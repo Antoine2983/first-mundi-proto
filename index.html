@@ -1055,15 +1055,22 @@ const PRO_BIENS = [
 
 /* ---- leads reçus — `achete` distingue ce qui est déjà à l'agence de ce qui reste à débloquer.
    Un lead `base` est toujours `achete:true` : le gratuit n'a jamais rien à débloquer. ---- */
+/* `part` = nombre d'agences destinataires de la demande. L'acquéreur envoie à toutes celles
+   qui détiennent un mandat et décoche celles qu'il écarte ; chacune paie sa qualification au
+   prix plein, donc chacune doit le savoir AVANT de débloquer. part:1 = elle est seule. */
 const PRO_LEADS = [
-  {n:'Marc D.',   b:'T3 · 62 m² · Lyon 7ᵉ',        k:'full', achete:true,  etat:'Rappelé',      d:'il y a 12 min'},
-  {n:'Sophie L.', b:'T2 · 44 m² · Villeurbanne',   k:'base', achete:true,  etat:'Nouveau',      d:'il y a 3 h'},
-  {n:'Karim B.',  b:'Immeuble · 210 m² · Lyon 9ᵉ', k:'rech', achete:false, etat:'Nouveau',      d:'hier'},
-  {n:'Élodie R.', b:'T4 · 89 m² · Lyon 3ᵉ',        k:'base', achete:true,  etat:'Traité',       d:'hier'},
-  {n:'Thomas P.', b:'T3 · 62 m² · Lyon 7ᵉ',        k:'fin',  achete:false, etat:'Nouveau',      d:'il y a 2 jours'},
-  {n:'Nadia K.',  b:'Studio · 27 m² · Lyon 8ᵉ',    k:'base', achete:true,  etat:'Sans réponse', d:'il y a 2 jours', tard:true},
-  {n:'Julien M.', b:'T2 · 44 m² · Villeurbanne',   k:'full', achete:false, etat:'Nouveau',      d:'il y a 3 jours'}
+  {n:'Marc D.',   b:'T3 · 62 m² · Lyon 7ᵉ',        k:'full', achete:true,  etat:'Rappelé',      d:'il y a 12 min',    part:3},
+  {n:'Sophie L.', b:'T2 · 44 m² · Villeurbanne',   k:'base', achete:true,  etat:'Nouveau',      d:'il y a 3 h',       part:1},
+  {n:'Karim B.',  b:'Immeuble · 210 m² · Lyon 9ᵉ', k:'rech', achete:false, etat:'Nouveau',      d:'hier',             part:2},
+  {n:'Élodie R.', b:'T4 · 89 m² · Lyon 3ᵉ',        k:'base', achete:true,  etat:'Traité',       d:'hier',             part:1},
+  {n:'Thomas P.', b:'T3 · 62 m² · Lyon 7ᵉ',        k:'fin',  achete:false, etat:'Nouveau',      d:'il y a 2 jours',   part:3},
+  {n:'Nadia K.',  b:'Studio · 27 m² · Lyon 8ᵉ',    k:'base', achete:true,  etat:'Sans réponse', d:'il y a 2 jours',   part:1, tard:true},
+  {n:'Julien M.', b:'T2 · 44 m² · Villeurbanne',   k:'full', achete:false, etat:'Nouveau',      d:'il y a 3 jours',   part:2}
 ];
+/* la mention de partage — jamais en petits caractères, jamais après l'achat */
+const partChip = l => l.part>1
+  ? `<span class="chip o">Partagé · ${l.part} agences</span>`
+  : `<span class="chip k">Vous seul</span>`;
 const ADEBLOQUER = PRO_LEADS.filter(l=>!l.achete);
 const TOTALDEB   = ADEBLOQUER.reduce((a,l)=>a+eur(LEADPX[l.k]),0);
 
@@ -2031,8 +2038,9 @@ add({id:'accueil', g:'P0 — Parcours acquéreur', n:'01', title:'Accueil app �
     ['Le nudge compte arrive en 2ᵉ visite, jamais en 1ʳᵉ','il est alors mérité par un usage, donc argumentable précisément : « cette recherche ne survivra pas à ce navigateur ». Un mur d’inscription à froid coûte plus qu’il ne rapporte sur un produit dont la promesse est la transparence.'],
     ['Preuve montrable plutôt que compteur','« 12 480 biens · 1 260 agences » est de la statistique, pas une réponse à « pourquoi vous et pas SeLoger ». Trois preuves vérifiables la remplacent — une annonce par bien · le budget total, pas le prix · le classement ne s’achète pas. Aucune n’est copiable par un portail installé.'],
     ['L’amorçage annonce la contrepartie, jamais la tâche','« renseignez votre apport » ne motive personne ; « chaque fiche affichera ce que ce bien vous coûte vraiment » oui. Trois jalons, jamais bloquants, jamais modaux — le bloc disparaît définitivement une fois franchi et ne revient pas.'],
-    ['Le suivi de demande n’affiche que ce qu’on SAIT','on sait que la demande est partie et que l’agence l’a ouverte dans son dashboard. On ne sait pas si elle a appelé. D’où trois statuts seulement — Envoyée · Consultée · Sans nouvelle — et un bouton « l’agence m’a répondu » qui est la seule façon honnête de fermer la boucle. Effet de bord précieux : ça produit une donnée de réactivité par agence qu’on ne peut acheter nulle part.'],
-    ['La bascule à 48 h est LE dividende de l’annonce unique','sans réponse, on propose un autre mandataire du même bien. Aucun portail ne peut le faire : chez eux ce sont trois annonces qui s’ignorent. C’est la valeur du regroupement rendue tangible au moment exact où l’utilisateur en a besoin — et c’est un second lead vendable, à trancher côté modèle éco.'],
+    ['Le suivi porte N statuts, pas un','la demande part à toutes les agences qui détiennent un mandat : le suivi affiche donc une ligne par agence, chacune avançant à son rythme. On n’affiche que ce qu’on SAIT — la demande est partie, l’agence l’a ouverte dans son dashboard. On ne sait pas si elle a appelé. D’où deux statuts seulement par ligne — Envoyée · Consultée — et un bouton « elle m’a répondu » par agence, seule façon honnête de fermer la boucle. Effet de bord précieux : une donnée de réactivité par agence qu’on ne peut acheter nulle part.'],
+    ['L’ÉCART entre les agences est l’information','« 1 sur 3 l’a ouverte » en dit plus que n’importe quel statut global : sur le même bien, à la même heure, avec la même demande, une agence a réagi et deux non. Aucun portail ne peut produire ce chiffre, il faudrait pour cela que les trois annonces se connaissent. C’est le même mécanisme que l’écart de prix sur la fiche — on l’affiche, on ne le commente pas.'],
+    ['La bascule à 48 h ne survit que si l’acquéreur a DÉCOCHÉ','envoyer aux trois d’un coup la vide de son objet : il n’y a plus d’agence 2 à proposer, elle a déjà la demande. Elle garde tout son sens dans l’autre cas — une seule agence retenue, sans réponse à 48 h, et l’on rappelle que celle qui a été écartée propose toujours le bien. C’est la valeur du regroupement rendue tangible au moment exact où l’utilisateur en a besoin, sans jamais lui vendre deux fois la même chose.'],
     ['« Retiré de la vente » se traite comme une baisse de prix','même soin, même place. C’est le bénéfice n°1 promis à l’avatar acquéreur, pas un message d’erreur : il mérite sa vignette et sa sortie.'],
     ['La zone de preuve se rétracte à mesure qu’il avance','elle porte tout le poids en visite froide, elle disparaît dès qu’il a des choses à traiter. Un utilisateur en cours de transaction n’a pas besoin qu’on lui vende le produit.']
   ],
@@ -2183,7 +2191,16 @@ add({id:'accueil', g:'P0 — Parcours acquéreur', n:'01', title:'Accueil app �
         enregistrée. Nous n'affichons jamais de sélection sans critère — ni « populaires », ni « coups de cœur ».</div>
       </div>`;
 
-    if (s==='Demande envoyée') primaire = `
+    if (s==='Demande envoyée') {
+      /* La demande part aux N agences du bien : le suivi porte donc N statuts, pas un.
+         Chaque agence avance à son rythme — c'est l'écart entre elles qui est l'information. */
+      const suivi = [
+        ['Agence du Parc',   'Consultée il y a 12 min', 'k',  true],
+        ['Rhône Immobilier', 'Envoyée — pas encore ouverte', '', false],
+        ['Lyon 7 Habitat',   'Envoyée — pas encore ouverte', '', false]
+      ];
+      const vus = suivi.filter(x=>x[3]).length;
+      primaire = `
       <div class="card">
         <div class="pad" style="border-bottom:1px solid var(--line-2)">
           <div class="row mid stackm" style="justify-content:space-between;gap:12px">
@@ -2191,23 +2208,34 @@ add({id:'accueil', g:'P0 — Parcours acquéreur', n:'01', title:'Accueil app �
               ${ph('photo',44).replace('height:44px','height:44px;width:62px;flex:none')}
               <div style="min-width:0">
                 <div class="txt" style="font-weight:500;color:var(--ink)">${BIENS[0].t}</div>
-                <div class="sub">Demande envoyée à ${BIENS[0].ag} · il y a 3 h</div>
+                <div class="sub">Demande envoyée à <b>${suivi.length} agences</b> · il y a 3 h</div>
               </div>
             </div>
-            <span class="chip k" style="flex:none">Consultée par l'agence${pin(7)}</span>
+            <span class="chip k" style="flex:none">${vus} sur ${suivi.length} l'a ouverte${pin(8)}</span>
           </div>
         </div>
         <div class="pad">
-          ${stepper(['Envoyée','Consultée par l\'agence','Réponse'],1)}
-          <div class="sub mt14">L'agence a ouvert votre demande il y a 12 minutes.
-          Temps de réponse moyen constaté sur la plateforme : <b class="num">8 h</b>.</div>
-          <div class="row gap8 mt14 wrap">
-            <button class="btn sec2 sm hot">L'agence m'a répondu</button>
-            <button class="btn ghost sm hot">Toujours sans nouvelle</button>
+          <div class="lbl" style="margin-bottom:8px">Où en est chaque agence${pin(7)}</div>
+          <div class="col gap6">
+            ${suivi.map(([ag,st2,cl,vu])=>`
+              <div class="card flat pad">
+                <div class="row mid agrow" style="justify-content:space-between;gap:10px">
+                  <div style="min-width:0">
+                    <div class="txt" style="font-weight:600;color:var(--ink)">${ag}</div>
+                    <div class="sub">${st2}</div>
+                  </div>
+                  <div class="row mid gap8" style="flex:none">
+                    <span class="chip ${cl}">${vu?'Consultée':'Envoyée'}</span>
+                    ${vu?'<button class="btn sec2 sm hot">Elle m\'a répondu</button>':''}
+                  </div>
+                </div>
+              </div>`).join('')}
           </div>
-          <div class="disc mt8">Nous savons que votre demande a été ouverte — pas si l'agence vous a appelé.
-          Personne ne publie cette information : seul vous pouvez nous le dire. Votre réponse ne sert
-          qu'à mesurer la réactivité des agences.</div>
+          <div class="sub mt14">Une seule a ouvert votre demande pour l'instant.
+          Temps de réponse moyen constaté sur la plateforme : <b class="num">8 h</b>.</div>
+          <div class="disc mt8">Nous savons qu'une demande a été ouverte — pas si l'agence vous a appelé.
+          Personne ne publie cette information : seul vous pouvez nous le dire, agence par agence.
+          Votre réponse ne sert qu'à mesurer leur réactivité.</div>
         </div>
       </div>
 
@@ -2216,8 +2244,9 @@ add({id:'accueil', g:'P0 — Parcours acquéreur', n:'01', title:'Accueil app �
           <span class="txt" style="font-weight:600;color:var(--ink)">${BIENS[1].t}</span>
           <span class="chip o">Sans nouvelle depuis 2 jours</span>
         </div>
-        <div class="sub" style="margin-top:4px">Demande envoyée à ${BIENS[1].ag} le 10/08 — jamais ouverte.</div>
-        <div class="bandeau mt14">${pin(8)} <b>Une autre agence propose ce bien.</b>
+        <div class="sub" style="margin-top:4px">Demande envoyée le 10/08 à ${BIENS[1].ag} seule —
+        vous aviez retiré l'autre agence avant l'envoi. Jamais ouverte.</div>
+        <div class="bandeau mt14">${pin(9)} <b>L'agence que vous aviez écartée propose toujours ce bien.</b>
           Vous n'êtes pas bloqué par un mandat qui ne répond pas : c'est le même bien et la même annonce,
           seul le contact change.
           <div class="row gap8 mt8 wrap">
@@ -2226,6 +2255,7 @@ add({id:'accueil', g:'P0 — Parcours acquéreur', n:'01', title:'Accueil app �
           </div>
         </div>
       </div></div>`;
+    }
 
     if (s==='Ça a bougé') primaire = `
       <div class="card"><div class="pad">
@@ -2252,7 +2282,7 @@ add({id:'accueil', g:'P0 — Parcours acquéreur', n:'01', title:'Accueil app �
           <div class="grow" style="min-width:0">
             <div class="row mid gap6 wrap">
               <span class="txt" style="font-weight:600;color:var(--ink)">T2 · 44 m² · Villeurbanne (Gratte-Ciel)</span>
-              <span class="chip o">Retiré de la vente${pin(9)}</span>
+              <span class="chip o">Retiré de la vente${pin(10)}</span>
             </div>
             <div class="sub" style="margin-top:3px">Plus aucune agence ne le propose depuis le 31/07.
             Nous ne savons pas s'il a été vendu — personne ne publie cette information.</div>
@@ -4394,7 +4424,8 @@ add({id:'pro-leads', g:'P2 — Monétisation', n:'15', title:'Mes leads — la l
     ['Une colonne « ce que vous avez », pas une colonne « prix »','« 20 € » seul se lit comme un péage. « Lead qualifié — recherche · 20 € — à débloquer » dit ce qu’on achète et rappelle, par contraste, que la ligne du dessus est déjà à l’agence. La distinction gratuit / payant se rejoue à chaque ligne, pas une fois en en-tête.'],
     ['Le total à débloquer est une information, pas un bouton','on affiche « 3 qualifications disponibles — 90 € au total » sans proposer de tout prendre. F-101 vend **à l’unité** : un bouton de lot transformerait un achat réfléchi en panier, et le premier regret coûterait plus cher que les trois ventes.'],
     ['« Nouveau » côté agence = « Envoyée » côté acquéreur','les deux statuts sont les deux faces du même événement. Ouvrir le lead fait passer l’acquéreur à « Consultée par l’agence » sur sa page d’accueil — c’est la seule chose que nous savons vraiment, et elle est donc affichée des deux côtés à l’identique.'],
-    ['Le lead sans réponse à 48 h est signalé à l’agence AVANT de l’être à l’acquéreur','à cette échéance, l’acquéreur se voit proposer un autre mandataire du même bien. Le lui cacher côté agence serait déloyal ; le lui dire en fait le rappel le plus efficace du produit — et personne ne peut nous reprocher la règle, elle est publiée.'],
+    ['Le lead sans réponse à 48 h est signalé à l’agence AVANT de l’être à l’acquéreur','la règle ne joue que sur un bien où l’acquéreur n’a retenu qu’une agence : à 48 h sans réponse, on lui rappelle que celle qu’il avait écartée propose toujours le bien. Le cacher côté agence serait déloyal ; le dire en fait le rappel le plus efficace du produit — et personne ne peut nous reprocher la règle, elle est publiée.'],
+    ['Un lead partagé le dit AVANT l’achat, pas après','l’acquéreur envoie sa demande à toutes les agences qui détiennent un mandat : sur un bien à trois mandats, trois agences reçoivent le même lead et **chacune paie sa qualification au prix plein**. C’est défendable — chacune reçoit un contact réel, vérifié, avec un projet chiffré — mais uniquement si c’est dit avant de cliquer « débloquer ». Une agence qui découvre le partage après coup se sent facturée deux fois pour le même acquéreur ; celle qui le sait avant arbitre en connaissance de cause et décroche son téléphone plus vite. La mention « Partagé avec N agences » est donc dans la liste, dans la fiche et dans l’écran d’achat — jamais en petits caractères.'],
     ['Le statut de traitement est déclaratif et sert l’agence, pas nous','Nouveau · Rappelé · Sans réponse · Traité. Aucune conséquence tarifaire, aucun scoring caché derrière : c’est un outil de suivi, et il doit rester perçu comme tel.'],
     ['Un lead injoignable est recrédité, et le bouton est dans la liste','pas dans un formulaire de support. La promesse ne vaut que si elle est à un clic — sinon elle n’est qu’une phrase de CGU.']
   ],
@@ -4460,8 +4491,9 @@ add({id:'pro-leads', g:'P2 — Monétisation', n:'15', title:'Mes leads — la l
 
       ${tard && st!=='Gratuits' ? `
       <div class="bandeau mt14" style="border-left-width:4px">${pin(4)}
-        <b>${tard.n} attend une réponse depuis 2 jours.</b> Passé 48 h, nous proposons à l'acquéreur de
-        contacter un autre mandataire du même bien — la règle est publiée, et elle joue pour tout le monde.
+        <b>${tard.n} attend une réponse depuis 2 jours.</b> Cet acquéreur ne vous a contacté que vous
+        sur ce bien. Passé 48 h, nous lui rappelons que l'autre mandataire le propose toujours —
+        la règle est publiée, et elle joue pour tout le monde.
         <div class="row gap8 mt8 wrap">
           <button class="btn sm hot" onclick="${dest(tard)}">Ouvrir le lead</button>
           <button class="btn sec2 sm hot">Ce numéro ne répond pas — recréditer</button>
@@ -4479,13 +4511,14 @@ add({id:'pro-leads', g:'P2 — Monétisation', n:'15', title:'Mes leads — la l
 
       <div class="card mt14">
         <table class="wt">
-          <thead><tr><th>Contact</th><th>Bien</th><th>Ce que vous avez</th><th>Reçu</th>
+          <thead><tr><th>Contact</th><th>Bien</th><th>Ce que vous avez</th><th>Destinataires</th><th>Reçu</th>
             <th>Traitement</th><th class="n">Action</th></tr></thead>
           <tbody>
             ${filtre.map(l=>`<tr class="hot" onclick="${dest(l)}">
               <td><b style="color:var(--ink)">${l.n}</b><div class="sub">téléphone vérifié par SMS</div></td>
               <td>${l.b}</td>
               <td>${leadChip(l)}</td>
+              <td>${partChip(l)}</td>
               <td class="sub">${l.d}</td>
               <td>${etatChip(l)}</td>
               <td class="n"><button class="btn sm ${l.achete?'sec2':''}">${l.achete?'Ouvrir':'Débloquer'}</button></td>
@@ -4502,16 +4535,21 @@ add({id:'pro-leads', g:'P2 — Monétisation', n:'15', title:'Mes leads — la l
                 </div>
                 ${etatChip(l)}
               </div>
-              <div class="row mid gap6 mt8 wrap">${leadChip(l)}
+              <div class="row mid gap6 mt8 wrap">${leadChip(l)}${partChip(l)}
                 <button class="btn sm ${l.achete?'sec2':''}" style="margin-left:auto">${l.achete?'Ouvrir':'Débloquer'}</button></div>
             </div>`).join('')}
         </div>
       </div>
 
+      <div class="disc mt8">${pin(5)} <b>« Partagé · 3 agences »</b> veut dire que l'acquéreur a envoyé la
+      même demande aux trois mandataires du bien — c'est son droit, et il a pu en retirer avant d'envoyer.
+      Chacune de vous reçoit un contact réel et vérifié, et chacune paie sa qualification au même prix.
+      Nous vous le disons avant que vous débloquiez, jamais après.</div>
+
       <div class="disc mt8">${pin(3)} Un lead marqué « Nouveau » n'a pas encore été ouvert : de son côté,
       l'acquéreur voit « Demande envoyée ». Dès que vous l'ouvrez, il voit « Consultée par l'agence ».
       C'est la seule chose que nous savons — nous ne prétendons pas savoir si vous l'avez rappelé.</div>
-      <div class="disc mt8">${pin(6)} Un numéro qui ne répond jamais est recrédité, sans justification à
+      <div class="disc mt8">${pin(7)} Un numéro qui ne répond jamais est recrédité, sans justification à
       fournir. Ce que nous vérifions : le téléphone, par SMS. Ce que nous ne vérifions pas : l'apport et la
       capacité de remboursement — l'acquéreur les déclare, nous vous les transmettons tels quels.</div>
     </div>`;
@@ -4558,7 +4596,9 @@ add({id:'pro-lead', g:'P2 — Monétisation', n:'14', title:'Fiche contact — g
           <div class="row mid gap8 mt8">
             ${ph('photo',44).replace('height:44px','height:44px;width:62px;flex:none')}
             <div><div class="txt" style="font-weight:500;color:var(--ink)">${BIENS[0].t}</div>
-            <div class="sub num">${nbsp('289 000 €')} · votre mandat depuis 3 jours · 9 leads</div></div>
+            <div class="sub num">${nbsp('289 000 €')} · votre mandat depuis 3 jours · 9 leads</div>
+            <div class="row mid gap6 mt8 wrap"><span class="chip o">Partagé · 3 agences</span>
+              <span class="sub">Marc D. a contacté les 3 mandataires du bien, le même jour</span></div></div>
           </div>
         </div>
 
@@ -4642,7 +4682,8 @@ add({id:'pro-achat', g:'P2 — Monétisation', n:'15', title:'Acheter une qualif
     ['« Sans abonnement » écrit noir sur blanc','c’est l’angoisse n°1 d’une agence échaudée. Elle vient de 1 040 €/mois payés d’avance à trois portails : le mot « abonnement » doit apparaître pour être nié.'],
     ['Rappeler que le refus ne coûte rien','ne pas acheter ne retire pas le contact. Sans cette phrase, le bouton se lit comme un péage et le lead gratuit perd sa crédibilité.'],
     ['Le doublon n’est jamais refacturé','F-102 critère 6 : même acquéreur déjà acheté sur un autre bien → l’écran le dit et n’encaisse rien. C’est le genre de détail qui achète plus de confiance que trois pages d’argumentaire.'],
-    ['Carte enregistrée = un clic','le second achat doit être plus rapide que le premier, sinon le modèle à l’acte ne décolle pas.']
+    ['Carte enregistrée = un clic','le second achat doit être plus rapide que le premier, sinon le modèle à l’acte ne décolle pas.'],
+    ['Le partage est dit AVANT le paiement, et il ne fait pas baisser le prix','l’acquéreur adresse sa demande à tous les mandataires du bien : sur deux mandats, deux agences reçoivent le même lead et **chacune paie le prix plein**. Le défendre tient en une phrase — chacune reçoit un contact réel, vérifié, avec un projet chiffré, et ce qu’elle achète est une information sur l’acquéreur, pas une exclusivité sur lui. Mais ça ne se défend que si c’est affiché avant le bouton : découvrir le partage après avoir payé, c’est la rupture de confiance qui coûte l’abonné. On l’écrit donc deux fois, sur l’aperçu et dans le récapitulatif de paiement, et on dit pourquoi on le dit — ça change la façon de rappeler, pas le tarif.']
   ],
   render:(st)=>{
     if (st==='Doublon — jamais refacturé') return `${appnav('Mes leads','pro')}
@@ -4689,7 +4730,14 @@ add({id:'pro-achat', g:'P2 — Monétisation', n:'15', title:'Acheter une qualif
               <span class="sub">Recevoir ce contact</span><span class="num sub">${nbsp('0 €')}</span></div>
             <div class="row mid" style="justify-content:space-between">
               <span class="sub">Abonnement</span><span class="num sub">aucun</span></div>
+            <div class="row mid" style="justify-content:space-between">
+              <span class="sub">${pin(7)} Destinataires de la demande</span>
+              <span class="num sub">2 agences</span></div>
           </div>
+          <div class="disc mt8">Karim B. a adressé la même demande aux 2 mandataires du bien.
+          L'autre agence paiera le même prix que vous pour la même qualification — ni plus, ni moins.
+          Nous vous le disons avant l'achat parce que ça change votre façon de le rappeler,
+          pas parce que ça change le tarif.</div>
           <div class="row mid gap8 mt20">
             <div class="ph solid" style="width:34px;height:22px;flex:none">••••</div>
             <div class="grow"><div class="txt">Visa se terminant par 4218</div><div class="sub">expire 09/29</div></div>
@@ -4707,7 +4755,9 @@ add({id:'pro-achat', g:'P2 — Monétisation', n:'15', title:'Acheter une qualif
           <div class="pad" style="border-bottom:1px solid var(--line-2)">
             <div class="row mid" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
               <div><h4 class="wt">Qualification disponible — Karim B.</h4>
-                <div class="sub">Sur votre bien « Immeuble · 210 m² · Vaise » · reçu hier</div></div>
+                <div class="sub">Sur votre bien « Immeuble · 210 m² · Vaise » · reçu hier</div>
+                <div class="row mid gap6 mt8 wrap"><span class="chip o">Partagé · 2 agences</span>
+                  <span class="sub">${pin(7)} Karim B. a contacté les 2 mandataires du bien</span></div></div>
               <span class="chip k">${nbsp('20 €')}</span>
             </div>
           </div>
