@@ -2,7 +2,7 @@
 
 Prototype cliquable d'une plateforme immobilière. **Un seul fichier, aucune dépendance, fonctionne hors ligne** : ouvre `index.html` dans un navigateur (double-clic).
 
-**24 écrans · 66 états · 528 rendus vérifiés** (écran × état × mode × connecté/visiteur), en niveau de gris. Pas de direction artistique : on valide ici les **parcours, la hiérarchie de l'information et les états**. La couleur, la typo et le logo viennent après.
+**24 écrans · 67 états**, vérifiés sur toutes les combinaisons écran × état × mode × connecté/visiteur, en niveau de gris. Pas de direction artistique : on valide ici les **parcours, la hiérarchie de l'information et les états**. La couleur, la typo et le logo viennent après.
 
 ## Ce que contient le prototype
 
@@ -31,6 +31,18 @@ Les règles qui tiennent l'écran :
 - **Preuve montrable plutôt que compteur.** « 12 480 biens · 1 260 agences » est de la statistique. Trois preuves vérifiables la remplacent — une annonce par bien · le budget total, pas le prix · le classement ne s'achète pas.
 - **Afficher des biens en état « En chasse » ne viole pas « aucune annonce sans critère »** : le critère existe, c'est sa recherche enregistrée. Ce qui reste interdit, c'est une grille « populaires » ou « coups de cœur ».
 
+### Le tunnel de mise en relation est ouvert, et la demande part à toutes les agences
+
+**L'app ne demande jamais de compte pour chercher, filtrer, ouvrir une fiche ou comparer.** Il n'est demandé que pour deux choses : voir le cashflow, et envoyer une demande. Et pour l'envoi, il arrive **à la fin du tunnel** — le visiteur remplit ses coordonnées, son projet, choisit ses agences, et ne rencontre la vérification SMS qu'au clic « Envoyer ». Les quatre champs de l'étape 1 *sont* le compte : rien à remplir deux fois. Le mur ne disparaît pas, il se déplace au moment où l'utilisateur a le plus à perdre en abandonnant.
+
+**Un bien porte N mandats : la demande part aux N agences.** L'écran les liste et l'acquéreur **décoche** celles qu'il ne veut pas solliciter.
+
+- **Tout est coché par défaut — décocher est le geste, cocher n'en est pas un.** Envoyer à une seule obligerait l'acquéreur à choisir entre des agences qu'il ne connaît pas, sur un critère qu'il n'a pas, et à recommencer si elle ne répond pas.
+- **On affiche pourquoi on pourrait vouloir décocher** : le prix demandé par chacune et la nature du mandat. Aucun tri, aucun classement, aucune recommandation.
+- **La dernière case se verrouille** — une demande sans destinataire n'est pas une demande. Elle refuse d'être décochée et le dit sur place, plutôt que d'échouer à l'envoi.
+- **Le consentement nomme les destinataires retenus**, pas « nos partenaires ».
+- **Bien à mandat unique** : pas de cases du tout, une phrase. Un état dédié le maquette.
+
 ### La recherche en langage naturel n'a pas d'écran
 
 Le mode « Décrire » vit **entièrement dans la nav** — pilule dépliée (champ + suggestions + **Valider**), pilule repliée (la phrase saisie + **Valider**), et onglet ✦ Décrire dans la popup de recherche mobile. Les trois mènent à la même **popup d'interprétation** : les critères déduits en chips modifiables, deux questions fermées (jamais un chat ouvert), et le rappel — *« aucun prix ni rendement n'est estimé ici : j'interprète une demande, je ne chiffre rien »*.
@@ -54,7 +66,7 @@ Trois limites matérialisées : la **carte de la fiche est statique** (recherche
 
 - **Navigation** : le rail de gauche, les flèches ← → de la barre du haut, ou les touches clavier ← →.
 - **Écrans cliquables** : les boutons principaux enchaînent vraiment (Rechercher → Résultats → Fiche → Contacter → OTP → Confirmation ; côté agence : Mes biens → fiche bien, Mes leads → fiche lead ou achat). Survole : ce qui s'entoure est cliquable.
-- **États** : les pastilles sous le titre basculent les 66 états. Pas seulement le cas heureux — vide, chargement, erreur, cas limite.
+- **États** : les pastilles sous le titre basculent les 67 états. Pas seulement le cas heureux — vide, chargement, erreur, cas limite.
 - **Modes** : `J'investis / J'habite` recompose le vocabulaire et les chiffres (rendement ↔ mensualité) sans perdre les favoris, communs aux deux modes.
 - **Responsive** : bascule `Auto / Desktop / Tablette / Mobile` en barre du bas. **Auto** suit la largeur réelle de la fenêtre (< 700 px mobile · < 1080 px tablette).
 - **Annotations** : les pastilles ocre renvoient aux décisions UX listées sous chaque écran. Décochable pour une lecture propre en réunion.
