@@ -1279,7 +1279,7 @@ const POP = {
           <div class="row mid agrow" style="justify-content:space-between;gap:10px">
             <div style="min-width:0">
               <div class="row mid gap6"><span class="txt" style="font-weight:600;color:var(--ink)">${ag}</span>
-                ${vit?'<span class="chip k">Contact affiché</span>':''}</div>
+                ${vit?'<span class="chip k">En tête de liste</span>':''}</div>
               <div class="sub">${mand}</div>
             </div>
             <div class="row mid gap8" style="flex:none">
@@ -1434,7 +1434,7 @@ const POP = {
               <div class="row mid agrow" style="justify-content:space-between;gap:10px">
                 <div style="min-width:0">
                   <div class="row mid gap6"><span class="txt" style="font-weight:600;color:var(--ink)">${ag}</span>
-                    ${vit?'<span class="chip k">Contact affiché</span>':''}</div>
+                    ${vit?'<span class="chip k">En tête de liste</span>':''}</div>
                   <div class="sub">${mand}</div>
                 </div>
                 <div class="mid2 num" style="flex:none">${nbsp(px)}</div>
@@ -2426,7 +2426,7 @@ add({id:'fiche', g:'P0 — Parcours acquéreur', n:'03', title:'Fiche bien — l
   states:['Cas nominal','Profil non renseigné','Bien retiré de la vente','Cas limite (DPE G)'],
   notes:[
     ['Tout le prix dans la colonne droite, et rien ailleurs','un seul bloc, collé au CTA. Éclater le prix entre le corps de page et la colonne obligeait l’œil à faire deux fois le même travail.'],
-    ['Le chiffre affiché est le budget total, pas le prix','« Budget total, pas le prix affiché » est notre promesse depuis la landing : la fiche doit la tenir, pas la contredire. Le prix de vente n’est pas caché — il est la première ligne de la popup — mais ce n’est pas lui qu’on met en gros. C’est le seul geste qui distingue vraiment cette colonne de celle de SeLoger.'],
+    ['Le chiffre affiché est le prix LE PLUS BAS des agences, jamais une moyenne','un bien à trois mandats a trois prix. En afficher un seul suppose de choisir, et choisir la moyenne serait inventer un prix qui n’existe chez personne. On affiche donc le plus bas — le seul qui soit réellement obtenable — et on dit aussitôt jusqu’où monte l’écart. Le budget total reste sous le prix, en ligne secondaire, et se déplie en entier dans la popup : c’est une information de décision, pas une accroche.'],
     ['Trois signaux, pas six','budget total · baisse · position marché en tag. La version précédente empilait prix, prix au m², écart marché, budget et une phrase de résumé : la phrase répétait la baisse et le tag, et le bloc se lisait comme un tableau. Le prix au m² reste, en gris, à côté du tag — c’est un repère, pas une décision.'],
     ['Le bloc prix est cliquable en entier','un clic n’importe où ouvre la popup qui déplie tout : prix de vente, prix au m² vs quartier, position face aux ventes DVF, historique des mouvements, décomposition du budget, prix par agence. La colonne donne le verdict, la popup montre d’où il vient.'],
     ['Une annonce par bien, écrite par nous','le texte d’une agence lui appartient ; les faits n’appartiennent à personne. Nous rédigeons donc la description à partir de la donnée — c’est ce qui autorise une fiche unique là où un portail classique empile trois annonces concurrentes du même appartement.'],
@@ -2438,7 +2438,7 @@ add({id:'fiche', g:'P0 — Parcours acquéreur', n:'03', title:'Fiche bien — l
     ['« Retiré de la vente », jamais « vendu »','le flux ne porte aucun statut de vente : dire « vendu » serait inventer. Cet état est un traitement à part entière, pas un message d’erreur — c’est le bénéfice n°1 de l’avatar acquéreur.'],
     ['Hypothèses éditables sur la fiche + export','l’investisseur ne renonce pas à son tableur. Un bloc qui affiche un résultat sans laisser modifier ni exporter sera lu comme publicitaire.'],
     ['On publie les FAITS, jamais le TEXTE d’une agence','surface, étage, DPE, charges, prix, mouvements : des faits, non protégeables, que nous remettons en forme nous-mêmes. Le texte et les photos d’une agence restent à elle — nous n’en reproduisons aucun. C’est précisément ce qui rend l’annonce unique possible sans contrefaçon.'],
-    ['L’agence reste le contact, elle n’est plus l’éditeur','plusieurs mandats sur un bien = plusieurs contacts possibles, pas plusieurs annonces. L’agence garde sa page de présentation, sa marque et son lead ; elle ne garde pas une version concurrente de la même page.'],
+    ['AUCUNE agence n’est « le contact » de la fiche','trois mandats, c’est trois contacts possibles — en mettre un en colonne droite reviendrait à en désigner un, donc à arbitrer entre des agences dont nous sommes le partenaire et non l’arbitre. La colonne ne porte donc que le bien : son prix, son analyse, le bouton. Les agences vivent dans le détail du prix, à égalité, chacune avec le sien — et la demande part à toutes, l’acquéreur en retirant qui il veut. Ce qui reste ici, c’est la provenance des DONNÉES, qui n’est pas une identité de contact.'],
     ['La description doit prouver qu’elle sort de la donnée','chaque phrase est rattachable à un champ : 62 m², DPE C, 140 €/mois, 63 ventes DVF. Un texte génératif qui vante « le charme de l’ancien » détruirait exactement la crédibilité qu’on cherche à construire — la contrainte est donc écrite dans le prompt, et affichée à l’utilisateur.'],
     ['Fourchette expliquée, jamais mise en scène','pas de tableau comparatif, pas de tri par prix croissant entre agences. Nous sommes le partenaire des agences, pas leur arbitre — un comparateur de prix nous grillerait auprès d’elles. Le prix affiché en tête est le plus bas connu, et on le dit.'],
     ['« Ce n’est pas le même bien » est une soupape obligatoire','entre 0,60 et 0,85 de score, on ne fusionne jamais : ce sont des « biens similaires ». Au-dessus, l’erreur reste possible — réunir deux lots distincts du même immeuble sous une seule annonce, c’est publier une information fausse. Le signalement sort le bien sous 24 h.'],
@@ -2703,18 +2703,26 @@ add({id:'fiche', g:'P0 — Parcours acquéreur', n:'03', title:'Fiche bien — l
           <div class="pad">
             <div class="hot pxblock" onclick="POP.prixdetail(${lim?3:0})" title="Voir tout le détail du prix">
               <div class="row mid" style="justify-content:space-between;gap:8px">
-                <span class="lbl">Budget total${pin(2)}</span>
+                <span class="lbl">Prix affiché${pin(2)}</span>
                 <span class="linkish sub">tout le détail ›</span>
               </div>
               <div class="row mid gap8 wrap" style="margin-top:2px">
-                <div class="big num">${nbsp(b.btot)}</div>
+                <div class="big num">${nbsp(b.p)}</div>
                 ${b.dv?`<span class="delta">↓ ${b.dv}</span>`:''}
               </div>
+              ${(b.ags||[]).length>1
+                ? `<div class="sub" style="margin-top:5px">le plus bas des ${b.ags.length} agences —
+                     jusqu'à ${nbsp(b.ags.map(a=>a[1]).sort((x,y)=>eur(y)-eur(x))[0])}</div>`
+                : ''}
               <div class="row mid gap6 wrap" style="margin-top:7px">
                 <span class="chip ${b.est.ok?'':'o'}">${b.est.tag[0].toUpperCase()+b.est.tag.slice(1)}</span>
                 <span class="sub num">${nbsp(b.m2)}</span>
               </div>
-              <div class="sub" style="margin-top:7px">frais de notaire inclus</div>
+              <div class="row mid" style="justify-content:space-between;gap:8px;margin-top:9px;
+                   padding-top:9px;border-top:1px solid var(--line-2)">
+                <span class="sub">Budget total, frais de notaire inclus</span>
+                <span class="mid2 num">${nbsp(b.btot)}</span>
+              </div>
             </div>
             <div class="hr"></div>
             <div>
@@ -2737,14 +2745,11 @@ add({id:'fiche', g:'P0 — Parcours acquéreur', n:'03', title:'Fiche bien — l
                      : 'Réponse moyenne : 8 h · sans frais pour vous'}</div>`}
           </div>
           <div class="pad" style="border-top:1px solid var(--line-2)">
-            <div class="lbl" style="margin-bottom:7px">Votre contact sur ce bien</div>
-            <div class="row mid gap8">
-              <div class="avatar"></div>
-              <div style="min-width:0"><div class="txt" style="font-weight:500;color:var(--ink)">${b.ag}</div>
-              <div class="sub">Pro vérifié · <span class="more" onclick="POP.source(${lim?3:0})">${b.src} · à jour ${b.maj}</span></div></div>
-            </div>
-            ${lim?'':`<div class="sub" style="margin-top:9px">2 autres agences détiennent un mandat sur ce bien —
-              <span class="linkish" onclick="POP.agences(0)">voir lesquelles</span></div>`}
+            <div class="lbl" style="margin-bottom:7px">${pin(14)} D'où viennent ces données</div>
+            <div class="sub"><span class="more" onclick="POP.source(${lim?3:0})">${b.src} · à jour ${b.maj}</span>
+            ${(b.ags||[]).length>1
+              ? ` — ${b.ags.length} agences détiennent un mandat sur ce bien, chacune à son prix.`
+              : ' — une seule agence détient ce bien à notre connaissance.'}</div>
           </div>
         </div>
       </div>
@@ -2752,8 +2757,8 @@ add({id:'fiche', g:'P0 — Parcours acquéreur', n:'03', title:'Fiche bien — l
     <div class="mobcta">
       <div class="msc hot" onclick="POP.prixdetail(${lim?3:0})"
         title="Voir tout le détail du prix">
-        <b class="num">${nbsp(b.btot)}<i class="mchev">›</i></b>
-        <span class="sub num">budget total${b.dv?' · ↓ '+b.dv:''}</span>
+        <b class="num">${nbsp(b.p)}<i class="mchev">›</i></b>
+        <span class="sub num">${(b.ags||[]).length>1?'le plus bas des '+b.ags.length+' agences':'prix affiché'}${b.dv?' · ↓ '+b.dv:''}</span>
       </div>
       ${off
         ? `<button class="btn sec2" style="flex:1" onclick="go('recherche')">Voir des biens similaires</button>`
@@ -2814,7 +2819,7 @@ add({id:'annonce-agence', g:'P0 — Parcours acquéreur', n:'', scope:'f010',
               <div class="grow" style="min-width:0">
                 <div class="row mid gap6 wrap">
                   <span class="txt" style="font-weight:650;color:var(--ink);font-size:15px">Agence du Parc</span>
-                  <span class="chip">Pro vérifié</span><span class="chip k">Contact affiché</span>
+                  <span class="chip">Pro vérifié</span><span class="chip k">En tête sur ce bien</span>
                 </div>
                 <div class="sub">${pin(2)} Lyon 6ᵉ · mandat exclusif sur ce bien · 8 collaborateurs</div>
               </div>
@@ -3060,7 +3065,7 @@ add({id:'lead2', g:'P0 — Parcours acquéreur', n:'05', title:'Mise en relation
                        font-size:11px;line-height:15px;text-align:center;font-weight:700">${on?'✓':''}</div>
                   <div style="min-width:0">
                     <div class="row mid gap6"><span class="txt" style="font-weight:600;color:var(--ink)">${ag}</span>
-                      ${vit?'<span class="chip k">Contact affiché</span>':''}</div>
+                      ${vit?'<span class="chip k">En tête de liste</span>':''}</div>
                     <div class="sub">${mand}</div>
                   </div>
                 </div>
@@ -4248,7 +4253,7 @@ add({id:'pro-bien', g:'P1 — Côté agence', n:'', title:'Fiche bien côté age
                   <div class="row mid" style="justify-content:space-between;gap:10px">
                     <div style="min-width:0"><div class="row mid gap6 wrap">
                       <span class="txt" style="font-weight:600;color:var(--ink)">${ag}</span>
-                      ${vit?'<span class="chip k">Contact affiché</span>':'<span class="chip o">vous</span>'}</div>
+                      ${vit?'<span class="chip k">En tête de liste</span>':'<span class="chip o">vous</span>'}</div>
                       <div class="sub">${det}</div></div>
                   </div>
                 </div>`).join('')}

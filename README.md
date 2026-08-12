@@ -32,6 +32,14 @@ Les règles qui tiennent l'écran :
 - **Preuve montrable plutôt que compteur.** « 12 480 biens · 1 260 agences » est de la statistique. Trois preuves vérifiables la remplacent — une annonce par bien · le budget total, pas le prix · le classement ne s'achète pas.
 - **Afficher des biens en état « En chasse » ne viole pas « aucune annonce sans critère »** : le critère existe, c'est sa recherche enregistrée. Ce qui reste interdit, c'est une grille « populaires » ou « coups de cœur ».
 
+### La fiche bien ne désigne aucune agence
+
+La colonne de droite ne porte que le bien : son prix, son analyse, le bouton. **Aucune agence n'y est « le contact »** — un bien à trois mandats a trois contacts possibles, et en mettre un en avant reviendrait à arbitrer entre des agences dont nous sommes le partenaire, pas l'arbitre. Elles vivent dans le détail du prix, à égalité, chacune avec le sien.
+
+Le chiffre en tête est le **prix le plus bas des agences**, avec la fourchette juste dessous (« le plus bas des 3 agences — jusqu'à 297 000 € »). Jamais une moyenne : ce serait inventer un prix qui n'existe chez personne. Le **budget total, frais de notaire inclus**, se lit en ligne secondaire et se déplie en entier dans le détail — c'est une information de décision, pas une accroche.
+
+Ce qui reste en bas de colonne n'est pas un contact mais la **provenance des données** (dépôt direct ou flux partenaire, date de mise à jour).
+
 ### Le tunnel de mise en relation est ouvert, et la demande part à toutes les agences
 
 **L'app ne demande jamais de compte pour chercher, filtrer, ouvrir une fiche ou comparer.** Il n'est demandé que pour deux choses : voir le cashflow, et envoyer une demande. Et pour l'envoi, il arrive **à la fin du tunnel** — le visiteur remplit ses coordonnées, son projet, choisit ses agences, et ne rencontre la vérification SMS qu'au clic « Envoyer ». Les quatre champs de l'étape 1 *sont* le compte : rien à remplir deux fois. Le mur ne disparaît pas, il se déplace au moment où l'utilisateur a le plus à perdre en abandonnant.
