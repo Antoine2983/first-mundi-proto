@@ -369,6 +369,24 @@ body.tablet .rpanel{position:fixed;top:0;right:0;bottom:var(--pbarH,54px);width:
   background:var(--paper);z-index:46;overflow:hidden}
 body.tablet .rpanel.open{transform:none;width:340px;box-shadow:-12px 0 40px rgba(0,0,0,.22)}
 body.tablet .rpanel .rin{width:340px;max-height:100%}
+
+/* ---------- APERÇU FORCÉ : rabattre les surfaces fixes sur le cadre ----------
+   Le rendu simulé est un bloc centré (390 px en mobile, 768 px en tablette), mais tout ce
+   qui est en position:fixed se cale sur la FENÊTRE et non sur lui. Depuis un grand écran,
+   la démo montrait donc un bottom sheet de 1350 px coiffant un écran de 390 px — le format
+   qu'on voulait justement démontrer était le seul à ne pas être respecté.
+   On rabat les trois surfaces concernées : le sheet, son voile, et le tiroir favoris.
+   Aucun effet en mode Auto (pas de classe .ovr) : cadre et fenêtre y coïncident déjà. */
+body.ovr .pop-ov,
+body.ovr .pscrim.open{margin-inline:auto}
+body.ovr.mobile .pop-ov,
+body.ovr.mobile .pscrim.open{max-width:390px}
+body.ovr.tablet .pop-ov,
+body.ovr.tablet .pscrim.open{max-width:768px}
+/* le tiroir mobile reste centré sans toucher à sa transform d'ouverture */
+body.ovr.mobile .rpanel{max-width:390px;margin-inline:auto}
+/* le tiroir tablette s'ancre au bord droit du cadre, plus à celui de la fenêtre */
+body.ovr.tablet .rpanel{right:calc(50% - 384px)}
 /* voile derrière le panneau (mobile + tablette) */
 .pscrim{display:none}
 body.mobile .pscrim.open,body.tablet .pscrim.open{display:block;position:fixed;inset:0;
@@ -2711,8 +2729,7 @@ add({id:'fiche', g:'P0 — Parcours acquéreur', n:'03', title:'Fiche bien — l
               ? `<button class="btn full" disabled>Bien retiré de la vente</button>
                  <button class="btn sec2 full hot" style="margin-top:8px" onclick="go('recherche')">Voir des biens similaires</button>
                  <div class="sub" style="margin-top:11px;text-align:center">Retiré le 31/07 — dernière vérification il y a 2 h</div>`
-              : `<button class="btn full hot ctamain" onclick="go('lead1')">${
-                    (b.ags||[]).length>1?`Contacter les ${b.ags.length} agences`:"Contacter l'agence"}</button>
+              : `<button class="btn full hot ctamain" onclick="go('lead1')">Prendre contact</button>
                  <button class="btn sec2 full" style="margin-top:8px">♡ Ajouter aux favoris</button>
                  <div class="sub" style="margin-top:11px;text-align:center">${
                    (b.ags||[]).length>1
@@ -2740,8 +2757,7 @@ add({id:'fiche', g:'P0 — Parcours acquéreur', n:'03', title:'Fiche bien — l
       </div>
       ${off
         ? `<button class="btn sec2" style="flex:1" onclick="go('recherche')">Voir des biens similaires</button>`
-        : `<button class="btn hot" style="flex:1" onclick="go('lead1')">${
-             (b.ags||[]).length>1?`Contacter les ${b.ags.length} agences`:"Contacter l'agence"}</button>`}
+        : `<button class="btn hot" style="flex:1" onclick="go('lead1')">Prendre contact</button>`}
     </div></div>`;
   }
 });
@@ -2897,7 +2913,7 @@ add({id:'lead1', g:'P0 — Parcours acquéreur', n:'04', title:'Mise en relation
       <div class="pad" style="border-bottom:1px solid var(--line-2);display:flex;gap:12px;align-items:center">
         ${ph('photo',52).replace('height:52px','height:52px;width:74px;flex:none')}
         <div class="grow"><div class="txt" style="font-weight:500;color:var(--ink)">${BIENS[0].t}${pin(1)}</div>
-        <div class="sub num">${nbsp('289 000 €')} · ${BIENS[0].ag}</div></div>
+        <div class="sub num">${nbsp('289 000 €')} · ${BIENS[0].ags.length} agences détiennent un mandat</div></div>
       </div>
       <div class="pad">
         <h4 class="wt">Vos coordonnées</h4>
@@ -5209,6 +5225,9 @@ function applyDevice(rerender){
     : document.body.classList.contains('tablet') ? 'tablet' : 'desktop';
   document.body.classList.toggle('mobile', d==='mobile');
   document.body.classList.toggle('tablet', d==='tablet');
+  /* .ovr = format forcé depuis la barre du bas. Il dit au CSS que le cadre simulé est plus
+     étroit que la fenêtre, et que les surfaces fixes doivent s'y rabattre. */
+  document.body.classList.toggle('ovr', !!DEVOVR);
   if (rerender && d !== was) show(cur, true);
 }
 document.querySelectorAll('#dev button').forEach(b=>b.onclick=()=>{
