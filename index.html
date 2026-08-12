@@ -1113,7 +1113,7 @@ const gratuitPayant = () => `
       <div class="row mid gap6"><span class="chip">Payant</span><span class="sub">à l'acte, jamais d'abonnement</span></div>
       <div class="col gap6 mt8">
         ${[['La qualification d\'un contact', '20 à 40 €'],
-           ['Une vente conclue grâce à nous', '3 % de votre commission']]
+           ['Une vente conclue grâce à nous', '0,16 % du prix de vente']]
           .map(([t,v])=>`<div class="row mid" style="justify-content:space-between;gap:10px">
             <span class="txt">${t}</span><span class="num" style="font-weight:600;flex:none">${nbsp(v)}</span></div>`).join('')}
       </div>
@@ -2026,9 +2026,9 @@ const POP = {
     <div class="hr" style="margin:16px 0"></div>
     <div class="row mid" style="justify-content:space-between;gap:12px;flex-wrap:wrap">
       <div style="min-width:0"><div class="txt" style="font-weight:600;color:var(--ink)">Vente conclue</div>
-        <div class="sub">3 % de VOTRE commission d’agence, jamais du prix du bien · minimum 100 €.
-        Payée seulement quand la transaction se conclut.</div></div>
-      <span class="mid2 num" style="flex:none">3 %</span>
+        <div class="sub">Frais de service First Mundi : 0,16 % du prix de vente · minimum 100 €.
+        Vous n’avez pas à nous déclarer vos honoraires. Payés seulement quand la transaction se conclut.</div></div>
+      <span class="mid2 num" style="flex:none">0,16 %</span>
     </div>
     <div class="bandeau mt14"><b>Ce qui reste gratuit, sans plafond ni date de fin :</b> publier vos biens,
     recevoir les contacts, le tableau de bord, les factures. Ne rien acheter ne vous retire rien.</div>
@@ -2426,7 +2426,7 @@ add({id:'fiche', g:'P0 — Parcours acquéreur', n:'03', title:'Fiche bien — l
   states:['Cas nominal','Profil non renseigné','Bien retiré de la vente','Cas limite (DPE G)'],
   notes:[
     ['Tout le prix dans la colonne droite, et rien ailleurs','un seul bloc, collé au CTA. Éclater le prix entre le corps de page et la colonne obligeait l’œil à faire deux fois le même travail.'],
-    ['Le chiffre affiché est le prix LE PLUS BAS des agences, jamais une moyenne','un bien à trois mandats a trois prix. En afficher un seul suppose de choisir, et choisir la moyenne serait inventer un prix qui n’existe chez personne. On affiche donc le plus bas — le seul qui soit réellement obtenable — et on dit aussitôt jusqu’où monte l’écart. Le budget total reste sous le prix, en ligne secondaire, et se déplie en entier dans la popup : c’est une information de décision, pas une accroche.'],
+    ['Le chiffre affiché est le prix, et rien d’autre','un bien à trois mandats a trois prix ; celui de la colonne est le plus bas, le seul qui soit réellement obtenable. Mais on ne le commente PAS ici — ni « le plus bas des trois », ni la fourchette. La colonne annonce un prix comme n’importe quelle fiche, et c’est la popup qui explique d’où il sort, agence par agence. Le budget total frais de notaire inclus vit lui aussi dans la popup : mis en colonne, il transforme un chiffre de décision en accroche et fait douter du prix affiché juste au-dessus.'],
     ['Trois signaux, pas six','budget total · baisse · position marché en tag. La version précédente empilait prix, prix au m², écart marché, budget et une phrase de résumé : la phrase répétait la baisse et le tag, et le bloc se lisait comme un tableau. Le prix au m² reste, en gris, à côté du tag — c’est un repère, pas une décision.'],
     ['Le bloc prix est cliquable en entier','un clic n’importe où ouvre la popup qui déplie tout : prix de vente, prix au m² vs quartier, position face aux ventes DVF, historique des mouvements, décomposition du budget, prix par agence. La colonne donne le verdict, la popup montre d’où il vient.'],
     ['Une annonce par bien, écrite par nous','le texte d’une agence lui appartient ; les faits n’appartiennent à personne. Nous rédigeons donc la description à partir de la donnée — c’est ce qui autorise une fiche unique là où un portail classique empile trois annonces concurrentes du même appartement.'],
@@ -2710,18 +2710,9 @@ add({id:'fiche', g:'P0 — Parcours acquéreur', n:'03', title:'Fiche bien — l
                 <div class="big num">${nbsp(b.p)}</div>
                 ${b.dv?`<span class="delta">↓ ${b.dv}</span>`:''}
               </div>
-              ${(b.ags||[]).length>1
-                ? `<div class="sub" style="margin-top:5px">le plus bas des ${b.ags.length} agences —
-                     jusqu'à ${nbsp(b.ags.map(a=>a[1]).sort((x,y)=>eur(y)-eur(x))[0])}</div>`
-                : ''}
               <div class="row mid gap6 wrap" style="margin-top:7px">
                 <span class="chip ${b.est.ok?'':'o'}">${b.est.tag[0].toUpperCase()+b.est.tag.slice(1)}</span>
                 <span class="sub num">${nbsp(b.m2)}</span>
-              </div>
-              <div class="row mid" style="justify-content:space-between;gap:8px;margin-top:9px;
-                   padding-top:9px;border-top:1px solid var(--line-2)">
-                <span class="sub">Budget total, frais de notaire inclus</span>
-                <span class="mid2 num">${nbsp(b.btot)}</span>
               </div>
             </div>
             <div class="hr"></div>
@@ -2738,18 +2729,7 @@ add({id:'fiche', g:'P0 — Parcours acquéreur', n:'03', title:'Fiche bien — l
                  <button class="btn sec2 full hot" style="margin-top:8px" onclick="go('recherche')">Voir des biens similaires</button>
                  <div class="sub" style="margin-top:11px;text-align:center">Retiré le 31/07 — dernière vérification il y a 2 h</div>`
               : `<button class="btn full hot ctamain" onclick="go('lead1')">Prendre contact</button>
-                 <button class="btn sec2 full" style="margin-top:8px">♡ Ajouter aux favoris</button>
-                 <div class="sub" style="margin-top:11px;text-align:center">${
-                   (b.ags||[]).length>1
-                     ? `Une demande, les ${b.ags.length} agences — vous en retirez avant l'envoi`
-                     : 'Réponse moyenne : 8 h · sans frais pour vous'}</div>`}
-          </div>
-          <div class="pad" style="border-top:1px solid var(--line-2)">
-            <div class="lbl" style="margin-bottom:7px">${pin(14)} D'où viennent ces données</div>
-            <div class="sub"><span class="more" onclick="POP.source(${lim?3:0})">${b.src} · à jour ${b.maj}</span>
-            ${(b.ags||[]).length>1
-              ? ` — ${b.ags.length} agences détiennent un mandat sur ce bien, chacune à son prix.`
-              : ' — une seule agence détient ce bien à notre connaissance.'}</div>
+                 <button class="btn sec2 full" style="margin-top:8px">♡ Ajouter aux favoris</button>`}
           </div>
         </div>
       </div>
@@ -2758,7 +2738,7 @@ add({id:'fiche', g:'P0 — Parcours acquéreur', n:'03', title:'Fiche bien — l
       <div class="msc hot" onclick="POP.prixdetail(${lim?3:0})"
         title="Voir tout le détail du prix">
         <b class="num">${nbsp(b.p)}<i class="mchev">›</i></b>
-        <span class="sub num">${(b.ags||[]).length>1?'le plus bas des '+b.ags.length+' agences':'prix affiché'}${b.dv?' · ↓ '+b.dv:''}</span>
+        <span class="sub num">prix affiché${b.dv?' · ↓ '+b.dv:''}</span>
       </div>
       ${off
         ? `<button class="btn sec2" style="flex:1" onclick="go('recherche')">Voir des biens similaires</button>`
@@ -3763,7 +3743,7 @@ add({id:'pro-dashboard', g:'P1 — Côté agence', n:'12', title:'Tableau de bor
         </div>
         <div class="grid4 mt20">
           ${[['Biens en ligne','3','publiés il y a 2 jours'],['Leads reçus','0','les gratuits arrivent en premier'],
-             ['Qualifications achetées','0','0 € ce mois'],['Ventes déclarées','0','commission 3 %']]
+             ['Qualifications achetées','0','0 € ce mois'],['Ventes déclarées','0','frais de service 0,16 %']]
             .map(([k,v,s2])=>`<div class="card flat pad">
               <div class="lbl">${k}</div><div class="big num" style="margin-top:3px">${nbsp(v)}</div>
               <div class="sub">${nbsp(s2)}</div></div>`).join('')}
@@ -3861,9 +3841,9 @@ add({id:'pro-dashboard', g:'P1 — Côté agence', n:'12', title:'Tableau de bor
     /* ---------- âges 4 et 5 : le régime de croisière, avec ou sans vente à déclarer ---------- */
     const stats = VENTE
       ? [['Biens en ligne','23','publication gratuite, sans limite'],['Leads ce mois','47','+9 vs mois dernier'],
-         ['Qualifications achetées','4','120 € ce mois'],['Ventes déclarées','2','commission 3 %']]
+         ['Qualifications achetées','4','120 € ce mois'],['Ventes déclarées','2','frais de service 0,16 %']]
       : [['Biens en ligne','23','publication gratuite, sans limite'],['Leads ce mois','47','dont 43 gratuits'],
-         ['Qualifications achetées','4','120 € ce mois'],['Ventes déclarées','2','commission 3 %']];
+         ['Qualifications achetées','4','120 € ce mois'],['Ventes déclarées','2','frais de service 0,16 %']];
 
     const RECENTS = PRO_LEADS.slice(0,4);
     const destLead = l => l.achete
@@ -3879,8 +3859,8 @@ add({id:'pro-dashboard', g:'P1 — Côté agence', n:'12', title:'Tableau de bor
       ${VENTE ? `
       <div class="bandeau mt20" style="border-left-width:4px">${pin(4)}
         <b>« T4 · 89 m² · Lyon 3ᵉ » est passé en Vendu.</b> Il ne reste qu'à déclarer la vente —
-        c'est le seul moment où nous facturons un pourcentage, et il est calculé sur votre commission,
-        pas sur le prix du bien.
+        c'est le seul moment où nous facturons un pourcentage : 0,16 % du prix de vente,
+        et rien d'autre à nous déclarer.
         <div class="row gap8 mt8 wrap">
           <button class="btn sm hot" onclick="go('pro-vente')">Déclarer la vente</button>
           <button class="btn sec2 sm hot" onclick="POP.tarif()">Comment c'est calculé</button>
@@ -4028,7 +4008,7 @@ add({id:'pro-biens', g:'P1 — Côté agence', n:'13', title:'Mes biens — la l
     ['Un DPE manquant est bloquant, et on le dit à la ligne','obligation légale : sans lui le bien n’est pas publiable. Ce n’est pas une pénalité maison, et la formulation doit le rendre évident — sinon l’agence la lit comme une brimade.'],
     ['La sélection multiple sert le statut, jamais la suppression','passer 4 biens en « Sous offre » après une salve de visites est le geste de masse réel. La suppression groupée n’existe pas : un bien retiré par erreur casse une URL, donc une preuve de diffusion.'],
     ['Le compteur de leads est scindé gratuits / qualifiés','« 9 leads » ne dit rien. « 8 gratuits · 1 qualifié » dit ce que le bien a rapporté et ce qu’il a coûté — c’est la lecture ROI que l’agence fait de toute façon, autant la lui donner juste.'],
-    ['« Vendus & archivés » est un état, pas un filtre caché','un bien vendu sort des résultats de recherche mais reste dans le portefeuille : c’est là que se déclare la commission, et c’est l’historique que l’agence montre à un vendeur en rendez-vous mandat.'],
+    ['« Vendus & archivés » est un état, pas un filtre caché','un bien vendu sort des résultats de recherche mais reste dans le portefeuille : c’est là que se déclarent les frais de service, et c’est l’historique que l’agence montre à un vendeur en rendez-vous mandat.'],
     ['Zéro tri par performance par défaut','trier par vues décroissantes ferait remonter les biens qui marchent et enterrerait ceux qui ont besoin d’attention. Le tri par défaut est la date de mise à jour.']
   ],
   render:(st)=>{
@@ -4151,7 +4131,7 @@ add({id:'pro-biens', g:'P1 — Côté agence', n:'13', title:'Mes biens — la l
         <div class="row mid stackm" style="justify-content:space-between;gap:12px">
           <div class="grow"><div class="txt" style="font-weight:600;color:var(--ink)">${pin(5)} Un bien vendu ne disparaît pas de votre portefeuille.</div>
             <div class="sub">Il sort des résultats de recherche, mais reste ici : c'est là que se déclare
-            la commission, et c'est l'historique que vous montrez en rendez-vous mandat.</div></div>
+            les frais de service, et c'est l'historique que vous montrez en rendez-vous mandat.</div></div>
           <button class="btn sm hot" style="flex:none" onclick="go('pro-vente')">Déclarer une vente</button>
         </div>
       </div>` : `
@@ -4277,8 +4257,9 @@ add({id:'pro-bien', g:'P1 — Côté agence', n:'', title:'Fiche bien côté age
               <span class="txt" style="font-weight:600;color:var(--ink)">Payé à ce jour</span>
               <span class="mid2 num">${nbsp('40 €')}</span></div>
           </div>
-          <div class="bandeau mt14">${pin(1)} La commission de 3 % se calcule sur <b>votre commission
-          d'agence</b>, jamais sur le prix du bien — et seulement maintenant que la vente est conclue.</div>
+          <div class="bandeau mt14">${pin(1)} Les frais de service First Mundi — <b>0,16 % du
+          prix de vente</b> — ne sont dus que maintenant que la vente est conclue. Vos honoraires
+          ne nous regardent pas : nous ne vous les demandons pas.</div>
         </div></div>`}
 
         <div class="card">
@@ -4318,7 +4299,7 @@ add({id:'pro-bien', g:'P1 — Côté agence', n:'', title:'Fiche bien côté age
           ${vendu ? `
           <div class="hr"></div>
           <button class="btn full hot ctamain" onclick="go('pro-vente')">Déclarer la vente</button>
-          <div class="sub" style="margin-top:10px;text-align:center">3 % de votre commission · min. 100 €</div>`
+          <div class="sub" style="margin-top:10px;text-align:center">Frais de service 0,16 % · min. 100 €</div>`
           : `
           <div class="hr"></div>
           <button class="btn full hot ctamain" onclick="go('pro-depot')">Modifier le bien</button>
@@ -4413,7 +4394,7 @@ add({id:'pro-depot', g:'P1 — Côté agence', n:'13', title:'Dépôt d\'un bien
             </div>
           </div>
           <div class="bandeau mt14">${pin(5)} <b>La publication est gratuite et illimitée.</b>
-          Nous sommes payés à la vente : 3 % de votre commission quand la transaction se conclut, et rien avant.
+          Nous sommes payés à la vente : 0,16 % du prix de vente quand la transaction se conclut, et rien avant.
           Les leads qualifiés restent optionnels.</div>
         </div>
       </div>`;
@@ -4829,13 +4810,13 @@ add({id:'pro-factures', g:'P2 — Monétisation', n:'16', title:'Paiements & fac
   notes:[
     ['La ligne « publication » à 0 €','la montrer explicitement dans le récapitulatif prouve la promesse mieux qu’un slogan.'],
     ['Historique téléchargeable en un clic','PDF par ligne et export mensuel comptable.'],
-    ['Commission de vente séparée des leads','deux natures de revenus différentes — les mélanger crée de la confusion au moment du rapprochement comptable.']
+    ['Frais de service séparés des leads','deux natures de revenus différentes — les mélanger crée de la confusion au moment du rapprochement comptable.']
   ],
   render:()=>`${appnav('Facturation','pro')}
   <div class="sec">
     <h4 class="wt">Facturation</h4>
     <div class="grid3 mt20">
-      ${[['Ce mois','120 €','4 qualifications achetées'],['Commissions de vente','1 340 €','2 ventes déclarées'],['Publication de biens','0 €','23 biens · gratuit, sans limite']]
+      ${[['Ce mois','120 €','4 qualifications achetées'],['Frais de service','1 340 €','2 ventes déclarées'],['Publication de biens','0 €','23 biens · gratuit, sans limite']]
         .map(([k,v,s],i)=>`<div class="card flat pad">
           <div class="lbl">${k}</div><div class="big num" style="margin-top:3px">${nbsp(v)}</div>
           <div class="sub">${i===2?pin(1):''} ${nbsp(s)}</div></div>`).join('')}
@@ -4845,7 +4826,7 @@ add({id:'pro-factures', g:'P2 — Monétisation', n:'16', title:'Paiements & fac
     <div class="row mid" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
       <h5 class="wt">Historique</h5>
       <div class="row gap8 wrap"><span class="chip k">Tout</span><span class="chip">${pin(3)} Leads</span>
-      <span class="chip">Commissions</span><button class="btn sec2 sm">${pin(2)} Export comptable</button></div>
+      <span class="chip">Frais de service</span><button class="btn sec2 sm">${pin(2)} Export comptable</button></div>
     </div>
     <div class="card mt14">
       <table class="wt">
@@ -4853,7 +4834,7 @@ add({id:'pro-factures', g:'P2 — Monétisation', n:'16', title:'Paiements & fac
         <tbody>
           ${[['04/08/2026','Qualification — recherche + financement','Marc D. · T3 Lyon 7ᵉ','40 €'],
              ['02/08/2026','Qualification — recherche','Karim B. · Immeuble Vaise','20 €'],
-             ['29/07/2026','Commission de vente (3 %)','T4 Lyon 3ᵉ · 415 000 €','560 €'],
+             ['29/07/2026','Frais de service First Mundi (0,16 %)','T4 Lyon 3ᵉ · 415 000 €','664 €'],
              ['24/07/2026','Qualification — financement (déclaratif)','Sophie L. · T2 Villeurbanne','30 €'],
              ['18/07/2026','Publication de biens (23)','juillet 2026','0 €']]
             .map(r=>`<tr><td class="sub">${r[0]}</td><td><b style="color:var(--ink)">${r[1]}</b></td>
@@ -4864,7 +4845,7 @@ add({id:'pro-factures', g:'P2 — Monétisation', n:'16', title:'Paiements & fac
       <div class="mobonly col gap8 pad">
         ${[['04/08/2026','Qualification — recherche + financement','Marc D. · T3 Lyon 7ᵉ','40 €'],
            ['02/08/2026','Qualification — recherche','Karim B. · Immeuble Vaise','20 €'],
-           ['29/07/2026','Commission de vente (3 %)','T4 Lyon 3ᵉ · 415 000 €','560 €'],
+           ['29/07/2026','Frais de service First Mundi (0,16 %)','T4 Lyon 3ᵉ · 415 000 €','664 €'],
            ['24/07/2026','Qualification — financement (déclaratif)','Sophie L. · T2 Villeurbanne','30 €'],
            ['18/07/2026','Publication de biens (23)','juillet 2026','0 €']]
           .map(([date,objet,ref,montant])=>`
@@ -4893,9 +4874,9 @@ add({id:'pro-vente', g:'P2 — Monétisation', n:'17', title:'Déclaration de ve
   states:['Déclaration','Confirmée'],
   notes:[
     ['Déclenché par le statut, pas par une relance','l’agence passe le bien en « Vendu » ; la déclaration s’enchaîne naturellement.'],
-    ['Le calcul est montré, pas asséné','3 % de la commission d’agence, minimum 100 € — avec le détail du calcul à l’écran, ligne à ligne.'],
+    ['Le calcul est montré, pas asséné','0,16 % du prix de vente, minimum 100 € — avec le détail du calcul à l’écran, ligne à ligne. La base est le prix, pas les honoraires : l’agence n’a rien à nous divulguer et peut vérifier le montant de tête.'],
     ['Rappeler ce qui est resté gratuit','diffusion, leads gratuits, dashboard : le rapport valeur/prix se juge à cet instant précis.'],
-    ['Contestation possible','un montant de commission erroné doit pouvoir être corrigé sans appeler le support.']
+    ['Contestation possible','un montant de frais de service erroné doit pouvoir être corrigé sans appeler le support.']
   ],
   render:(st)=>{
     if (st==='Confirmée') return `${appnav('Mes biens','pro')}
@@ -4904,7 +4885,7 @@ add({id:'pro-vente', g:'P2 — Monétisation', n:'17', title:'Déclaration de ve
           <div class="ico"></div>
           <h4 class="wt">Vente enregistrée</h4>
           <p>Merci. Le bien passe en « Vendu » et sort des résultats de recherche.
-          Votre facture de commission (<b class="num">560&nbsp;€</b>) est disponible dans votre espace facturation.</p>
+          Votre facture de frais de service (<b class="num">664&nbsp;€</b>) est disponible dans votre espace facturation.</p>
           <div class="row gap8"><button class="btn hot" onclick="go('pro-dashboard')">Retour au tableau de bord</button>
           <button class="btn sec2 hot" onclick="go('pro-factures')">Voir la facture</button></div>
         </div></div>
@@ -4921,20 +4902,21 @@ add({id:'pro-vente', g:'P2 — Monétisation', n:'17', title:'Déclaration de ve
             ${inp('Prix de vente final','415 000 €')}
             ${inp('Date de signature','29/07/2026',{hint:'compromis ou acte authentique'})}
           </div>
-          <div class="grid2 mt14">
-            ${inp('Votre commission d\'agence','18 675 €',{hint:'4,5 % du prix de vente'})}
+          <div class="mt14">
             ${inp('Acquéreur venu de la plateforme','Oui — Marc D.')}
           </div>
 
           <div class="card flat pad mt20" style="background:var(--fill-2)">
-            <div class="lbl">${pin(2)} Notre commission</div>
+            <div class="lbl">${pin(2)} Frais de service First Mundi</div>
             <div class="col gap6 mt8">
-              <div class="row mid" style="justify-content:space-between"><span class="txt">Votre commission d'agence</span><span class="num">18 675 €</span></div>
-              <div class="row mid" style="justify-content:space-between"><span class="txt">Notre part — 3 %</span><span class="num">560 €</span></div>
+              <div class="row mid" style="justify-content:space-between"><span class="txt">Prix de vente final</span><span class="num">415 000 €</span></div>
+              <div class="row mid" style="justify-content:space-between"><span class="txt">Frais de service — 0,16 %</span><span class="num">664 €</span></div>
               <div class="row mid" style="justify-content:space-between"><span class="sub">Minimum applicable</span><span class="num sub">100 €</span></div>
               <div class="hr" style="margin:8px 0"></div>
-              <div class="row mid" style="justify-content:space-between"><span class="txt" style="font-weight:600;color:var(--ink)">À régler</span><span class="mid2 num">560 €</span></div>
+              <div class="row mid" style="justify-content:space-between"><span class="txt" style="font-weight:600;color:var(--ink)">À régler</span><span class="mid2 num">664 €</span></div>
             </div>
+            <div class="disc mt8">Le calcul ne porte que sur le prix de vente : nous ne vous demandons pas
+            le montant de vos honoraires, et vous pouvez vérifier le montant de tête.</div>
           </div>
 
           <div class="bandeau mt14">${pin(3)} Sur ce bien, vous n'avez rien payé pour la diffusion (64 jours en ligne),
@@ -4977,7 +4959,7 @@ add({id:'site-home', g:'Site vitrine', n:'', scope:'site', title:'Landing publiq
     <h4 class="wt" style="font-size:30px;max-width:18ch;margin:0 auto;line-height:1.15">Ici, aucune agence ne paie pour être devant.</h4>
     <p class="txt" style="max-width:58ch;margin:14px auto 0;font-size:15px">
       Le classement n'est pas achetable, parce que la diffusion est gratuite. Nous sommes payés à la vente, par l'agence —
-      3 % de sa commission, et rien avant. Un bien = une annonce, écrite par nous à partir de la donnée : budget total,
+      0,16 % du prix de vente, et rien avant. Un bien = une annonce, écrite par nous à partir de la donnée : budget total,
       rendement et cash-flow y sont affichés, pas cachés.</p>
     <div class="row gap8 mid" style="justify-content:center;max-width:460px;margin:24px auto 0">
       <div class="grow"><div class="inp"><span>Votre email</span></div></div>
@@ -5010,7 +4992,7 @@ add({id:'site-home', g:'Site vitrine', n:'', scope:'site', title:'Landing publiq
         <h4 class="wt mt14" style="font-size:22px">Publiez autant de biens que vous voulez. Gratuitement.${pin(1)}</h4>
         <p class="txt mt8">Pas d'abonnement de diffusion, pas de forfait d'annonces. Vous déposez les données du bien,
         nous écrivons l'annonce et vous la relisez. Vous ne payez que les leads qualifiés que vous choisissez
-        d'acheter — et 3 % de votre commission si la vente se conclut.</p>
+        d'acheter — et 0,16 % du prix de vente en frais de service si la vente se conclut.</p>
         <div class="row gap8 mt20 wrap"><button class="btn hot" onclick="go('pro-siret')">Créer un compte agence</button>
         <button class="btn sec2">Voir la grille tarifaire</button></div>
       </div>
@@ -5027,7 +5009,7 @@ add({id:'site-home', g:'Site vitrine', n:'', scope:'site', title:'Landing publiq
       ${[['Publier un bien','0 €','sans limite de nombre ni de durée'],
          ['Recevoir un contact','0 €','gratuit à vie, sans plafond'],
          ['Sa qualification','20 à 40 €','à l\'acte, selon ce qu\'il a rempli'],
-         ['Vente conclue','3 %','de votre commission · min. 100 €']]
+         ['Vente conclue','0,16 %','frais de service, du prix de vente · min. 100 €']]
         .map(([k,v,s])=>`<div class="card flat pad"><div class="lbl">${k}</div>
           <div class="big num" style="margin-top:3px">${nbsp(v)}</div><div class="sub">${nbsp(s)}</div></div>`).join('')}
     </div>

@@ -36,9 +36,9 @@ Les règles qui tiennent l'écran :
 
 La colonne de droite ne porte que le bien : son prix, son analyse, le bouton. **Aucune agence n'y est « le contact »** — un bien à trois mandats a trois contacts possibles, et en mettre un en avant reviendrait à arbitrer entre des agences dont nous sommes le partenaire, pas l'arbitre. Elles vivent dans le détail du prix, à égalité, chacune avec le sien.
 
-Le chiffre en tête est le **prix le plus bas des agences**, avec la fourchette juste dessous (« le plus bas des 3 agences — jusqu'à 297 000 € »). Jamais une moyenne : ce serait inventer un prix qui n'existe chez personne. Le **budget total, frais de notaire inclus**, se lit en ligne secondaire et se déplie en entier dans le détail — c'est une information de décision, pas une accroche.
+Le chiffre en tête est le prix — celui de l'agence la moins chère, le seul réellement obtenable. Mais **la colonne ne le commente pas** : ni « le plus bas des trois », ni la fourchette. Elle annonce un prix comme n'importe quelle fiche, et c'est le détail qui explique d'où il sort, agence par agence. Jamais de moyenne : ce serait inventer un prix qui n'existe chez personne.
 
-Ce qui reste en bas de colonne n'est pas un contact mais la **provenance des données** (dépôt direct ou flux partenaire, date de mise à jour).
+Le **budget total frais de notaire inclus** vit lui aussi dans le détail. Mis en colonne, il transforme un chiffre de décision en accroche et fait douter du prix affiché juste au-dessus.
 
 ### Le tunnel de mise en relation est ouvert, et la demande part à toutes les agences
 
