@@ -2,19 +2,19 @@
 
 Prototype cliquable d'une plateforme immobilière. **Un seul fichier, aucune dépendance, fonctionne hors ligne** : ouvre `index.html` dans un navigateur (double-clic).
 
-**24 écrans · 67 états**, vérifiés sur toutes les combinaisons écran × état × mode × connecté/visiteur, en niveau de gris. Pas de direction artistique : on valide ici les **parcours, la hiérarchie de l'information et les états**. La couleur, la typo et le logo viennent après.
+**24 écrans · 69 états**, vérifiés sur 828 rendus (écran × état × format × connecté/visiteur × mode), en niveau de gris. Pas de direction artistique : on valide ici les **parcours, la hiérarchie de l'information et les états**. La couleur, la typo et le logo viennent après.
 
 ## Ce que contient le prototype
 
 | Groupe | Écrans |
 |---|---|
-| **Parcours acquéreur** (10) | Accueil ⭐ · Recherche & résultats · Fiche bien ⭐ · Page agence · Mise en relation 1 & 2 · Vérification SMS · Favoris · Recherches sauvegardées · Paramètres |
+| **Parcours acquéreur** (10) | Accueil ⭐ · Recherche & résultats · Fiche bien ⭐ · Page agence · Mise en relation 1 & 2 · Vérification SMS · Favoris · Mes recherches (enregistrées & récentes) · Paramètres |
 | **Estimation & IA** (2) | Estimation + score + avis (bascule investisseur / acquéreur) · Complétude du profil acquéreur |
 | **Côté agence** (6) | Choix du profil · Vérification SIRET · Tableau de bord · Mes biens · Fiche bien côté agence · Dépôt d'un bien (4 étapes) |
 | **Leads & facturation** (5) | Mes leads · Fiche lead · Acheter une qualification · Paiements & factures · Déclaration de vente |
 | **Site vitrine** (1) | Landing publique + waitlist |
 
-## Les deux écrans qui portent le produit
+## Les écrans qui portent le produit
 
 ### L'accueil change de métier en cours de vie — 6 états
 
@@ -31,6 +31,23 @@ Les règles qui tiennent l'écran :
 - **Le nudge compte arrive en 2ᵉ visite, jamais en 1ʳᵉ.** Il est alors mérité par un usage, donc argumentable : « cette recherche ne survivra pas à ce navigateur ».
 - **Preuve montrable plutôt que compteur.** « 12 480 biens · 1 260 agences » est de la statistique. Trois preuves vérifiables la remplacent — une annonce par bien · le budget total, pas le prix · le classement ne s'achète pas.
 - **Afficher des biens en état « En chasse » ne viole pas « aucune annonce sans critère »** : le critère existe, c'est sa recherche enregistrée. Ce qui reste interdit, c'est une grille « populaires » ou « coups de cœur ».
+
+### La recherche — localisation, historique, filtres
+
+**« Où » n'est pas un champ, c'est un écran.** Un lieu est un objet typé — commune, arrondissement, quartier, département — avec un parent et un stock de biens. Les zones **se cumulent** et chacune porte **son propre rayon** (`Lyon 7ᵉ + 5 km` et `Villeurbanne seule` coexistent).
+
+- **L'effet d'un rayon est annoncé avant d'être appliqué** : « +5 km inclut Lyon 3ᵉ, Lyon 8ᵉ, Villeurbanne — 1 527 biens au lieu de 412 ».
+- **Le chevauchement est dit, pas corrigé en silence.** Les biens sont comptés une seule fois, et l'écran l'explique. Corriger en douce ferait douter de tous les chiffres.
+- **La couverture est annoncée** : trois biens sur une commune, on l'écrit — « ce n'est pas votre budget qui est en cause, c'est nous » — avec une alerte de couverture.
+- **Pas de dessin sur carte, et on le dit** plutôt que de laisser chercher un bouton absent.
+
+**L'historique, c'est deux objets — jamais un.** Les **récentes** s'écrivent toutes seules, ne sont jamais nommées, expirent à 30 jours et ne quittent pas l'appareil sans compte. Les **enregistrées** sont nommées, synchronisées, alertées. **L'étoile est la seule frontière**, au même endroit dans les deux listes : les mélanger obligerait l'utilisateur à ranger une liste qu'il n'a jamais demandée. Quatre points d'entrée — le ↺ de la nav, la tête de la popup de recherche, l'état sans critère, et l'écran « Mes recherches » à deux onglets.
+
+**Les critères actifs se retirent là où ils sont lus.** Chaque critère est une pastille avec sa croix, en haut de la liste. Un utilisateur qui doit rouvrir une popup pour enlever un filtre ne l'enlève pas : il abandonne. La ligne du haut retire, celle du bas ajoute, et un critère actif ne réapparaît jamais dans les suggestions.
+
+**Zéro résultat : on chiffre chaque renoncement** — « +18 biens si vous étendez à 10 km », « +4 si vous acceptez un DPE E ». L'utilisateur choisit ce qui lui coûte le moins au lieu de tout relâcher.
+
+**Aucun filtre ne masque un bien faute de donnée.** Un équipement non déclaré n'est pas un équipement absent ; filtrer dessus retire les biens dont on ne sait rien, et l'écran le dit.
 
 ### La fiche bien ne désigne aucune agence
 
@@ -76,7 +93,7 @@ Trois limites matérialisées : la **carte de la fiche est statique** (recherche
 
 - **Navigation** : le rail de gauche, les flèches ← → de la barre du haut, ou les touches clavier ← →.
 - **Écrans cliquables** : les boutons principaux enchaînent vraiment (Rechercher → Résultats → Fiche → Contacter → OTP → Confirmation ; côté agence : Mes biens → fiche bien, Mes leads → fiche lead ou achat). Survole : ce qui s'entoure est cliquable.
-- **États** : les pastilles sous le titre basculent les 67 états. Pas seulement le cas heureux — vide, chargement, erreur, cas limite.
+- **États** : les pastilles sous le titre basculent les 69 états. Pas seulement le cas heureux — vide, chargement, erreur, cas limite.
 - **Modes** : `J'investis / J'habite` recompose le vocabulaire et les chiffres (rendement ↔ mensualité) sans perdre les favoris, communs aux deux modes.
 - **Responsive** : bascule `Auto / Desktop / Tablette / Mobile` en barre du bas. **Auto** suit la largeur réelle de la fenêtre (< 700 px mobile · < 1080 px tablette).
 - **Annotations** : les pastilles ocre renvoient aux décisions UX listées sous chaque écran. Décochable pour une lecture propre en réunion.

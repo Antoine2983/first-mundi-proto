@@ -489,6 +489,10 @@ body.mobile .fichacts{display:none}
 /* confort tactile */
 body.mobile .btn{min-height:40px}
 body.mobile .chip{padding:6px 12px}
+/* Une pastille CLIQUABLE est un contrôle, pas une étiquette : elle respecte les 44 px comme les
+   boutons. Les pastilles décoratives (statut, compteur, DPE) gardent leur taille — les agrandir
+   ferait passer de l'information pour une action. C'est la différence que porte `.hot`. */
+body.mobile .chip.hot,body.tablet .chip.hot{min-height:44px;padding-top:0;padding-bottom:0}
 /* popups en bottom-sheet */
 body.mobile .pop-ov{align-items:flex-end;padding:0}
 body.mobile .pop{max-width:100%;width:100%;border-radius:14px 14px 0 0;max-height:86vh}
@@ -877,14 +881,21 @@ const navSearch = () => {
     <div class="ns-go" style="margin-left:6px">⌕</div>
   </div>`;
 
-  /* mode critères — clic : modifier la recherche existante */
+  /* mode critères — clic : modifier la recherche existante.
+     Le segment de gauche ouvre directement le choix de zones : c'est le critère qu'on change le
+     plus souvent en cours de session, il ne doit pas coûter un aller-retour par la popup générale.
+     Le ↺ donne l'historique sans quitter l'écran — sinon « retrouver ma recherche d'hier » oblige
+     à passer par le compte, et personne ne le fait. */
   return `
   <div class="navsearch" onclick="POP.recherche()" title="Modifier ma recherche">
     ${modeSeg}
-    <span class="ns-seg">Lyon 7ᵉ +1</span>
+    <span class="ns-seg hot" title="Changer de zone"
+      onclick="event.stopPropagation();POP.localisation()">${zonesLbl()||'Où ?'}</span>
     <span class="ns-seg opt num">${MODE==='home'?nbsp('≤ 1 300 €/mois'):nbsp('≤ 300 000 €')}</span>
     <span class="ns-seg opt mut">${MODE==='home'?'T3 · 2 ch. min':'Rendement ≥ 4 %'}</span>
     ${tog(false)}
+    <span class="ns-tog" title="Mes recherches récentes"
+      onclick="event.stopPropagation();POP.recentes()">↺</span>
     <div class="ns-go" style="margin-left:6px" title="Voir les résultats"
       onclick="event.stopPropagation();go('recherche')">⌕</div>
   </div>`;
@@ -895,8 +906,10 @@ const mobSearch = () => {
   let txt;
   if (SMODE==='ia') txt = '✦ « ' + IAPHRASE().slice(0,34) + '… »';
   else if (!HASQ) txt = '⌕ Commencer une recherche';
-  else txt = '⌕ Lyon 7ᵉ +1 · ' + (MODE==='home'?'≤ 1 300 €/mois':'≤ 300 000 €');
-  return `<div class="mobsearch" onclick="POP.recherche()"><span>${nbsp(txt)}</span></div>`;
+  else txt = '⌕ ' + (zonesLbl()||'Où ?') + ' · ' + (MODE==='home'?'≤ 1 300 €/mois':'≤ 300 000 €');
+  return `<div class="mobsearch" onclick="POP.recherche()"><span>${nbsp(txt)}</span>
+    <span class="ns-tog" style="flex:none" title="Mes recherches récentes"
+      onclick="event.stopPropagation();POP.recentes()">↺</span></div>`;
 };
 
 /* `auth` peut être forcé : l'accueil pilote ses états lui-même (visiteur vs connecté),
@@ -975,6 +988,54 @@ const BIENS = [
    m2med:'3 240 €/m²', m2d:'−4,5 % vs la commune', vente:'87 jours',
    ags:[['Sud-Ouest Habitat','448 500 €','Mandat simple · connue par le flux partenaire',true,false]],
    est:{ok:false, tag:'non estimable', delta:'pas assez de ventes comparables'}}
+];
+
+/* ---- LOCALISATION ----
+   Un lieu n'est pas une chaîne de caractères : c'est un type (commune, arrondissement, quartier,
+   département), un parent, et un stock de biens. Le type change ce que l'utilisateur peut en faire
+   — un rayon autour d'un quartier a du sens, autour d'un département non — et le stock est la
+   seule façon honnête de lui dire à l'avance si sa zone vaut le coup. */
+const LIEUX = [
+  ['Lyon 7ᵉ',        'arr',  'Lyon · 69007',                412],
+  ['Lyon 3ᵉ',        'arr',  'Lyon · 69003',                338],
+  ['Lyon 8ᵉ',        'arr',  'Lyon · 69008',                291],
+  ['Lyon',           'com',  'Rhône · métropole',          2140],
+  ['Villeurbanne',   'com',  'Métropole de Lyon · 69100',   486],
+  ['Jean Macé',      'qua',  'Lyon 7ᵉ',                      47],
+  ['Guillotière',    'qua',  'Lyon 7ᵉ',                      63],
+  ['Rhône',          'dep',  'Département 69',             5890],
+  ['Roubaix',        'com',  'Nord · 59100',                318],
+  ['Paris 11ᵉ',      'arr',  'Paris · 75011',               524],
+  ['Mérignac',       'com',  'Gironde · 33700',             203],
+  ['Guéret',         'com',  'Creuse · 23000',                3]
+];
+const LTYPE = {arr:'Arrondissement', com:'Commune', qua:'Quartier', dep:'Département'};
+const LORDRE = ['arr','com','qua','dep'];
+
+/* Les zones retenues pour la recherche en cours. Le rayon est porté par la ZONE, pas par la
+   recherche : « Lyon 7ᵉ + 5 km » et « Villeurbanne seule » doivent pouvoir coexister. */
+let ZONES = [['Lyon 7ᵉ','arr',5], ['Villeurbanne','com',0]];
+const RAYONS = [0,2,5,10,20];
+const rayonLbl = km => km===0 ? 'zone seule' : '+ '+km+' km';
+/* ce qu'un rayon ramène en plus — annoncé AVANT de l'appliquer, jamais découvert après */
+const RAYON_EFFET = {
+  0:  ['—', 412],
+  2:  ['Lyon 3ᵉ', 750],
+  5:  ['Lyon 3ᵉ, Lyon 8ᵉ, Villeurbanne', 1527],
+  10: ['+ 6 communes dont Bron, Vénissieux', 2810],
+  20: ['+ 23 communes dont Vaulx-en-Velin, Saint-Priest', 4190]
+};
+
+/* ---- HISTORIQUE DE RECHERCHE ----
+   Les récentes sont un historique PASSIF : écrites toutes seules à chaque lancement, jamais
+   nommées, jamais alertées. Les sauvegardées sont un geste EXPLICITE, avec un nom et une alerte.
+   Confondre les deux est l'erreur classique : elle transforme l'historique en corvée de ménage. */
+const RECENTES = [
+  {q:'Lyon 7ᵉ +5 km, Villeurbanne · ≤ 300 000 € · rendement ≥ 4 %', n:41, d:'il y a 2 h',   sauv:true,  mode:'invest'},
+  {q:'Roubaix · immeuble · ≤ 200 000 €',                            n:12, d:'hier',         sauv:true,  mode:'invest'},
+  {q:'Lyon 7ᵉ · T3 min · ≤ 1 300 €/mois · DPE ≥ D',                 n:28, d:'hier',         sauv:false, mode:'home'},
+  {q:'Paris 11ᵉ · studio · ≤ 260 000 €',                            n:0,  d:'il y a 6 jours',sauv:true, mode:'invest'},
+  {q:'Mérignac · maison · ≤ 500 000 €',                             n:17, d:'il y a 9 jours',sauv:false,mode:'home'}
 ];
 
 /* équipements & prestations — relevés dans les données du bien (dépôt agence ou flux partenaire) */
@@ -1566,28 +1627,70 @@ const POP = {
       `<button class="btn sm" onclick="HASQ=true;POP.interpretation()">Valider</button>`);
       return;
     }
+    const nb = ZONES.length ? zonesTotal() : 0;
     pop(HASQ?'Modifier ma recherche':'Nouvelle recherche',
       `Les critères s'appliquent au mode « ${home?'J\'habite':'J\'investis'} ».`, head + `
-    <div class="field"><div class="lbl">Localisation</div>
-      <div class="row gap6 wrap">
-        ${HASQ?'<span class="chip k">Lyon 7ᵉ ✕</span><span class="chip k">Villeurbanne ✕</span>':''}
-        <span class="chip o">+ ville, code postal, quartier</span>
-      </div></div>
+
+    ${!HASQ && RECENTES.length ? `
+      <div class="card flat pad" style="margin-bottom:16px">
+        <div class="row mid" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
+          <div class="lbl">${pin(9)} Reprendre une recherche récente</div>
+          <span class="linkish sub hot" onclick="popGo('recherches')">Toutes mes recherches →</span>
+        </div>
+        <div class="col" style="gap:2px;margin-top:6px">
+          ${RECENTES.slice(0,3).map(r=>`
+            <div class="rrow hot" style="justify-content:space-between" onclick="HASQ=true;popGo('recherche')">
+              <div style="min-width:0"><span class="txt" style="color:var(--ink)">${r.q}</span>
+                <span class="sub"> · ${r.d}</span></div>
+              <span class="sub num" style="flex:none">${r.n?nbsp(r.n+' biens'):'aucun'}</span>
+            </div>`).join('')}
+        </div>
+      </div>` : ''}
+
+    <div class="field"><div class="row mid" style="justify-content:space-between;gap:8px">
+        <div class="lbl">${pin(8)} Où</div>
+        ${ZONES.length?`<span class="sub num">${nbsp(nb+' biens')} dans vos zones</span>`:''}
+      </div>
+      <div class="row gap6 wrap" style="margin-top:6px">
+        ${ZONES.map(([n,,km])=>`<span class="chip k hot" onclick="POP.localisation()">${
+          n}${km?` +${km} km`:''}</span>`).join('')}
+        <span class="chip o hot" onclick="POP.localisation()">${
+          ZONES.length?'+ ajouter une zone':'+ ville, arrondissement, quartier, département'}</span>
+      </div>
+      <div class="hint">Cumulez les zones et réglez un rayon sur chacune —
+        <span class="linkish" onclick="POP.localisation()">tout le détail de la localisation</span>.</div>
+    </div>
+
     <div class="grid2 mt14">
       ${home
         ? inp('Mensualité max', HASQ?'1 300 €/mois':'', {placeholder:'ex. 1 300 €/mois', hint:'calculée avec votre apport et votre taux'})
-          + inp('Pièces min', HASQ?'T3 · 2 chambres':'', {placeholder:'ex. T3'})
+          + inp('Apport disponible', HASQ?'45 000 €':'', {placeholder:'ex. 45 000 €', hint:'sert au calcul de la mensualité'})
         : inp('Budget max', HASQ?'300 000 €':'', {placeholder:'ex. 300 000 €'})
           + inp('Rendement brut min', HASQ?'4 %':'', {placeholder:'ex. 4 %'})}
     </div>
+
+    <div class="field mt14"><div class="lbl">Type de bien</div>
+      <div class="row gap6 wrap">${['Appartement','Maison','Immeuble','Terrain','Local / bureau','Parking']
+        .map(t=>`<span class="chip hot ${HASQ&&(t==='Appartement'||t==='Immeuble')?'k':''}">${t}</span>`).join('')}</div></div>
+
+    <div class="field mt14"><div class="lbl">Nombre de pièces</div>
+      <div class="row gap6 wrap">${['Studio','T2','T3','T4','T5 et +']
+        .map(t=>`<span class="chip hot ${HASQ&&(t==='T2'||t==='T3')?'k':''}">${t}</span>`).join('')}</div>
+      <div class="hint">Plusieurs tailles possibles — c'est un OU, pas un minimum.</div></div>
+
     <div class="grid2 mt14">
-      ${inp('Type de bien', HASQ?'Appartement, Immeuble':'', {placeholder:'Tous types'})}
       ${inp('Surface min', HASQ?'40 m²':'', {placeholder:'—'})}
+      ${inp('Surface max', '', {placeholder:'—'})}
     </div>
-    <div class="sub mt14">Besoin de plus fin ? <span class="linkish" onclick="POP.filtres()">Tous les filtres</span> —
-      équipements, DPE, score…</div>`,
-    `${HASQ?'<span class="linkish sub" style="margin-right:auto">Réinitialiser</span>':''}
-     <button class="btn sm" onclick="HASQ=true;popGo('recherche')">Rechercher</button>`);
+
+    <div class="row mid mt14" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
+      <span class="sub">Besoin de plus fin ? <span class="linkish" onclick="POP.filtres()">Tous les filtres</span> —
+        DPE, score, équipements, état, critères ${home?'de vie':'investisseur'}…</span>
+      ${HASQ?'<span class="chip">3 filtres actifs</span>':''}
+    </div>`,
+    `${HASQ?'<span class="linkish sub hot" style="margin-right:auto" onclick="ZONES=[];HASQ=false;POP.recherche()">Réinitialiser</span>':''}
+     <button class="btn sm" ${ZONES.length?`onclick="HASQ=true;popGo('recherche')"`:'disabled'}>${
+       ZONES.length?`Rechercher — ${nbsp(nb+' biens')}`:'Choisissez d\'abord une zone'}</button>`);
   },
 
   /* interprétation d'une recherche en langage naturel — remplace l'ancien écran dédié.
@@ -1663,50 +1766,339 @@ const POP = {
   },
 
   /* tri des résultats — dropdown */
-  tri(){ const home = MODE==='home';
-    pop('Trier les résultats', null, `
-    <div class="col" style="gap:2px">
-      ${[['Score décroissant',true],
-         [home?'Mensualité croissante':'Rendement décroissant',false],
-         ['Prix croissant',false],['Prix décroissant',false],
-         ['Nouveautés d’abord',false],['Baisse de prix récente',false]]
-        .map(([t,on])=>`<div class="rrow" onclick="closePop()" style="justify-content:space-between">
-          <span class="txt" style="${on?'font-weight:600;color:var(--ink)':''}">${t}</span>
-          ${on?'<span class="txt">✓</span>':''}
-        </div>`).join('')}
+  /* ---------- OÙ CHERCHER — le choix de localisation, en entier ----------
+     C'était le champ le plus expédié de la recherche alors que c'est le premier que l'utilisateur
+     remplit et le seul qu'il ne peut pas se contenter d'approximer. Quatre exigences :
+     1) on cherche un LIEU TYPÉ, pas une chaîne — le type décide de ce qu'on peut en faire ;
+     2) le rayon appartient à la zone, pas à la recherche ;
+     3) on annonce ce qu'un rayon ramène AVANT de l'appliquer ;
+     4) on dit combien de biens il y a derrière chaque zone, y compris quand la réponse est « trois ». */
+  localisation(){
+    const total = zonesTotal();
+    const q = LQ.trim().toLowerCase();
+    const dispo = LIEUX.filter(([n,t,p2]) => !q || n.toLowerCase().includes(q) || p2.toLowerCase().includes(q));
+    const groupes = LORDRE.map(t => [t, dispo.filter(l=>l[1]===t)]).filter(([,l])=>l.length);
+    const pauvre = ZONES.find(([n]) => (LIEUX.find(l=>l[0]===n)||[,, ,999])[3] < 20);
+
+    pop('Où cherchez-vous ?',
+      'Ville, arrondissement, quartier ou département — cumulez-en autant que vous voulez.', `
+    <div class="iainwrap" style="margin-bottom:16px">
+      <span style="flex:none;color:var(--ink-3)">⌕</span>
+      <input id="locinput" class="iain" value="${LQ}"
+        placeholder="Ex. : Lyon 7ᵉ, 69007, Jean Macé, Rhône…"
+        oninput="LQ=this.value;POP.localisation()">
+      ${LQ?`<span class="linkish sub" style="flex:none" onclick="LQ='';POP.localisation()">effacer</span>`:''}
     </div>
-    <div class="disc mt8">Le score combine prix vs marché, ${home?'coût d’usage':'rendement'}, DPE et
-    fraîcheur — c'est le tri par défaut.</div>`);
+
+    <div class="lbl" style="margin-bottom:7px">Vos zones${ZONES.length?` (${ZONES.length})`:''}</div>
+    ${ZONES.length ? `<div class="col gap6">${ZONES.map(([n,t,km],i)=>{
+      const meta = LIEUX.find(l=>l[0]===n) || [n,t,'',0];
+      const eff  = (n==='Lyon 7ᵉ' && RAYON_EFFET[km]) ? RAYON_EFFET[km] : null;
+      return `
+      <div class="card flat pad">
+        <div class="row mid" style="justify-content:space-between;gap:10px">
+          <div style="min-width:0">
+            <div class="txt" style="font-weight:600;color:var(--ink)">${n}</div>
+            <div class="sub">${LTYPE[t]} · ${meta[2]}</div>
+          </div>
+          <div class="row mid gap8" style="flex:none">
+            <span class="sub num">${nbsp(zoneCount(n,t,km)+' biens')}</span>
+            <span class="pclose hot" title="Retirer cette zone" onclick="zoneDel(${i})">✕</span>
+          </div>
+        </div>
+        ${t==='dep' ? `<div class="hint" style="margin-top:8px">Un département se prend en entier —
+          le rayon ne s'applique qu'aux communes, arrondissements et quartiers.</div>`
+        : `<div class="row gap6 wrap" style="margin-top:9px">
+            ${RAYONS.map(r=>`<span class="chip hot ${r===km?'k':''}"
+              onclick="zoneRayon(${i},${r})">${rayonLbl(r)}</span>`).join('')}
+          </div>
+          ${km>0 && eff ? `<div class="hint" style="margin-top:7px">Inclut ${eff[0]} —
+            ${nbsp(eff[1]+' biens')} au lieu de ${nbsp(meta[3]+' biens')}.</div>`
+          : km>0 ? `<div class="hint" style="margin-top:7px">Étend la zone de ${km} km autour de
+            ${n} — les communes limitrophes entrent dans les résultats.</div>` : ''}`}
+      </div>`;}).join('')}</div>`
+    : `<div class="card flat pad"><div class="sub">Aucune zone pour l'instant.
+        Sans localisation, nous n'affichons pas de liste — elle ne voudrait rien dire.</div></div>`}
+
+    ${zonesChevauchent() ? `<div class="bandeau mt14">${pin(4)}
+      <b>Villeurbanne est déjà comprise dans « Lyon 7ᵉ + 5 km ».</b>
+      Les biens ne sont comptés qu'une fois — vous pouvez laisser les deux, ça ne double rien.</div>` : ''}
+
+    ${pauvre ? `<div class="bandeau mt14">${pin(5)} <b>Nous couvrons mal ${pauvre[0]}.</b>
+      ${nbsp(zoneCount(pauvre[0],pauvre[1],pauvre[2])+' biens')} seulement — ce n'est pas votre budget
+      qui est en cause, c'est nous. Vous pouvez être prévenu dès que la couverture s'améliore.
+      <div class="row gap8 mt8"><button class="btn sm sec2 hot">M'alerter sur cette commune</button></div></div>` : ''}
+
+    <div class="lbl" style="margin:18px 0 7px">${LQ?`Résultats pour « ${LQ} »`:'Les plus cherchés'}</div>
+    ${groupes.length ? groupes.map(([t,items])=>`
+      <div style="margin-bottom:14px">
+        <div class="sub" style="margin-bottom:4px">${LTYPE[t]}${items.length>1?'s':''}</div>
+        <div class="col" style="gap:2px">
+          ${items.map(([n,tt,par,nb])=>{
+            const deja = ZONES.some(z=>z[0]===n);
+            return `<div class="rrow ${deja?'':'hot'}" style="justify-content:space-between"
+              ${deja?'':`onclick="zoneAdd('${n}','${tt}')"`}>
+              <div style="min-width:0"><span class="txt" style="font-weight:${deja?'400':'600'};color:var(--ink)">${n}</span>
+                <span class="sub"> · ${par}</span></div>
+              <div class="row mid gap8" style="flex:none">
+                <span class="sub num">${nbsp(nb+' biens')}</span>
+                ${deja?'<span class="chip k">retenue</span>':'<span class="linkish sub">ajouter</span>'}
+              </div></div>`;}).join('')}
+        </div>
+      </div>`).join('')
+    : `<div class="card flat pad"><div class="sub">Aucun lieu ne correspond à « ${LQ} ».
+        Vérifiez l'orthographe, ou cherchez la commune plutôt que le quartier.</div></div>`}
+
+    <div class="lbl" style="margin:18px 0 7px">${pin(6)} Récemment cherché</div>
+    <div class="row gap6 wrap">
+      ${['Roubaix','Paris 11ᵉ','Mérignac','Rhône'].map(n=>{
+        const l = LIEUX.find(x=>x[0]===n); const deja = ZONES.some(z=>z[0]===n);
+        return `<span class="chip ${deja?'k':'hot'}" ${deja?'':`onclick="zoneAdd('${n}','${l[1]}')"`}>${n}</span>`;
+      }).join('')}
+    </div>
+
+    <div class="disc mt14">${pin(7)} Dessiner une zone à la main sur la carte n'est pas au MVP
+    (recherche cartographique F-020, hors périmètre) — on le dit plutôt que de laisser chercher
+    le bouton. Les zones ci-dessus sont des périmètres administratifs réels, pas des approximations.</div>`,
+
+    `${ZONES.length?`<span class="linkish sub" style="margin-right:auto" onclick="ZONES=[];POP.localisation()">Tout effacer</span>`:''}
+     <button class="btn sm" ${ZONES.length?`onclick="POP.recherche()"`:'disabled'}>${
+       ZONES.length?`Valider — ${nbsp(total+' biens')}`:'Choisissez au moins une zone'}</button>`);
+
+    setTimeout(()=>{ const i=document.getElementById('locinput');
+      if(i){ i.focus(); i.setSelectionRange(i.value.length,i.value.length); } }, 30);
   },
 
-  /* plus de filtres — recherche avancée */
-  filtres(){ const home = MODE==='home';
-    pop('Plus de filtres', 'Tout est combinable. Les biens non notés restent affichés.', `
-    <div class="grid2" style="gap:14px">
-      ${inp('Surface min','40 m²')}
-      ${inp('Surface terrain min','',{placeholder:'—'})}
+  /* ---------- MES RECHERCHES RÉCENTES — accès depuis la nav ----------
+     Deux natures distinctes dans la même liste : ce qu'on a écrit tout seul (récent) et ce que
+     l'utilisateur a nommé (sauvegardé). On les montre ensemble parce qu'il les cherche au même
+     moment, mais on ne les traite pas pareil — l'étoile est la frontière. */
+  recentes(){
+    pop('Mes recherches', 'Les dernières lancées, et celles que vous avez enregistrées.', `
+    <div class="col" style="gap:2px">
+      ${RECENTES.map((r,i)=>`
+        <div class="rrow hot" style="justify-content:space-between;align-items:flex-start"
+             onclick="HASQ=true;popGo('recherche')">
+          <div style="min-width:0">
+            <div class="row mid gap6 wrap">
+              <span class="txt" style="font-weight:500;color:var(--ink)">${r.q}</span>
+              ${r.sauv?'<span class="chip k">enregistrée</span>':''}
+              <span class="chip">${r.mode==='home'?"J'habite":"J'investis"}</span>
+            </div>
+            <div class="sub" style="margin-top:3px">${r.d} · ${
+              r.n?nbsp(r.n+' biens'):'aucun résultat à ce moment-là'}</div>
+          </div>
+          <div class="row mid gap8" style="flex:none">
+            <span class="linkish sub hot" title="${r.sauv?'Retirer des enregistrées':'Enregistrer et être alerté'}"
+              onclick="event.stopPropagation();${r.sauv?`RECENTES[${i}].sauv=false;POP.recentes()`:`POP.sauvegarder(${i})`}">${
+              r.sauv?'★':'☆'}</span>
+          </div>
+        </div>`).join('')}
     </div>
-    <div class="field mt14"><div class="lbl">DPE minimum</div>
-      <div class="row gap6 wrap">${['A','B','C','D','E','F','G'].map(d=>
-        `<span class="chip ${['A','B','C','D'].includes(d)?'k':''}">${d}</span>`).join('')}</div></div>
-    <div class="field mt14"><div class="lbl">Score minimum</div>
-      <div class="row gap6 wrap">${['tous','6+','7+','8+'].map((s,i)=>
-        `<span class="chip ${i===0?'k':''}">${s}</span>`).join('')}</div>
-      <div class="hint">Les biens non notés (données insuffisantes) restent affichés.</div></div>
-    <div class="field mt14"><div class="lbl">Équipements & prestations</div>
-      <div class="row gap6 wrap">${['Garage / parking','Piscine','Balcon ou terrasse','Jardin','Ascenseur',
-        'Cave','Dernier étage','Rez-de-jardin','Cuisine équipée','Cheminée','Climatisation','Accès PMR']
-        .map((e,i)=>`<span class="chip ${i===2?'k':''}">${e}</span>`).join('')}</div></div>
-    <div class="field mt14"><div class="lbl">État du bien</div>
-      <div class="row gap6 wrap">${['Neuf','Récent','À rafraîchir','À rénover'].map(e=>
-        `<span class="chip">${e}</span>`).join('')}</div></div>
-    <div class="field mt14"><div class="lbl">${home?'Votre projet':'Critères investisseur'}</div>
-      <div class="row gap6 wrap">${(home
-        ? ['Proche écoles','Proche transports','Étage élevé','Sans travaux']
-        : ['Vendu loué','Immeuble de rapport','Cash-flow positif','Colocation possible','Éligible LMNP'])
-        .map(e=>`<span class="chip">${e}</span>`).join('')}</div></div>`,
-    `<span class="linkish sub" style="margin-right:auto">Tout réinitialiser</span>
-     <button class="btn sm" onclick="closePop()">Afficher les 4 biens</button>`);
+    <div class="disc mt14">${pin(10)} Vos dernières recherches sont conservées <b>30 jours</b> et
+    restent sur cet appareil tant que vous n'avez pas de compte. Enregistrer une recherche (★) la
+    rend permanente, la synchronise, et permet de recevoir les nouveautés.</div>`,
+    `<span class="linkish sub hot" style="margin-right:auto" onclick="popGo('recherches')">Gérer mes alertes</span>
+     <button class="btn sm sec2" onclick="closePop()">Fermer</button>
+     <button class="btn sm" onclick="HASQ=false;POP.recherche()">Nouvelle recherche</button>`);
+  },
+
+  /* ---------- ENREGISTRER LA RECHERCHE ----------
+     Le seul moment où l'on peut demander une fréquence d'alerte sans être intrusif : l'utilisateur
+     vient de dire qu'il tenait à cette recherche. Le nom est pré-rempli depuis les critères — on ne
+     fait pas remplir un champ dont on connaît déjà la réponse. */
+  sauvegarder(i){
+    const r = (i!=null && RECENTES[i]) ? RECENTES[i] : null;
+    const titre = r ? r.q : `${zonesLbl()} · ${MODE==='home'?'≤ 1 300 €/mois':'≤ 300 000 €'}`;
+    pop('Enregistrer cette recherche',
+      'Elle devient permanente, et vous êtes prévenu des nouveautés.', `
+    ${inp('Nom de la recherche', titre, {hint:'pré-rempli depuis vos critères — modifiable'})}
+
+    <div class="field mt20"><div class="lbl">${pin(11)} Me prévenir des nouveautés</div>
+      <div class="col" style="gap:2px">
+        ${[['Instantané','dès qu\'un bien correspond — pour une recherche serrée',false],
+           ['Quotidien','un résumé par jour, le matin',true],
+           ['Hebdomadaire','un résumé le lundi — pour une veille de fond',false],
+           ['Aucune alerte','je reviendrai voir moi-même',false]]
+          .map(([t,d,on])=>`
+          <div class="rrow hot" style="justify-content:space-between" onclick="closePop()">
+            <div style="min-width:0"><span class="txt" style="${on?'font-weight:600;color:var(--ink)':''}">${t}</span>
+              <div class="sub">${d}</div></div>
+            ${on?'<span class="txt" style="flex:none">✓</span>':''}
+          </div>`).join('')}
+      </div>
+      <div class="hint">Modifiable à tout moment, et un seul clic pour couper —
+        jamais un lien de désabonnement en bas d'un mail.</div></div>
+
+    <div class="field mt14"><div class="lbl">Ce qui déclenche une alerte</div>
+      <div class="row gap6 wrap">
+        ${[['Nouveau bien',true],['Baisse de prix',true],['Retiré de la vente',false],
+           ['Passé sous offre',false]].map(([t,on])=>`<span class="chip hot ${on?'k':''}">${t}</span>`).join('')}
+      </div>
+      <div class="hint">« Retiré de la vente » et « sous offre » concernent les biens que vous avez
+        déjà vus dans cette recherche — pas le marché entier.</div></div>
+
+    <div class="bandeau mt20">${pin(12)} <b>${nbsp(zonesTotal()+' biens')}</b> correspondent aujourd'hui.
+      En moyenne, une recherche de ce périmètre reçoit <b>4 nouveautés par semaine</b> — de quoi
+      justifier une alerte quotidienne sans vous noyer.</div>`,
+    `<button class="btn sm sec2" onclick="closePop()">Annuler</button>
+     <button class="btn sm" onclick="closePop()">Enregistrer</button>`);
+  },
+
+  /* ---------- TRIER ----------
+     Le tri par défaut est le score, parce que c'est le seul classement que nous produisons et que
+     personne ne peut acheter. Chaque option dit ce qu'elle met en tête : un intitulé seul oblige
+     l'utilisateur à essayer pour comprendre, et il n'essaie qu'une fois. */
+  tri(){ const home = MODE==='home';
+    pop('Trier les résultats', 'Le tri ne filtre rien — tous les biens restent affichés.', `
+    <div class="col" style="gap:2px">
+      ${[['Score décroissant', 'les mieux notés d\'abord — prix vs marché, ' + (home?'coût d\'usage':'rendement') + ', DPE et fraîcheur', true],
+         [home?'Mensualité croissante':'Rendement décroissant',
+          home?'ce qui pèse le moins sur votre budget mensuel':'le meilleur rapport loyer/prix d\'abord', false],
+         ['Prix croissant','les moins chers d\'abord — le prix affiché, pas le budget total', false],
+         ['Prix au m² croissant','utile pour comparer des surfaces très différentes', false],
+         ['Nouveautés d\'abord','mis en ligne le plus récemment — le tri d\'une session de veille', false],
+         ['Baisse de prix récente','les vendeurs qui ont déjà bougé : la négociation y est plus ouverte', false],
+         ['Ancienneté de l\'annonce','en ligne depuis le plus longtemps — souvent les plus négociables', false]]
+        .map(([t,d,on])=>`<div class="rrow hot" onclick="closePop()" style="justify-content:space-between">
+          <div style="min-width:0">
+            <span class="txt" style="${on?'font-weight:600;color:var(--ink)':''}">${t}</span>
+            <div class="sub">${d}</div>
+          </div>
+          ${on?'<span class="txt" style="flex:none">✓</span>':''}
+        </div>`).join('')}
+    </div>
+    <div class="disc mt14">Les biens non notés apparaissent en fin de liste sur le tri par score,
+    jamais masqués. Aucun tri n'est achetable : la diffusion est gratuite, aucune agence ne peut
+    payer pour passer devant.</div>`);
+  },
+
+  /* ---------- TOUS LES FILTRES — la recherche avancée, en entier ----------
+     Assez long pour mériter un menu d'ancres, comme le détail du prix. Trois règles :
+     le compteur de résultats est recalculé et visible en permanence dans le pied ; chaque filtre
+     dit ce qu'il COÛTE en biens quand il est restrictif ; et aucun filtre ne masque un bien
+     faute de donnée — l'absence d'information n'est pas un défaut du bien. */
+  filtres(){ const home = MODE==='home';
+    const MENU = [['f-lieu','Où'],['f-prix',home?'Budget':'Budget & rendement'],['f-bien','Le bien'],
+                  ['f-etat','État & DPE'],['f-equip','Équipements'],
+                  ['f-proj',home?'Votre projet':'Critères investisseur'],['f-annonce','L\'annonce']];
+    const seg = (label, items, hint) => `
+      <div class="field mt14"><div class="lbl">${label}</div>
+        <div class="row gap6 wrap">${items.map(([t,on])=>
+          `<span class="chip hot ${on?'k':''}">${t}</span>`).join('')}</div>
+        ${hint?`<div class="hint">${hint}</div>`:''}</div>`;
+
+    pop('Tous les filtres',
+      `Tout est combinable — ${nbsp(zonesTotal()+' biens')} dans vos zones avant filtrage.`, `
+    <div class="pmenu">${MENU.map(([a,l])=>
+      `<a data-anc="${a}" onclick="anc('${a}')">${l}</a>`).join('')}</div>
+    <div class="pscroll">
+
+      <section id="f-lieu">
+        <h5 class="wt" style="margin-bottom:10px">Où</h5>
+        <div class="row gap6 wrap">
+          ${ZONES.map(([n,,km])=>`<span class="chip k hot" onclick="POP.localisation()">${
+            n}${km?` +${km} km`:''}</span>`).join('')}
+          <span class="chip o hot" onclick="POP.localisation()">+ ajouter une zone</span>
+        </div>
+        <div class="hint">${pin(8)} Rayon, quartiers, départements et couverture :
+          <span class="linkish" onclick="POP.localisation()">tout le détail de la localisation</span>.</div>
+      </section>
+
+      <section id="f-prix">
+        <h5 class="wt" style="margin-bottom:10px">${home?'Budget':'Budget & rendement'}</h5>
+        <div class="grid2" style="gap:14px">
+          ${home
+            ? inp('Mensualité max','1 300 €/mois',{hint:'calculée avec votre apport et votre taux'})
+              + inp('Apport disponible','45 000 €')
+            : inp('Budget min','',{placeholder:'—'})
+              + inp('Budget max','300 000 €')}
+        </div>
+        <div class="grid2 mt14" style="gap:14px">
+          ${home
+            ? inp('Charges max','',{placeholder:'—', hint:'charges de copropriété mensuelles'})
+              + inp('Taxe foncière max','',{placeholder:'—'})
+            : inp('Rendement brut min','4 %')
+              + inp('Cash-flow min','',{placeholder:'—', hint:'mensuel, après charges et crédit'})}
+        </div>
+        <div class="grid2 mt14" style="gap:14px">
+          ${inp('Prix au m² max','',{placeholder:'—'})}
+          ${inp('Budget total max','',{placeholder:'—', hint:'frais de notaire inclus'})}
+        </div>
+        ${seg('Écart au marché', [['Sous le marché',false],['Au prix du marché',false],['Au-dessus',false]],
+          'Calculé sur les ventes DVF du quartier. Les biens non estimables restent affichés.')}
+      </section>
+
+      <section id="f-bien">
+        <h5 class="wt" style="margin-bottom:10px">Le bien</h5>
+        ${seg('Type', [['Appartement',true],['Maison',false],['Immeuble',true],['Terrain',false],
+                       ['Local / bureau',false],['Parking',false]])}
+        ${seg('Nombre de pièces', [['Studio',false],['T2',true],['T3',true],['T4',false],['T5 et +',false]],
+          'Plusieurs tailles possibles — c\'est un OU, pas un minimum.')}
+        ${seg('Chambres', [['1+',false],['2+',true],['3+',false],['4+',false]])}
+        <div class="grid2 mt14" style="gap:14px">
+          ${inp('Surface min','40 m²')}${inp('Surface max','',{placeholder:'—'})}
+        </div>
+        <div class="grid2 mt14" style="gap:14px">
+          ${inp('Surface terrain min','',{placeholder:'—'})}
+          ${inp('Étage', '', {placeholder:'—', hint:'du … au …'})}
+        </div>
+        ${seg('Exposition', [['Sud',false],['Est',false],['Ouest',false],['Nord',false],['Traversant',false]],
+          'Renseignée sur une partie des biens seulement — ceux qui ne la déclarent pas restent affichés.')}
+      </section>
+
+      <section id="f-etat">
+        <h5 class="wt" style="margin-bottom:10px">État & DPE</h5>
+        <div class="field"><div class="lbl">DPE minimum</div>
+          <div class="row gap6 wrap">${['A','B','C','D','E','F','G'].map(d=>
+            `<span class="chip hot ${['A','B','C','D'].includes(d)?'k':''}">${d}</span>`).join('')}</div>
+          <div class="hint">${pin(16)} F et G sont des passoires énergétiques : location interdite ou
+            en voie de l'être. Le bandeau réglementaire s'affiche sur la fiche, on ne les cache pas.</div></div>
+        ${seg('Score minimum', [['Tous',true],['6+',false],['7+',false],['8+',false]],
+          'Les biens non notés (données insuffisantes) restent affichés — un marché peu liquide n\'est pas un mauvais bien.')}
+        ${seg('État du bien', [['Neuf',false],['Récent',false],['À rafraîchir',false],['À rénover',false]])}
+      </section>
+
+      <section id="f-equip">
+        <h5 class="wt" style="margin-bottom:10px">Équipements & prestations</h5>
+        ${seg('Extérieur', [['Balcon ou terrasse',true],['Jardin',false],['Piscine',false],
+                            ['Rez-de-jardin',false],['Dernier étage',false]])}
+        ${seg('Stationnement', [['Garage',false],['Parking',false],['Box fermé',false]])}
+        ${seg('Immeuble', [['Ascenseur',false],['Gardien',false],['Local vélos',false],['Accès PMR',false]])}
+        ${seg('Intérieur', [['Cuisine équipée',false],['Cheminée',false],['Climatisation',false],
+                            ['Cave',false],['Buanderie',false]])}
+        <div class="disc mt14">Un équipement non déclaré n'est pas un équipement absent :
+          filtrer dessus retire les biens dont on ne sait rien. Le compteur le dit à chaque coche.</div>
+      </section>
+
+      <section id="f-proj">
+        <h5 class="wt" style="margin-bottom:10px">${home?'Votre projet':'Critères investisseur'}</h5>
+        ${seg(home?'Usage':'Montage', (home
+          ? [['Sans travaux',false],['Étage élevé',false],['Calme',false],['Proche transports',false]]
+          : [['Vendu loué',false],['Immeuble de rapport',false],['Cash-flow positif',false],
+             ['Colocation possible',false],['Éligible LMNP',false],['Division possible',false]]),
+          home
+            ? 'Écoles, transports et commerces ne sont pas au périmètre : nous n\'avons pas la donnée, nous ne l\'inventons pas.'
+            : 'Déduits des données du bien (surface, lots, loyers déclarés) — jamais d\'un texte d\'agence.')}
+      </section>
+
+      <section id="f-annonce">
+        <h5 class="wt" style="margin-bottom:10px">L'annonce</h5>
+        ${seg('Mise en ligne', [['24 h',false],['7 jours',false],['30 jours',false],['Peu importe',true]])}
+        ${seg('Mouvement de prix', [['Baisse récente',false],['Prix inchangé',false],['Peu importe',true]])}
+        ${seg('Statut', [['Disponible',true],['Sous offre',false],['Retiré de la vente',false]],
+          'Un bien retiré reste consultable si vous l\'avez en favori — il ne revient pas dans les résultats.')}
+        ${seg('Nombre de mandats', [['Peu importe',true],['Plusieurs agences',false],['Une seule',false]],
+          'Un bien porté par plusieurs agences a plusieurs prix : c\'est souvent là que se trouve la marge de négociation.')}
+        ${seg('Source des données', [['Peu importe',true],['Déposée en direct',false],['Flux partenaire',false]],
+          'Une donnée déposée en direct par l\'agence est plus fraîche et plus complète.')}
+        ${seg('Photos', [['Avec photo',false],['Peu importe',true]],
+          'Un bien sans photo n\'est pas un mauvais bien — c\'est souvent une agence qui n\'a pas fini son dépôt.')}
+      </section>
+    </div>`,
+    `<span class="linkish sub hot" style="margin-right:auto" onclick="POP.filtres()">Tout réinitialiser</span>
+     <button class="btn sm sec2" onclick="POP.sauvegarder()">★ Enregistrer</button>
+     <button class="btn sm" onclick="popGo('recherche')">Afficher les ${nbsp('41 biens')}</button>`, true);
   },
 
   /* équipements & prestations — la liste complète, groupée */
@@ -2346,39 +2738,96 @@ add({id:'accueil', g:'P0 — Parcours acquéreur', n:'01', title:'Accueil app �
 });
 
 add({id:'recherche', g:'P0 — Parcours acquéreur', n:'02', title:'Recherche & résultats',
-  intro:"L'écran où l'utilisateur passe le plus de temps avant la fiche. Densité assumée : le rendement et le cash-flow apparaissent DÈS la carte, c'est ce qui nous distingue d'un portail classique.",
+  intro:"L'écran où l'utilisateur passe le plus de temps avant la fiche. Densité assumée : le rendement et le cash-flow apparaissent DÈS la carte, c'est ce qui nous distingue d'un portail classique. La recherche elle-même se joue en trois surfaces — la barre de nav, la popup « ma recherche » et la popup « où » — plus l'historique, qui est le seul moyen de ne pas faire recommencer quelqu'un qui revient.",
   states:['Résultats','Sans critère','Chargement','Aucun résultat','Erreur'],
   notes:[
     ['Le score domine la carte','badge sur la photo + barre sous les chiffres + tri par défaut. C’est l’élément qui décide si on ouvre la fiche — il doit être lisible avant la lecture du prix. Un bien non notable affiche « — non noté », jamais un 0 ni un score inventé.'],
     ['Le rendement sur la carte','décision structurante : l’utilisateur trie mentalement avant même d’ouvrir une fiche. C’est le différenciateur visible en 1 scroll.'],
-    ['Filtres persistants en colonne (desktop)','en mobile ils passent en tiroir déclenché par un bouton — la liste ne doit jamais être poussée hors écran par les filtres.'],
-    ['L’état sans critère n’est pas une page vide','il rappelle la règle et rend le champ manquant actionnable immédiatement.'],
+    ['Sans localisation, pas de liste — et on le dit à la place de la liste','l’état vide ne s’excuse pas : il pose la seule question qui bloque (« où cherchez-vous ? ») et ouvre l’écran qui y répond. Afficher des biens au hasard pour meubler donnerait des résultats qui ne veulent rien dire, et contredirait la règle « aucune annonce sans critère ».'],
+    ['Les zones se CUMULENT, et se recouvrent sans doubler','on peut retenir « Lyon 7ᵉ + 5 km » ET « Villeurbanne » — même si la seconde est déjà dans la première. Plutôt que d’interdire ou de corriger en silence, on le dit et on compte les biens une seule fois. Interdire ferait perdre l’utilisateur qui ne connaît pas la géographie administrative ; corriger en silence lui ferait douter du compteur.'],
+    ['La couverture est annoncée, jamais subie','trois biens à Guéret, on l’écrit — « ce n’est pas votre budget qui est en cause, c’est nous » — et on propose une alerte de couverture. Un utilisateur qui découvre le vide après trois filtres nous en veut ; celui qui le sait avant revient quand ça s’améliore.'],
+    ['Les lieux récents avant la saisie','on ne cherche pas une commune, on y revient. Les quatre derniers lieux sont affichés en chips au-dessus du clavier : dans une session de chasse, c’est le geste le plus fréquent après le scroll.'],
+    ['Pas de dessin sur carte, et on le dit','la recherche cartographique est hors MVP (F-020). Plutôt que de laisser l’utilisateur chercher un bouton qui n’existe pas, une ligne l’annonce et rappelle que nos zones sont des périmètres administratifs réels, pas des approximations tracées à la main.'],
+    ['« Où » n’est pas un champ, c’est un écran','c’était le champ le plus expédié de la recherche alors que c’est le premier qu’on remplit et le seul qu’on ne peut pas approximer. Il ouvre désormais une surface entière : recherche typée (commune, arrondissement, quartier, département), stock de biens par lieu, rayon réglable ZONE PAR ZONE, et effet du rayon annoncé avant de l’appliquer.'],
+    ['Reprendre une recherche récente est proposé AVANT de remplir','le formulaire vide est le pire moment pour découvrir qu’on aurait pu ne pas le remplir. Les trois dernières recherches sont en tête de la popup, avec leur nombre de résultats — pas en bas, pas derrière un onglet.'],
+    ['L’historique est passif, l’enregistrement est un geste','les récentes s’écrivent toutes seules, ne sont jamais nommées, expirent à 30 jours et restent sur l’appareil sans compte. Les enregistrées sont nommées, synchronisées et alertées. Confondre les deux transforme l’historique en corvée de ménage — d’où l’étoile comme unique frontière, au même endroit dans les deux listes.'],
+    ['Zéro résultat : on chiffre chaque assouplissement','« +18 biens si vous étendez à 10 km » vaut mieux que « élargissez vos critères ». L’utilisateur choisit alors le renoncement qui lui coûte le moins, au lieu de tout relâcher au hasard ou de partir.'],
+    ['Le compteur est celui des zones, et il est daté','« 41 biens · Lyon 7ᵉ +5 km · mis à jour il y a 6 min ». Le chiffre vient du périmètre choisi, la fraîcheur est affichée : sur un stock qui bouge tous les jours, un compteur sans date est une promesse invérifiable.'],
+    ['Les critères actifs se retirent LÀ où ils sont lus','chaque critère est une pastille avec sa croix, dans la barre du haut. Un utilisateur qui doit rouvrir une popup pour enlever « DPE ≥ D » ne l’enlève pas : il abandonne la recherche. La deuxième ligne « affiner » ne fait qu’ajouter — les deux gestes ne se mélangent jamais.'],
     ['Cas limite intégré à la liste','la 4ᵉ carte (Mérignac) teste en même temps : photo absente, DPE G, rendement non calculable. Si la maquette tient avec elle, elle tient partout.'],
     ['L’erreur propose une sortie','recharger, ou revenir au dernier résultat connu. Jamais un cul-de-sac.'],
     ['Filtrer par score, sans jamais masquer les non-notés','un bien sans assez de comparables n’est pas un mauvais bien. Le filtre exclut par score bas, pas par absence de score — sinon on fait disparaître les biens des marchés peu liquides, qui sont souvent les plus rentables.'],
     ['Source et fraîcheur sur chaque carte','« déposée en direct » ou « flux partenaire », et la date de mise à jour. C’est la réponse au préjugé n°1 des deux avatars — « encore un agrégateur » — et ça se joue avant le clic, pas dans une page à propos.'],
-    ['Le cœur est sur la carte, pas seulement sur la fiche','exigence explicite de F-018 : on met en favori depuis la liste, sans ouvrir. C’est le geste de tri le plus fréquent d’une session.']
+    ['Le cœur est sur la carte, pas seulement sur la fiche','exigence explicite de F-018 : on met en favori depuis la liste, sans ouvrir. C’est le geste de tri le plus fréquent d’une session.'],
+    ['Filtres en tiroir sur mobile','la liste ne doit jamais être poussée hors écran par les filtres — bottom sheet, comme toutes les autres feuilles de détail.']
   ],
   render:(st)=>{
     const vide = st==='Sans critère';
     const quick = MODE==='home'
       ? ['Baisse de prix','DPE ≥ D','Balcon ou terrasse','Garage / parking','Sans travaux','Proche écoles','Dernier étage']
       : ['Baisse de prix','DPE ≥ D','Balcon ou terrasse','Garage / parking','Cash-flow positif','Vendu loué','Immeuble de rapport'];
+    /* Les critères actifs sont des objets manipulables, pas un résumé en texte : chacun se retire
+       d'un clic, là où il est lu. Un utilisateur qui doit rouvrir une popup pour enlever « DPE ≥ D »
+       ne l'enlève pas — il abandonne la recherche. */
+    const actifs = vide ? [] : [
+      ...ZONES.map(([n,,km])=>[`${n}${km?` +${km} km`:''}`, 'zone']),
+      [MODE==='home' ? nbsp('≤ 1 300 €/mois') : nbsp('≤ 300 000 €'), 'budget'],
+      [MODE==='home' ? 'T2 · T3' : nbsp('Rendement ≥ 4 %'), 'crit'],
+      ['Appartement · Immeuble', 'type'],
+      [nbsp('≥ 40 m²'), 'surface'],
+      ['DPE ≥ D', 'dpe'],
+      ['Balcon ou terrasse', 'equip']
+    ];
     const filtres = `
       <div class="fbar">
-        <button class="btn sec2 sm hot" style="flex:none" onclick="POP.filtres()">
-          ⚙ Filtres${vide?'':' · <b class="num">3</b>'}</button>
+        <button class="btn sec2 sm hot" style="flex:none" onclick="POP.recherche()">
+          ⚙ Ma recherche${vide?'':` · <b class="num">${actifs.length}</b>`}</button>
         <span class="fsep"></span>
-        ${quick.map((f,i)=>`<span class="chip hot ${!vide&&(i===1||i===2)?'k':''}">${f}</span>`).join('')}
-      </div>`;
+        ${vide
+          ? `<span class="chip o hot" onclick="POP.localisation()">+ choisir une zone</span>
+             <span class="chip hot" onclick="POP.recentes()">↺ mes recherches récentes</span>`
+          : `${actifs.map(([l,k])=>`<span class="chip k hot" title="Retirer ce critère"
+                onclick="${k==='zone'?'POP.localisation()':'POP.filtres()'}">${l} <b style="opacity:.55">✕</b></span>`).join('')}
+             <span class="linkish sub hot" style="flex:none" onclick="POP.recherche()">tout effacer</span>`}
+      </div>
+      ${vide?'':(()=>{
+        /* on ne propose jamais d'AJOUTER ce qui est déjà actif : la ligne du haut retire,
+           celle du bas ajoute, et aucun critère n'apparaît dans les deux. */
+        const dispo = quick.filter(f=>!actifs.some(([l])=>l===f));
+        return dispo.length ? `<div class="fbar" style="margin-top:8px">
+          <span class="sub" style="flex:none">Affiner :</span>
+          ${dispo.map(f=>`<span class="chip hot">+ ${f}</span>`).join('')}
+          <span class="fsep"></span>
+          <span class="linkish sub hot" style="flex:none" onclick="POP.filtres()">tous les filtres</span>
+        </div>` : '';})()}`;
 
     let liste;
     if (vide) liste = `
       <div class="card"><div class="empty">
         <div class="ico"></div>
-        <h5 class="wt">Lancez votre première recherche${pin(3)}</h5>
-        <p>Choisissez au moins une ville et un budget. Nous n'affichons pas de liste au hasard : sans critère, les résultats ne veulent rien dire.</p>
-        <button class="btn hot" onclick="setState('Résultats')">Choisir une ville</button>
+        <h5 class="wt">Où cherchez-vous ?${pin(3)}</h5>
+        <p>Choisissez au moins une zone. Nous n'affichons pas de liste au hasard :
+        sans localisation, les résultats ne veulent rien dire.</p>
+        <button class="btn hot" onclick="POP.localisation()">Choisir une zone</button>
+      </div></div>
+      <div class="card mt14"><div class="pad">
+        <div class="row mid" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
+          <div class="lbl">${pin(10)} Reprendre une recherche récente</div>
+          <span class="linkish sub hot" onclick="POP.recentes()">Toutes →</span>
+        </div>
+        <div class="col" style="gap:2px;margin-top:8px">
+          ${RECENTES.slice(0,3).map(r=>`
+            <div class="rrow hot" style="justify-content:space-between" onclick="setState('Résultats')">
+              <div style="min-width:0">
+                <div class="row mid gap6 wrap">
+                  <span class="txt" style="color:var(--ink)">${r.q}</span>
+                  ${r.sauv?'<span class="chip k">enregistrée</span>':''}
+                </div>
+                <div class="sub" style="margin-top:2px">${r.d}</div>
+              </div>
+              <span class="sub num" style="flex:none">${r.n?nbsp(r.n+' biens'):'aucun'}</span>
+            </div>`).join('')}
+        </div>
       </div></div>`;
     else if (st==='Chargement') liste = `
       <div><div class="sk" style="height:14px;width:180px;margin-bottom:14px"></div>
@@ -2386,27 +2835,41 @@ add({id:'recherche', g:'P0 — Parcours acquéreur', n:'02', title:'Recherche & 
     else if (st==='Aucun résultat') liste = `
       <div class="card"><div class="empty">
         <div class="ico"></div>
-        <h5 class="wt">Aucun bien ne coche toutes vos cases</h5>
-        <p>4 biens correspondraient si vous acceptiez un DPE E, 9 si vous montiez le budget à 340 000 €.</p>
-        <div class="row gap8 wrap"><button class="btn sec2 sm">Accepter DPE E</button>
-        <button class="btn sec2 sm">Budget 340 000 €</button>
-        <button class="btn sm">Sauvegarder cette recherche</button></div>
+        <h5 class="wt">Aucun bien ne coche toutes vos cases${pin(11)}</h5>
+        <p>Voici ce que chaque assouplissement rapporterait — chiffré, pour que vous choisissiez
+        celui qui vous coûte le moins.</p>
+        <div class="col gap6" style="text-align:left;max-width:420px;margin:4px auto 0">
+          ${[['Étendre Lyon 7ᵉ à +10 km','+ 18 biens'],
+             ['Accepter un DPE E','+ 4 biens'],
+             ['Monter le budget à 340 000 €','+ 9 biens'],
+             ['Retirer « balcon ou terrasse »','+ 6 biens']]
+            .map(([t,g])=>`<div class="rrow hot" style="justify-content:space-between">
+              <span class="txt">${t}</span><span class="chip k">${g}</span></div>`).join('')}
+        </div>
+        <div class="row gap8 wrap mt14">
+          <button class="btn sm hot" onclick="POP.sauvegarder()">M'alerter si un bien arrive</button>
+          <button class="btn sec2 sm hot" onclick="POP.recentes()">Revenir à une recherche récente</button>
+        </div>
       </div></div>`;
     else if (st==='Erreur') liste = `
       <div class="card"><div class="empty">
         <div class="ico"></div>
-        <h5 class="wt">Quelque chose a coincé de notre côté${pin(5)}</h5>
-        <p>Vos critères sont conservés. Réessayez — si ça persiste, on est là : support@…</p>
+        <h5 class="wt">Quelque chose a coincé de notre côté${pin(15)}</h5>
+        <p>Vos critères et vos zones sont conservés. Réessayez — si ça persiste, on est là : support@…</p>
         <div class="row gap8 wrap"><button class="btn hot" onclick="setState('Résultats')">Réessayer</button>
         <button class="btn sec2">Revenir aux 4 derniers résultats</button></div>
       </div></div>`;
     else liste = `
       <div>
         <div class="row mid" style="justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-          <div class="txt"><b class="num">4</b> biens</div>
+          <div style="min-width:0">
+            <div class="txt"><b class="num">${nbsp(zonesTotal()+'')}</b> biens${pin(12)}</div>
+            <div class="sub">${zonesLbl()}${zonesChevauchent()?' · zones qui se recouvrent, comptées une fois':''}
+              · mis à jour il y a 6 min</div>
+          </div>
           <div class="row mid gap8 wrap resacts">
             <button class="btn sec2 sm hot" onclick="POP.tri()">Trier : Score décroissant ▾</button>
-            <button class="btn sec2 sm">Sauvegarder la recherche</button>
+            <button class="btn sec2 sm hot" onclick="POP.sauvegarder()">★ Enregistrer</button>
           </div>
         </div>
         <div class="cards">${BIENS.map(carte).join('')}</div>
@@ -3175,43 +3638,102 @@ add({id:'favoris', g:'P0 — Parcours acquéreur', n:'07', title:'Favoris',
   }
 });
 
-add({id:'recherches', g:'P0 — Parcours acquéreur', n:'08', title:'Recherches sauvegardées & alertes',
-  intro:"Le moteur de rétention. Une recherche sauvegardée avec alerte, c'est un utilisateur qui revient sans qu'on paie pour le faire revenir.",
+add({id:'recherches', g:'P0 — Parcours acquéreur', n:'08', title:'Mes recherches — enregistrées & récentes',
+  intro:"Le moteur de rétention. Une recherche enregistrée avec alerte, c'est un utilisateur qui revient sans qu'on paie pour le faire revenir. Mais la majorité des retours passe par une recherche qu'il n'a JAMAIS enregistrée — d'où les deux onglets, et l'étoile comme seul passage de l'un à l'autre.",
+  states:['Enregistrées','Récentes','Aucune recherche'],
   notes:[
     ['Le compteur de nouveautés est le CTA','« 4 nouvelles » est plus efficace que n’importe quel bouton.'],
     ['Fréquence d’alerte choisie par l’utilisateur','instantané pour les chasseurs, hebdomadaire pour les tièdes — c’est aussi ce qui limite notre coût d’envoi.'],
-    ['Critères modifiables sur place','sans repasser par l’écran de recherche.']
+    ['Critères modifiables sur place','sans repasser par l’écran de recherche.'],
+    ['Deux onglets, parce que ce sont deux objets','les enregistrées sont un engagement — nommées, alertées, permanentes. Les récentes sont un historique passif que personne n’a demandé et que personne ne veut ranger. Les mélanger obligerait l’utilisateur à faire le ménage dans une liste qu’il n’a pas créée.'],
+    ['L’étoile est la seule frontière','un clic fait passer une récente en enregistrée, et ouvre le choix de fréquence dans la foulée. C’est le seul moment où demander une alerte n’est pas intrusif : il vient de dire qu’il tenait à cette recherche.'],
+    ['Les récentes expirent, et on le dit','30 jours, écrit dans l’écran. Sans compte, elles ne quittent pas l’appareil — c’est aussi l’argument le plus concret pour créer un compte, et il est vrai.'],
+    ['Le nombre de résultats est celui du MOMENT de la recherche','« 0 bien » sur une recherche d’il y a six jours ne dit pas qu’il n’y a rien aujourd’hui. On date le chiffre plutôt que de le rafraîchir en silence : un compteur qui change tout seul fait douter de tous les autres.'],
+    ['L’état vide distingue les deux cas','aucune recherche du tout, ou aucune enregistrée alors qu’il y a des récentes. Le second propose l’action évidente — enregistrer celle d’hier — au lieu de renvoyer vers un formulaire vide.']
   ],
-  render:()=>`${appnav('Mes recherches')}
-  <div class="sec">
-    <div class="row mid" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <div><h4 class="wt">Mes recherches</h4><div class="sub"><b class="num">3</b> recherches · 2 alertes actives</div></div>
-      <button class="btn sec2 hot" onclick="go('recherche')">Nouvelle recherche</button>
-    </div>
-    <div class="col gap8 mt20">
-      ${[['T2/T3 Lyon-Villeurbanne < 300 k€, DPE ≥ D','4','Instantané','il y a 2 h'],
-         ['Immeubles de rapport Nord < 200 k€','1','Quotidien','hier'],
-         ['Studios Paris 11ᵉ < 260 k€','0','Désactivée','il y a 6 jours']]
-        .map(([t,n,f,d],i)=>`
-        <div class="card flat pad">
-          <div class="row mid stackm" style="justify-content:space-between;gap:12px">
-            <div class="grow">
-              <div class="txt" style="font-weight:500;color:var(--ink)">${t}</div>
-              <div class="row mid gap8" style="margin-top:7px;flex-wrap:wrap">
-                ${n!=='0'?`<span class="chip k">${pin(1)} ${n} nouvelle${n==='1'?'':'s'}</span>`:'<span class="chip">Aucune nouveauté</span>'}
-                <span class="chip">${pin(2)} Alerte : ${f}</span>
-                <span class="sub">dernière exécution ${d}</span>
+  render:(st)=>{
+    const rec = st==='Récentes';
+    const vide = st==='Aucune recherche';
+    const onglets = `
+      <div class="sidetabs" style="margin-top:14px">
+        ${[['Enregistrées',`Enregistrées (${RECENTES.filter(r=>r.sauv).length})`],
+           ['Récentes',`Récentes (${RECENTES.length})`]]
+          .map(([k,l])=>`<button class="${(rec?'Récentes':'Enregistrées')===k?'on':''}"
+            onclick="setState('${k}')">${l}</button>`).join('')}
+      </div>`;
+
+    if (vide) return `${appnav('Mes recherches')}
+      <div class="sec">
+        <h4 class="wt">Mes recherches</h4>
+        <div class="card mt20"><div class="empty">
+          <div class="ico"></div>
+          <h5 class="wt">Aucune recherche pour l'instant</h5>
+          <p>Dès que vous lancez une recherche, elle apparaît ici — sans rien avoir à enregistrer.
+          L'étoile ne sert qu'à celles que vous voulez garder et suivre.</p>
+          <button class="btn hot" onclick="go('recherche')">Lancer une recherche</button>
+        </div></div>
+      </div>`;
+
+    const liste = rec ? RECENTES : RECENTES.filter(r=>r.sauv);
+    const ALERTES = {0:'Instantané', 1:'Quotidien', 3:'Désactivée'};
+
+    return `${appnav('Mes recherches')}
+    <div class="sec">
+      <div class="row mid" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div><h4 class="wt">Mes recherches</h4>
+          <div class="sub">${rec
+            ? `<b class="num">${RECENTES.length}</b> lancées ces 30 derniers jours`
+            : `<b class="num">${RECENTES.filter(r=>r.sauv).length}</b> enregistrées · 2 alertes actives`}</div></div>
+        <button class="btn sec2 hot" onclick="HASQ=false;go('recherche')">Nouvelle recherche</button>
+      </div>
+      ${onglets}
+
+      <div class="col gap8 mt20">
+        ${liste.map((r,i)=>{
+          const idx = RECENTES.indexOf(r);
+          const freq = ALERTES[idx] || 'Quotidien';
+          return `
+          <div class="card flat pad">
+            <div class="row mid stackm" style="justify-content:space-between;gap:12px">
+              <div class="grow" style="min-width:0">
+                <div class="row mid gap6 wrap">
+                  <span class="linkish hot" style="font-weight:500;color:var(--ink)"
+                    onclick="POP.localisation()" title="Modifier les zones">${r.q}</span>
+                  <span class="chip">${r.mode==='home'?"J'habite":"J'investis"}</span>
+                </div>
+                <div class="row mid gap8" style="margin-top:7px;flex-wrap:wrap">
+                  ${r.n
+                    ? `<span class="chip k">${pin(1)} ${nbsp(r.n+' biens')}</span>`
+                    : '<span class="chip">Aucun résultat</span>'}
+                  ${r.sauv
+                    ? `<span class="chip">${pin(2)} Alerte : ${freq}</span>`
+                    : `<span class="chip o">${pin(5)} Non enregistrée</span>`}
+                  <span class="sub">${pin(7)} ${rec?'lancée':'dernière exécution'} ${r.d}</span>
+                </div>
+              </div>
+              <div class="row gap8" style="flex:none;flex-wrap:wrap">
+                <button class="btn sm ${r.n?'':'sec2'} hot" onclick="go('recherche')">Voir les résultats</button>
+                <button class="btn sm sec2 hot" onclick="${r.sauv
+                  ? `RECENTES[${idx}].sauv=false;show(cur,true)`
+                  : `POP.sauvegarder(${idx})`}">${r.sauv?'★ Enregistrée':'☆ Enregistrer'}</button>
+                <button class="btn sm ghost hot" onclick="POP.recherche()">${pin(3)} Modifier</button>
               </div>
             </div>
-            <div class="row gap8">
-              <button class="btn sm ${n!=='0'?'':'sec2'} hot" onclick="go('recherche')">Voir les résultats</button>
-              <button class="btn sm sec2">${pin(3)} Modifier</button>
-              <button class="btn sm ghost">Supprimer</button>
-            </div>
-          </div>
-        </div>`).join('')}
-    </div>
-  </div>`
+          </div>`;}).join('')}
+      </div>
+
+      ${rec
+        ? `<div class="disc mt14">${pin(6)} Vos recherches récentes sont conservées <b>30 jours</b>.
+           Sans compte, elles ne quittent pas cet appareil — les enregistrer (★) les rend permanentes,
+           les synchronise et permet de recevoir les nouveautés.</div>`
+        : (RECENTES.some(r=>!r.sauv)
+          ? `<div class="bandeau mt14">${pin(8)}
+             <b>${RECENTES.filter(r=>!r.sauv).length} recherches récentes ne sont pas enregistrées.</b>
+             Elles disparaîtront dans 30 jours et ne déclenchent aucune alerte.
+             <div class="row gap8 mt8"><button class="btn sm sec2 hot" onclick="setState('Récentes')">Les voir</button></div></div>`
+          : '')}
+    </div>`;
+  }
 });
 
 add({id:'compte', g:'P0 — Parcours acquéreur', n:'09', title:'Paramètres du compte',
@@ -5082,6 +5604,37 @@ function leadAgList(){ return BIENS[0].ags.filter((_,i)=>leadAgs().has(i)); }
 let FROMLEAD = false;
 function otpFromLead(){ FROMLEAD = true; go('otp'); }
 function sendFromOtp(){ FROMLEAD = false; AUTH = 'in'; HASQ = true; goState('lead2','Demande envoyée'); }
+
+/* ---- moteur de la localisation ----
+   Le rayon appartient à la zone. Le compte de biens doit rester honnête : deux zones qui se
+   recouvrent ne s'additionnent pas, sinon on annonce un stock qu'on n'a pas. */
+let LQ = '';
+function zoneCount(nom, type, km){
+  const base = (LIEUX.find(l=>l[0]===nom)||[,,,0])[3];
+  if (!km || type==='dep') return base;
+  if (nom==='Lyon 7ᵉ' && RAYON_EFFET[km]) return RAYON_EFFET[km][1];
+  return Math.round(base * (1 + km*0.35));
+}
+/* le seul chevauchement du jeu de données : Villeurbanne tombe dans Lyon 7ᵉ + 5 km */
+function zonesChevauchent(){
+  const l7 = ZONES.find(z=>z[0]==='Lyon 7ᵉ');
+  return !!(l7 && l7[2] >= 5 && ZONES.some(z=>z[0]==='Villeurbanne'));
+}
+function zonesTotal(){
+  let t = ZONES.reduce((a,[n,ty,km])=>a+zoneCount(n,ty,km), 0);
+  if (zonesChevauchent()) t -= zoneCount('Villeurbanne','com',0);
+  return t;
+}
+function zoneAdd(nom, type){ if(!ZONES.some(z=>z[0]===nom)) ZONES.push([nom,type,0]); POP.localisation(); }
+function zoneDel(i){ ZONES.splice(i,1); POP.localisation(); }
+function zoneRayon(i, km){ ZONES[i][2] = km; POP.localisation(); }
+/* le libellé qui s'affiche partout ailleurs — nav, filtres, recherches sauvegardées */
+function zonesLbl(){
+  if (!ZONES.length) return '';
+  const [n,,km] = ZONES[0];
+  const t = n + (km?` +${km} km`:'');
+  return ZONES.length>1 ? `${t} +${ZONES.length-1}` : t;
+}
 
 /* switch de recherche : critères ⌕ / phrase ✦ — le mode phrase déploie la nav */
 let SMODE = 'criteres', IAFOCUS = false;
