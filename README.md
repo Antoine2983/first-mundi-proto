@@ -2,7 +2,7 @@
 
 Prototype cliquable d'une plateforme immobilière. **Un seul fichier, aucune dépendance, fonctionne hors ligne** : ouvre `index.html` dans un navigateur (double-clic).
 
-**24 écrans · 69 états**, vérifiés sur 828 rendus (écran × état × format × connecté/visiteur × mode), en niveau de gris. Pas de direction artistique : on valide ici les **parcours, la hiérarchie de l'information et les états**. La couleur, la typo et le logo viennent après.
+**24 écrans · 69 états**, vérifiés sur 1 656 rendus (écran × état × format × connecté/visiteur × mode d'achat × mode de recherche), en niveau de gris. Pas de direction artistique : on valide ici les **parcours, la hiérarchie de l'information et les états**. La couleur, la typo et le logo viennent après.
 
 ## Ce que contient le prototype
 
@@ -40,6 +40,8 @@ Les règles qui tiennent l'écran :
 - **Le chevauchement est dit, pas corrigé en silence.** Les biens sont comptés une seule fois, et l'écran l'explique. Corriger en douce ferait douter de tous les chiffres.
 - **La couverture est annoncée** : trois biens sur une commune, on l'écrit — « ce n'est pas votre budget qui est en cause, c'est nous » — avec une alerte de couverture.
 - **Pas de dessin sur carte, et on le dit** plutôt que de laisser chercher un bouton absent.
+
+**La barre de la home porte la recherche entière.** C'est la seule surface de recherche d'un visiteur qui arrive à froid — la pilule de nav n'existe que sur les écrans intérieurs. Elle porte donc les deux modes (`⌕ Critères` et `✦ Décrire`, ce dernier était jusqu'ici invisible en première visite), le même écran de zones que partout ailleurs, et — sous la barre, au même emplacement — **des raccourcis pour les froids, l'historique pour ceux qui reviennent**. Contenu opposé, place identique : la barre ne bouge jamais.
 
 **L'historique, c'est deux objets — jamais un.** Les **récentes** s'écrivent toutes seules, ne sont jamais nommées, expirent à 30 jours et ne quittent pas l'appareil sans compte. Les **enregistrées** sont nommées, synchronisées, alertées. **L'étoile est la seule frontière**, au même endroit dans les deux listes : les mélanger obligerait l'utilisateur à ranger une liste qu'il n'a jamais demandée. Quatre points d'entrée — le ↺ de la nav, la tête de la popup de recherche, l'état sans critère, et l'écran « Mes recherches » à deux onglets.
 

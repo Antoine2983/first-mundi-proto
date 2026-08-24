@@ -486,6 +486,10 @@ body.mobile .gcar{display:block;position:relative;margin:0 -14px}
 .gcar .gdots i.on{background:var(--ink)}
 body.mobile .gal2{display:none}
 body.mobile .fichacts{display:none}
+/* les onglets de mode de recherche ne se coupent jamais en deux lignes : « ⌕ » au-dessus de
+   « Critères » se lit comme un bug, et la barre de la home est la première chose qu'on voit */
+.sidetabs button{white-space:nowrap}
+
 /* confort tactile */
 body.mobile .btn{min-height:40px}
 body.mobile .chip{padding:6px 12px}
@@ -1195,7 +1199,7 @@ const rpanelHTML = () => {
     </div>`).join('')}
     <button class="btn sec2 sm full" style="margin-top:10px" onclick="go('favoris')">Tous mes favoris →</button>`;
   const recherches = `
-    ${[['T2/T3 Lyon-Villeurbanne < 300 k€, DPE ≥ D','4 nouvelles · alerte quotidienne'],
+    ${[[RECENTES[0].q,'4 nouvelles · alerte quotidienne'],
        ['Immeubles Nord < 200 k€','1 nouvelle · alerte instantanée'],
        ['Studios Paris 11ᵉ','aucune nouveauté · alerte désactivée']]
       .map(([t,s])=>`
@@ -2452,7 +2456,11 @@ add({id:'accueil', g:'P0 — Parcours acquéreur', n:'01', title:'Accueil app �
     ['L’ÉCART entre les agences est l’information','« 1 sur 3 l’a ouverte » en dit plus que n’importe quel statut global : sur le même bien, à la même heure, avec la même demande, une agence a réagi et deux non. Aucun portail ne peut produire ce chiffre, il faudrait pour cela que les trois annonces se connaissent. C’est le même mécanisme que l’écart de prix sur la fiche — on l’affiche, on ne le commente pas.'],
     ['La bascule à 48 h ne survit que si l’acquéreur a DÉCOCHÉ','envoyer aux trois d’un coup la vide de son objet : il n’y a plus d’agence 2 à proposer, elle a déjà la demande. Elle garde tout son sens dans l’autre cas — une seule agence retenue, sans réponse à 48 h, et l’on rappelle que celle qui a été écartée propose toujours le bien. C’est la valeur du regroupement rendue tangible au moment exact où l’utilisateur en a besoin, sans jamais lui vendre deux fois la même chose.'],
     ['« Retiré de la vente » se traite comme une baisse de prix','même soin, même place. C’est le bénéfice n°1 promis à l’avatar acquéreur, pas un message d’erreur : il mérite sa vignette et sa sortie.'],
-    ['La zone de preuve se rétracte à mesure qu’il avance','elle porte tout le poids en visite froide, elle disparaît dès qu’il a des choses à traiter. Un utilisateur en cours de transaction n’a pas besoin qu’on lui vende le produit.']
+    ['La zone de preuve se rétracte à mesure qu’il avance','elle porte tout le poids en visite froide, elle disparaît dès qu’il a des choses à traiter. Un utilisateur en cours de transaction n’a pas besoin qu’on lui vende le produit.'],
+    ['La home porte la recherche ENTIÈRE, pas une version allégée','c’est la seule surface de recherche d’un visiteur qui arrive à froid : la pilule de nav n’existe que sur les écrans intérieurs. Une barre au rabais ici oblige à entrer dans le produit pour accéder aux vrais réglages — et on n’entre pas dans un produit qu’on n’a pas encore évalué. Le champ « Où » ouvre donc exactement le même écran de zones que partout ailleurs, avec le rayon, le stock de biens et le dédoublonnage.'],
+    ['« Où » n’est pas une saisie libre','une saisie libre ferait espérer une autocomplétion qui n’est pas là, et perdrait ce qui fait la valeur du choix de zones : le type du lieu, le rayon, le nombre de biens derrière. Le champ affiche les zones retenues en pastilles et ouvre l’écran complet — c’est un bouton déguisé en champ, et il est plus honnête ainsi.'],
+    ['« Décrire » doit exister DÈS la home','c’est le mode qui impressionne le plus une première visite, et il n’était accessible que depuis la pilule de nav — donc jamais par un visiteur qui n’a pas encore cherché. Les deux modes sont désormais côte à côte au même endroit, dans les deux surfaces.'],
+    ['Raccourcis pour les froids, HISTORIQUE pour les autres','même emplacement sous la barre, contenu opposé. Un visiteur sans passé a besoin d’exemples pour comprendre ce qu’on sait faire ; celui qui revient n’a besoin que de sa propre dernière recherche. Proposer des raccourcis génériques à quelqu’un qui a déjà cherché, c’est lui faire répéter un travail qu’il a déjà fait.']
   ],
   render:(st)=>{
     const VIS = ['Visiteur — première visite','Visiteur — de retour'];
@@ -2480,37 +2488,98 @@ add({id:'accueil', g:'P0 — Parcours acquéreur', n:'01', title:'Accueil app �
       : [['Budget max',     repris?'300 000 €':'', 'ex. 300 000 €'],
          ['Rendement min',  repris?'4 %':'', 'ex. 4 %']];
 
+    /* ---------- la barre de recherche de la home ----------
+       C'est la seule surface de recherche d'un visiteur qui arrive à froid : il n'a pas la pilule
+       de nav, qui n'existe que sur les écrans intérieurs. Elle doit donc porter TOUT ce que porte
+       la pilule — les deux modes, les zones, l'historique — sans jamais bouger de place ni grandir
+       quand l'utilisateur, lui, avance. */
+    const ia = SMODE==='ia';
+    /* `repris` gouverne TOUTE la barre, zones comprises : un visiteur en première visite ou un
+       compte neuf n'a pas de zones, et afficher celles de la session de démo lui ferait croire
+       qu'on a deviné où il cherche. Les champs vides et les zones vides vont ensemble. */
+    const zonesHome = repris ? ZONES : [];
+
+    /* le champ « Où » n'est pas un champ : c'est l'entrée du choix de zones. Une saisie libre
+       ferait espérer une autocomplétion qui n'est pas là, et perdrait le rayon et le stock. */
+    const champOu = `
+      <div class="field">
+        <div class="row mid" style="justify-content:space-between;gap:8px">
+          <div class="lbl">Où ?${pin(12)}</div>
+          ${zonesHome.length?`<span class="sub num">${nbsp(zonesTotal()+' biens')}</span>`:''}
+        </div>
+        <div class="inp hot" style="flex-wrap:wrap;gap:5px;justify-content:flex-start;padding:6px 8px"
+             onclick="POP.localisation()" title="Choisir vos zones">
+          ${zonesHome.length
+            ? zonesHome.map(([n,,km])=>`<span class="chip k">${n}${km?` +${km} km`:''}</span>`).join('')
+              + '<span class="chip o">+ ajouter</span>'
+            : '<span>Ville, arrondissement, quartier, département</span>'}
+        </div>
+      </div>`;
+
     const barre = `
       <div style="max-width:700px;margin:0 auto;text-align:center">
         <h4 class="wt" style="font-size:23px">${h1}${pin(1)}</h4>
         <p class="txt mt8">${h2}</p>
       </div>
       <div class="card mt20" style="max-width:820px;margin:22px auto 0;padding:16px 14px 14px">
-        <div class="row" style="justify-content:center;margin-bottom:14px">
+        <div class="row mid gap8 wrap" style="justify-content:center;margin-bottom:14px">
           <div class="modeseg">
             <button class="${MODE==='invest'?'on':''}" onclick="setMode('invest')">J'investis</button>
             <button class="${MODE==='home'?'on':''}" onclick="setMode('home')">J'habite</button>
           </div>
+          <div class="sidetabs" style="margin-top:0;flex:none">
+            <button class="${ia?'':'on'}" style="padding:5px 13px" onclick="setSMode('criteres')">⌕ Critères</button>
+            <button class="${ia?'on':''}" style="padding:5px 13px" onclick="setSMode('ia')">✦ Décrire</button>
+          </div>
         </div>
+
+        ${ia ? `
+        <div class="iainwrap">
+          <span style="flex:none;color:var(--ink-3)">✦</span>
+          <input id="iainput" class="iain"
+            placeholder="Décrivez ce que vous cherchez, comme vous l'expliqueriez à un agent immobilier…">
+          <button class="btn sm" style="flex:none" onmousedown="event.preventDefault()"
+            onclick="HASQ=true;POP.interpretation()">Valider</button>
+        </div>
+        <div class="row mid gap6 wrap" style="margin-top:10px;justify-content:center">
+          <span class="sub" style="flex:none">Suggestions :</span>
+          ${(acq
+            ? ['sans travaux','proche des écoles','avec balcon ou terrasse','dernier étage']
+            : ['cash-flow positif','immeuble de rapport','DPE D minimum','baisse de prix récente'])
+            .map(t=>`<span class="chip hot" onmousedown="event.preventDefault()" onclick="iaAdd('${t}')">${t}</span>`).join('')}
+        </div>
+        <div class="sub" style="margin-top:11px">${pin(13)} Votre phrase est traduite en critères
+          que vous relisez et corrigez avant le lancement — aucun prix ni rendement n'est estimé ici.</div>`
+        : `
         <div class="row stackm gap8 mid">
-          <div class="grow">${inp('Où ?', repris?'Lyon 7ᵉ, Villeurbanne':'', {placeholder:'Ville, code postal, quartier'})}</div>
+          <div class="grow">${champOu}</div>
           ${champs.map(([l,v,ph2])=>`<div class="grow">${inp(l, v, {placeholder:ph2})}</div>`).join('')}
-          <button class="btn hot" style="margin-top:18px" onclick="go('recherche')">${repris?'Reprendre':'Rechercher'}</button>
+          <button class="btn hot" style="margin-top:18px" ${zonesHome.length
+            ? `onclick="HASQ=true;go('recherche')"` : `onclick="POP.localisation()"`}>${
+            zonesHome.length ? (repris?'Reprendre':'Rechercher') : 'Choisir une zone'}</button>
         </div>
         <div class="sub" style="margin-top:11px">${repris
           ? 'Votre dernière recherche — modifiez un critère, ou relancez-la telle quelle.'
           : (acq
-            ? 'La mensualité est calculée avec votre apport et votre taux — renseignés une fois, appliqués partout.'
-            : 'Renseignez au moins une localisation et un budget pour lancer la recherche.')}</div>
+            ? 'Choisissez une zone pour commencer. La mensualité sera calculée avec votre apport et votre taux — renseignés une fois, appliqués partout.'
+            : 'Choisissez au moins une zone : sans localisation, les résultats ne veulent rien dire.')}</div>`}
       </div>
+
       ${froid||neuf ? `
       <div class="row mid gap8" style="justify-content:center;margin-top:16px;flex-wrap:wrap">
-        <span class="sub">Raccourcis :</span>
+        <span class="sub">${pin(14)} Raccourcis :</span>
         ${(acq
           ? ['T3 Lyon &lt; 1 300 €/mois','Sans travaux','Avec balcon ou terrasse']
           : ['T2/T3 Lyon &lt; 300 000 €','Rendement &gt; 8 %','Immeubles de rapport'])
-          .map(t=>`<span class="chip hot" onclick="go('recherche')">${t}</span>`).join('')}
-      </div>` : ''}`;
+          .map(t=>`<span class="chip hot" onclick="HASQ=true;go('recherche')">${t}</span>`).join('')}
+      </div>`
+      : `
+      <div class="row mid gap8" style="justify-content:center;margin-top:16px;flex-wrap:wrap">
+        <span class="sub">${pin(15)} Vos dernières recherches :</span>
+        ${RECENTES.slice(0,3).map(r=>`<span class="chip hot" title="${r.n?r.n+' biens · '+r.d:'aucun résultat · '+r.d}"
+          onclick="HASQ=true;go('recherche')">${r.sauv?'★ ':''}${r.q.split(' · ')[0]}</span>`).join('')}
+        <span class="linkish sub hot" onclick="POP.recentes()">toutes →</span>
+      </div>`}`;
 
     /* ---------- zone 2 : le bloc primaire, un seul ---------- */
     const ligne = (t, sub, dest) => `
@@ -2547,7 +2616,7 @@ add({id:'accueil', g:'P0 — Parcours acquéreur', n:'01', title:'Accueil app �
             <div class="grow" style="min-width:0">
               <div class="lbl">Votre dernière recherche${pin(2)}</div>
               <div class="txt" style="font-weight:600;color:var(--ink);margin-top:3px">
-                T2/T3 Lyon-Villeurbanne &lt; 300 k€, DPE ≥ D</div>
+                ${RECENTES[0].q}</div>
               <div class="sub" style="margin-top:4px">
                 <b class="num">4</b> nouveaux biens depuis votre passage, il y a 6 jours</div>
             </div>
@@ -2577,7 +2646,7 @@ add({id:'accueil', g:'P0 — Parcours acquéreur', n:'01', title:'Accueil app �
           <div style="width:33%;height:100%;background:var(--ink-2)"></div></div>
         <div class="col gap8 mt14">
           ${jalon(1, true, 'Lancer une recherche',
-            'Vous avez cherché « T2/T3 Lyon-Villeurbanne » — enregistrez-la pour être alerté.','','recherche')}
+            `Vous avez cherché « ${zonesLbl()} » — enregistrez-la pour être alerté.`,'','recherche')}
           ${jalon(2, false, 'Mettre un bien en favori',
             'Vous serez prévenu dès que son prix bouge ou qu\'il est retiré de la vente.','Parcourir les biens','recherche')}
           ${jalon(3, false, acq?'Renseigner votre apport et votre taux':'Renseigner votre apport, votre taux et votre loyer cible',
@@ -2589,7 +2658,7 @@ add({id:'accueil', g:'P0 — Parcours acquéreur', n:'01', title:'Accueil app �
     if (s==='En chasse') primaire = `
       <div>
         <div class="row mid" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
-          <div><h5 class="wt"><b class="num">4</b> nouveaux biens sur « T2/T3 Lyon-Villeurbanne »${pin(3)}</h5>
+          <div><h5 class="wt"><b class="num">4</b> nouveaux biens sur « ${zonesLbl()} »${pin(3)}</h5>
             <div class="sub">Depuis hier · alerte quotidienne</div></div>
           <div class="row gap8 wrap">
             <button class="btn sec2 sm hot" onclick="go('recherches')">Gérer l'alerte</button>
