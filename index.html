@@ -4,26 +4,36 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Prototype MVP — parcours complet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Source+Serif+4:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --ink:#111418; --ink-2:#4a5058; --ink-3:#767d87; --ink-4:#a3a9b3;
-  --line:#d7dbe0; --line-2:#e8ebee; --bg:#f4f5f7; --paper:#fff;
-  --fill:#eceef1; --fill-2:#f7f8f9;
-  --note:#8a6d2f; --note-bg:#fdf6e6; --note-line:#e8d9ae;
-  --r:6px; --mono:ui-monospace,"SF Mono",Menlo,monospace;
+  /* Tokens Hauzmy — source : firstmundi_DA.pen (hz-*). Les noms de variables du proto ne
+     changent pas : tout le JS inline qui dit var(--ink) reçoit la nouvelle palette sans
+     être touché. Le nom « Hauzmy » ne vit que dans les libellés — le renommage n'étant
+     pas tranché, un rebrand doit rester un find-replace. */
+  --ink:#111111; --ink-2:#54604F; --ink-3:#6F7B68; --ink-4:#9AA491;
+  --line:#DBD6C6; --line-2:#E8E4D6; --bg:#EAE6D8; --paper:#fff; --app:#F5F2E7;
+  --fill:#EDE9DC; --fill-2:#F7F5EC;
+  --note:#8a6d2f; --note-bg:#FDF6E6; --note-line:#E8D9AE;
+  --green:#14512F; --green-2:#2E7D4C; --lime:#C8F169; --mist:#CBE3C4;
+  --terra:#E6633C; --terra-2:#C25A2A;
+  --r:10px; --mono:"Space Grotesk",ui-monospace,"SF Mono",Menlo,monospace;
   --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --serif:"Source Serif 4",Georgia,serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
 
 /* ---------- CHROME DU PROTOTYPE ---------- */
 .stage{padding:26px 22px 130px}
-.frame{background:var(--paper);border:1px solid var(--line);border-radius:8px;overflow:clip;
+.frame{background:var(--app);border:1px solid var(--line);border-radius:14px;overflow:clip;
   max-width:1180px;margin:0 auto;box-shadow:0 1px 2px rgba(0,0,0,.04)}
 body.mobile .frame{max-width:390px}
 
 /* barre de contrôle flottante */
-.pbar{position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--ink);color:#fff;
+.pbar{position:fixed;left:0;right:0;bottom:0;z-index:60;background:#10331F;color:#fff;
   display:flex;align-items:center;gap:10px;padding:9px 16px;flex-wrap:wrap;
   box-shadow:0 -2px 12px rgba(0,0,0,.18)}
 .pbar .grp{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -103,19 +113,19 @@ body.mobile .row.stackm{flex-direction:column}
 .gap8{gap:8px}.gap6{gap:6px}.gap20{gap:20px}
 .mt8{margin-top:8px}.mt14{margin-top:14px}.mt20{margin-top:20px}
 
-h4.wt{font-size:15px;font-weight:600;letter-spacing:-.1px}
+h4.wt{font-size:16px;font-weight:600;letter-spacing:0;font-family:var(--serif)}
 h5.wt{font-size:12.5px;font-weight:600;color:var(--ink)}
 .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--ink-3);font-weight:600}
 .sub{font-size:12px;color:var(--ink-3)}
 .txt{font-size:13px;color:var(--ink-2)}
 .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
-.big{font-size:24px;font-weight:650;letter-spacing:-.4px}
+.big{font-size:24px;font-weight:600;letter-spacing:0;font-family:var(--serif)}
 .mid2{font-size:17px;font-weight:600}
 
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;border-radius:var(--r);
-  border:1.5px solid var(--ink);background:var(--ink);color:#fff;font-size:12.5px;font-weight:550;cursor:pointer;
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 18px;border-radius:99px;
+  border:1.5px solid var(--lime);background:var(--lime);color:var(--green);font-size:12.5px;font-weight:650;cursor:pointer;
   font-family:inherit;white-space:nowrap}
-.btn.sec2{background:var(--paper);color:var(--ink);border-color:var(--line)}
+.btn.sec2{background:var(--paper);color:var(--green);border-color:var(--line)}
 .btn.ghost{background:transparent;color:var(--ink-2);border-color:transparent;padding-left:6px;padding-right:6px}
 .btn.sm{padding:6px 11px;font-size:11.5px}
 .btn.full{width:100%}
@@ -124,7 +134,7 @@ h5.wt{font-size:12.5px;font-weight:600;color:var(--ink)}
 .inp{border:1px solid var(--line);border-radius:var(--r);padding:9px 11px;background:var(--paper);
   color:var(--ink-3);font-size:12.5px;min-height:36px;display:flex;align-items:center;justify-content:space-between}
 .inp .v{color:var(--ink)}
-.inp:focus-within{box-shadow:0 0 0 3px rgba(17,20,24,.08);border-color:var(--ink-3)}
+.inp:focus-within{box-shadow:0 0 0 3px rgba(20,81,47,.14);border-color:var(--green-2)}
 .inlive{flex:1;min-width:0;border:0;outline:0;background:transparent;font:inherit;
   font-size:12.5px;color:var(--ink);padding:0}
 .inlive::placeholder{color:var(--ink-4)}
@@ -135,21 +145,21 @@ h5.wt{font-size:12.5px;font-weight:600;color:var(--ink)}
 .field .err{font-size:10.5px;color:#a1341f}
 .inp.bad{border-color:#c0705c}
 
-.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border:1px solid var(--line);
-  border-radius:14px;font-size:11px;color:var(--ink-2);background:var(--paper);white-space:nowrap}
-.chip.k{background:var(--ink);color:#fff;border-color:var(--ink)}
-.chip.o{border-style:dashed}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border:1px solid var(--line);
+  border-radius:99px;font-size:11px;color:var(--ink-2);background:var(--paper);white-space:nowrap}
+.chip.k{background:var(--green);color:#fff;border-color:var(--green)}
+.chip.o{border:1px dashed var(--terra-2);color:var(--terra-2);background:#E6633C12}
 .dpe{display:inline-flex;width:22px;height:22px;align-items:center;justify-content:center;border-radius:4px;
   font-family:var(--mono);font-size:11px;font-weight:700;border:1.5px solid var(--ink-2);color:var(--ink)}
 .dpe.warn{border-color:var(--ink);background:var(--fill);}
-.dpe.stop{background:var(--ink);color:#fff;border-color:var(--ink)}
+.dpe.stop{background:var(--terra);color:#fff;border-color:var(--terra)}
 
-.card{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--paper)}
+.card{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--paper)}
 .card .body{padding:12px 13px}
 .card.flat{border-radius:var(--r)}
 .pad{padding:14px}
 .hr{height:1px;background:var(--line-2);margin:14px 0}
-.bandeau{border:1px solid var(--line);border-left:3px solid var(--ink);background:var(--fill-2);
+.bandeau{border:1px solid var(--mist);border-left:3px solid var(--green);background:#CBE3C42E;
   padding:10px 13px;border-radius:var(--r);font-size:12px;color:var(--ink-2)}
 
 table.wt{width:100%;border-collapse:collapse;font-size:12.5px}
@@ -166,8 +176,10 @@ body.mobile .mobonly{display:block}
 .appnav{display:flex;align-items:center;gap:22px;padding:12px 26px;border-bottom:1px solid var(--line);
   position:sticky;top:0;z-index:30;background:var(--paper)}
 body.mobile .appnav{padding:11px 14px;gap:12px}
-.logo{width:88px;height:22px;background:var(--fill);border:1px dashed var(--line);border-radius:4px;
-  display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:9px;color:var(--ink-4);flex:none}
+.logo{height:22px;display:flex;align-items:center;gap:5px;flex:none;
+  font-family:var(--mono);font-size:16px;font-weight:700;color:var(--green);letter-spacing:-.3px}
+.logo::before{content:'';width:9px;height:9px;border-radius:50%;background:var(--lime);
+  border:1.5px solid var(--green)}
 .appnav .lk{font-size:12.5px;color:var(--ink-2);cursor:pointer}
 .appnav .lk.on{color:var(--ink);font-weight:600}
 body.mobile .appnav .lk{display:none}
@@ -205,9 +217,9 @@ body.mobile .side .card{position:static}
 
 /* variation de prix */
 .delta{display:inline-flex;align-items:center;gap:3px;font-family:var(--mono);font-size:11px;
-  font-weight:700;padding:2px 6px;border-radius:4px;border:1px solid var(--line);
-  background:var(--fill-2);color:var(--ink)}
-.delta.up{border-color:#c8b48a}
+  font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid var(--mist);
+  background:#CBE3C44D;color:var(--green)}
+.delta.up{border-color:#F2BC6B;background:#F2BC6B26;color:#8a5a1f}
 .tl{position:relative;padding-left:20px}
 .tl:before{content:'';position:absolute;left:5px;top:6px;bottom:6px;width:1px;background:var(--line)}
 .tl .ev{position:relative;padding:8px 0}
@@ -268,7 +280,7 @@ body.popopen{overflow:hidden}
 
 .hot{cursor:pointer}
 .hot:hover{outline:2px solid var(--ink-4);outline-offset:2px}
-.linkish{color:var(--ink);text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+.linkish{color:var(--green);text-decoration:underline;text-underline-offset:2px;cursor:pointer}
 .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:11px;
   padding:52px 20px;text-align:center}
 .empty .ico{width:44px;height:44px;border:1.5px dashed var(--line);border-radius:8px}
@@ -298,10 +310,10 @@ body.popopen{overflow:hidden}
 .more:hover{border-bottom-color:var(--ink);color:var(--ink)}
 
 /* mode global — segmenté (utilisé dans le hero de l'accueil) */
-.modeseg{display:flex;border:1.5px solid var(--ink);border-radius:20px;padding:2px;flex:none}
+.modeseg{display:flex;border:1.5px solid var(--green);border-radius:99px;padding:2px;flex:none;background:var(--paper)}
 .modeseg button{font:inherit;font-size:12px;font-weight:550;padding:5px 13px;border:0;background:transparent;
   color:var(--ink-2);border-radius:16px;cursor:pointer;white-space:nowrap}
-.modeseg button.on{background:var(--ink);color:#fff}
+.modeseg button.on{background:var(--green);color:#fff}
 body.mobile .modeseg button{padding:5px 10px;font-size:11.5px}
 
 /* rangée de filtres façon Airbnb — sous la nav, au-dessus des résultats */
@@ -558,7 +570,7 @@ body.mobile .card.hot:hover{transform:none;box-shadow:none}
 .eq.off{color:var(--ink-4);text-decoration:line-through}
 .eq.off .eqico{border-style:dotted;opacity:.6}
 
-/* bloc Analyse First Mundi — score global en jauge + 4 critères */
+/* bloc Analyse Hauzmy — score global en jauge + 4 critères */
 .fmband{display:flex;gap:18px;align-items:center}
 .ring{position:relative;width:64px;height:64px;flex:none}
 .ring b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
@@ -575,7 +587,7 @@ body.mobile .fmtiles{grid-template-columns:repeat(2,minmax(0,1fr))}
 body.mobile .confstrip{grid-template-columns:repeat(2,minmax(0,1fr))}
 body.mobile .chip{white-space:normal}
 
-/* avis First Mundi condensé — en face du texte de l'agence */
+/* avis Hauzmy condensé — en face du texte de l'agence */
 .avrow{font-size:12px;color:var(--ink-2);padding:3px 0;white-space:nowrap;overflow:hidden;
   text-overflow:ellipsis}
 .avrow em{font-family:var(--mono);font-style:normal;color:var(--ink-4);margin-right:6px;font-size:10px}
@@ -652,7 +664,7 @@ body.mobile .fiscfig .num{font-size:13px}
    markup sans aucune règle — le champ s'affichait nu, sans cadre ni hauteur tactile */
 .iainwrap{display:flex;align-items:center;gap:9px;border:1.5px solid var(--ink);
   border-radius:var(--r);padding:10px 12px;background:var(--paper);min-height:44px}
-.iainwrap:focus-within{box-shadow:0 0 0 3px rgba(17,20,24,.08)}
+.iainwrap:focus-within{box-shadow:0 0 0 3px rgba(20,81,47,.14)}
 /* Le champ « où » reste au-dessus de ses propres résultats : on tape, on scrolle pour lire,
    et on doit pouvoir corriger sans remonter à l'aveugle. */
 .locsearch{position:sticky;top:0;z-index:3;background:var(--paper)}
@@ -996,7 +1008,7 @@ const appnav = (active, who='customer', auth=AUTH) => {
     const links = ['Tableau de bord','Mes biens','Mes leads','Facturation'];
     return `<div class="appnav">
       <div class="burger"><i></i><i></i><i></i></div>
-      <div class="logo hot" onclick="go('pro-dashboard')" title="Retour au tableau de bord">LOGO</div>
+      <div class="logo hot" onclick="go('pro-dashboard')" title="Retour au tableau de bord">hauzmy</div>
       ${links.map(l=>`<div class="lk ${l===active?'on':''}" ${GO[l]?`onclick="go('${GO[l]}')"`:''}>${l}</div>`).join('')}
       <div style="margin-left:auto" class="row mid gap8">
         <span class="chip">Pro vérifié</span>
@@ -1007,7 +1019,7 @@ const appnav = (active, who='customer', auth=AUTH) => {
   const home = active==='home';
   return `<div class="appnav" style="gap:14px;flex-wrap:wrap">
     <div class="burger"><i></i><i></i><i></i></div>
-    <div class="logo hot" onclick="go('accueil')" title="Retour à l'accueil">LOGO</div>
+    <div class="logo hot" onclick="go('accueil')" title="Retour à l'accueil">hauzmy</div>
     ${home ? '<div style="flex:1"></div>'
            : `<div style="flex:1"></div>${navSearch()}${mobSearch()}<div style="flex:1"></div>`}
     <div class="row mid gap8" style="flex:none;margin-left:auto">
@@ -1024,7 +1036,7 @@ const GO = {'Recherche':'recherche','Favoris':'favoris','Mes recherches':'recher
             'Facturation':'pro-factures'};
 
 /* ---- données réelles (08-CONTENU-EXEMPLE) ----
-   Modèle F-010 v2 : UNE annonce par bien, éditée par First Mundi.
+   Modèle F-010 v2 : UNE annonce par bien, éditée par Hauzmy.
    `src` = provenance des DONNÉES (dépôt agence ou flux partenaire), jamais un auteur d'annonce.
    `ags` = les agences qui détiennent un mandat sur le bien : elles sont un contact, pas un éditeur. */
 const BIENS = [
@@ -2356,14 +2368,14 @@ ${LQ ? '' : `<div id="locres">${locResultats()}</div>`}
         <div class="grid2" style="gap:0 26px">${items.map(eqrow).join('')}</div>
       </div>`).join('')}
     <div class="disc">Les éléments barrés sont déclarés absents. Informations non vérifiées par
-    First Mundi — confirmez lors de la visite.</div>`,
+    Hauzmy — confirmez lors de la visite.</div>`,
     `<button class="btn sec2 sm" onclick="closePop()">Fermer</button>`);
   },
 
   /* l'analyse complète — grande popup, menu latéral, ancres */
   analyse(anchor){ const acq = MODE==='home';
     const MENU = [['prix','Estimation de prix'],['usage', acq?'Coût d\'usage':'Loyer estimé'],
-      ['quartier','Le quartier'],['score','Score du bien'],['avis','Avis First Mundi']];
+      ['quartier','Le quartier'],['score','Score du bien'],['avis','Avis Hauzmy']];
     const secHead = (t, right) => `<div class="row mid" style="justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px">
       <h5 class="wt">${t}</h5>${right||''}</div>`;
     const body = `
@@ -2443,7 +2455,7 @@ ${LQ ? '' : `<div id="locres">${locResultats()}</div>`}
       </section>
 
       <section id="anc-avis">
-        ${secHead('L\'avis First Mundi', '<span class="chip o">établi uniquement à partir des données du bien</span>')}
+        ${secHead('L\'avis Hauzmy', '<span class="chip o">établi uniquement à partir des données du bien</span>')}
         <div class="grid2">
           <div class="ia"><div class="lbl">Points forts</div><ul>
             ${(acq
@@ -2470,7 +2482,7 @@ ${LQ ? '' : `<div id="locres">${locResultats()}</div>`}
         et des ventes DVF du quartier. Aucune information extérieure, aucun jugement sur le quartier lui-même.</div>
       </section>
     </div>`;
-    pop(`L'analyse First Mundi — T3 · 62 m² · Lyon 7ᵉ`,
+    pop(`L'analyse Hauzmy — T3 · 62 m² · Lyon 7ᵉ`,
       'Chaque chiffre montre sa méthode et son indice de confiance.', body,
       `<button class="btn sec2 sm" onclick="popGo('analyse-avancee')">Ouvrir en plein écran →</button>
        <button class="btn sm" onclick="closePop()">Fermer</button>`, true);
@@ -2593,7 +2605,7 @@ ${LQ ? '' : `<div id="locres">${locResultats()}</div>`}
   source(i){ const b = BIENS[i]; pop('D’où vient cette annonce ?',
     'Une annonce par bien, écrite par nous. Voici la matière première, ligne par ligne.', `
     <div class="col gap6">
-      ${[['Texte de l’annonce','rédigé par First Mundi'],
+      ${[['Texte de l’annonce','rédigé par Hauzmy'],
          ['Caractéristiques du bien', b.src],
          ['Prix, mandats et mouvements', b.src],
          ['Comparables et prix du quartier','DVF — ventes notariées DGFiP'],
@@ -2664,7 +2676,7 @@ ${LQ ? '' : `<div id="locres">${locResultats()}</div>`}
     <div class="hr" style="margin:16px 0"></div>
     <div class="row mid" style="justify-content:space-between;gap:12px;flex-wrap:wrap">
       <div style="min-width:0"><div class="txt" style="font-weight:600;color:var(--ink)">Vente conclue</div>
-        <div class="sub">Frais de service First Mundi : 0,16 % du prix de vente · minimum 100 €.
+        <div class="sub">Frais de service Hauzmy : 0,16 % du prix de vente · minimum 100 €.
         Vous n’avez pas à nous déclarer vos honoraires. Payés seulement quand la transaction se conclut.</div></div>
       <span class="mid2 num" style="flex:none">0,16 %</span>
     </div>
@@ -3192,7 +3204,7 @@ add({id:'recherche', g:'P0 — Parcours acquéreur', n:'02', title:'Recherche & 
         <div class="ico"></div>
         <h5 class="wt">Quelque chose a coincé de notre côté${pin(15)}</h5>
         <p>Vos critères et vos zones sont conservés. Réessayez — si ça persiste, on est là :
-        <span class="num">support@firstmundi.fr</span></p>
+        <span class="num">support@hauzmy.fr</span></p>
         <div class="row gap8 wrap"><button class="btn hot" onclick="relancer()">Réessayer</button>
         <button class="btn sec2 hot" onclick="setState('Résultats')">Revenir aux derniers résultats</button></div>
       </div></div>`;
@@ -3258,7 +3270,7 @@ add({id:'recherche', g:'P0 — Parcours acquéreur', n:'02', title:'Recherche & 
 });
 
 add({id:'fiche', g:'P0 — Parcours acquéreur', n:'03', title:'Fiche bien — l\'écran signature',
-  intro:"L'écran qu'on comparera à SeLoger. Photo-first en haut, puis une densité de données assumée. **Une seule annonce par bien, et c'est la nôtre** : le texte, les caractéristiques et l'analyse sont produits par First Mundi à partir du flux partenaire et des ventes DVF. La colonne droite est collante : tout le prix et le CTA de contact restent visibles pendant tout le scroll.",
+  intro:"L'écran qu'on comparera à SeLoger. Photo-first en haut, puis une densité de données assumée. **Une seule annonce par bien, et c'est la nôtre** : le texte, les caractéristiques et l'analyse sont produits par Hauzmy à partir du flux partenaire et des ventes DVF. La colonne droite est collante : tout le prix et le CTA de contact restent visibles pendant tout le scroll.",
   states:['Cas nominal','Profil non renseigné','Bien retiré de la vente','Cas limite (DPE G)'],
   notes:[
     ['Tout le prix dans la colonne droite, et rien ailleurs','un seul bloc, collé au CTA. Éclater le prix entre le corps de page et la colonne obligeait l’œil à faire deux fois le même travail.'],
@@ -3406,7 +3418,7 @@ add({id:'fiche', g:'P0 — Parcours acquéreur', n:'03', title:'Fiche bien — l
           </div>
           <h4 class="wt mt8" style="font-size:20px">${b.t}</h4>
           <div class="sub" style="margin-top:5px">${b.d} · DPE ${b.dpe} ·
-            <span class="linkish" onclick="POP.source(${lim?3:0})">annonce First Mundi</span></div>
+            <span class="linkish" onclick="POP.source(${lim?3:0})">annonce Hauzmy</span></div>
           ${lim ? '' : `
           <div class="card hot" style="margin-top:18px" onclick="POP.analyse('score')">
             <div class="pad">
@@ -3414,7 +3426,7 @@ add({id:'fiche', g:'P0 — Parcours acquéreur', n:'03', title:'Fiche bien — l
                 ${ring(acq?'7,6':'7,2')}
                 <div class="grow" style="min-width:0">
                   <div class="row mid" style="justify-content:space-between;gap:8px">
-                    <h5 class="wt">Analyse First Mundi</h5>
+                    <h5 class="wt">Analyse Hauzmy</h5>
                     <span class="linkish sub" onclick="event.stopPropagation();POP.analyse('prix')">tout voir</span>
                   </div>
                   <div class="sub" style="margin-top:3px">${acq
@@ -3437,7 +3449,7 @@ add({id:'fiche', g:'P0 — Parcours acquéreur', n:'03', title:'Fiche bien — l
         <div>
           <div class="row mid" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
             <h5 class="wt">Description</h5>
-            <span class="chip o hot" onclick="POP.redaction()">écrite par First Mundi — flux partenaire + DVF</span>
+            <span class="chip o hot" onclick="POP.redaction()">écrite par Hauzmy — flux partenaire + DVF</span>
           </div>
           <p class="txt mt8" style="max-width:74ch;line-height:1.65">${lim
             ? `Maison de 145 m² sur un terrain de 420 m², à Mérignac, secteur Capeyron. Cinq pièces dont
@@ -4167,7 +4179,7 @@ add({id:'compte', g:'P0 — Parcours acquéreur', n:'09', title:'Paramètres du 
 });
 
 /* ---------------- CACHET & IA (scope v2) ---------------- */
-add({id:'analyse-avancee', g:'P0+ — Cachet & IA (scope v2)', n:'', scope:'v2', title:'Estimation, score et avis First Mundi',
+add({id:'analyse-avancee', g:'P0+ — Cachet & IA (scope v2)', n:'', scope:'v2', title:'Estimation, score et avis Hauzmy',
   intro:"Le bloc qui fait passer la fiche de « portail efficace » à « produit à cachet ». **Les deux profils y ont droit** — l'estimation, le quartier et l'avis IA répondent à la peur n°1 de l'acquéreur (« et si on achète trop cher ? ») autant qu'au besoin de vérification de l'investisseur. Seules les unités changent. Règle transverse non négociable : toute estimation affiche sa méthode, son indice de confiance et la mention « indicatif, non contractuel ».",
   states:['Cas nominal','Confiance faible','Données insuffisantes'],
   notes:[
@@ -4199,7 +4211,7 @@ add({id:'analyse-avancee', g:'P0+ — Cachet & IA (scope v2)', n:'', scope:'v2',
             <button class="btn sec2 sm">Élargir le rayon à 2 km</button>
             <button class="btn sec2 sm">Voir les 3 mutations trouvées</button>
           </div>
-          <div class="disc" style="margin-top:6px">Le score du bien et l'avis First Mundi sont également indisponibles :
+          <div class="disc" style="margin-top:6px">Le score du bien et l'avis Hauzmy sont également indisponibles :
           tous deux s'appuient sur l'estimation.</div>
         </div></div>
       </div></div>`;
@@ -4340,7 +4352,7 @@ add({id:'analyse-avancee', g:'P0+ — Cachet & IA (scope v2)', n:'', scope:'v2',
 
       <div class="card mt14"><div class="pad">
         <div class="row mid" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
-          <h5 class="wt">L'avis First Mundi${pin(7)}</h5>
+          <h5 class="wt">L'avis Hauzmy${pin(7)}</h5>
           <span class="chip o">établi uniquement à partir des données du bien</span>
         </div>
         <div class="grid2 mt14">
@@ -4496,7 +4508,7 @@ add({id:'inscription', g:'P1 — Côté agence', n:'10', title:'Inscription — 
     ['Google en premier pour l’acquéreur','friction minimale côté B2C ; côté agence l’email professionnel reste plus naturel.']
   ],
   render:()=>`
-  <div class="appnav"><div class="logo hot" onclick="go('accueil')" title="Retour à l'accueil">LOGO</div><div style="margin-left:auto" class="sub">Déjà inscrit ? <span class="linkish">Se connecter</span></div></div>
+  <div class="appnav"><div class="logo hot" onclick="go('accueil')" title="Retour à l'accueil">hauzmy</div><div style="margin-left:auto" class="sub">Déjà inscrit ? <span class="linkish">Se connecter</span></div></div>
   <div class="sec" style="padding-top:44px;padding-bottom:54px">
     <div style="max-width:760px;margin:0 auto;text-align:center">
       <h4 class="wt" style="font-size:22px">Créer un compte</h4>
@@ -4537,7 +4549,7 @@ add({id:'pro-siret', g:'P1 — Côté agence', n:'11', title:'Inscription agence
   ],
   render:(st)=>{
     if (st==='Vérifié') return `
-      <div class="appnav"><div class="logo hot" onclick="go('accueil')" title="Retour à l'accueil">LOGO</div></div>
+      <div class="appnav"><div class="logo hot" onclick="go('accueil')" title="Retour à l'accueil">hauzmy</div></div>
       <div class="sec"><div style="max-width:640px;margin:0 auto">
         ${stepper(['Entreprise','Responsable','Vérification SMS'],0)}
         <div class="card mt20"><div class="pad">
@@ -4556,7 +4568,7 @@ add({id:'pro-siret', g:'P1 — Côté agence', n:'11', title:'Inscription agence
         </div></div>
       </div></div>`;
     if (st==='SIRET introuvable') return `
-      <div class="appnav"><div class="logo hot" onclick="go('accueil')" title="Retour à l'accueil">LOGO</div></div>
+      <div class="appnav"><div class="logo hot" onclick="go('accueil')" title="Retour à l'accueil">hauzmy</div></div>
       <div class="sec"><div style="max-width:640px;margin:0 auto">
         ${stepper(['Entreprise','Responsable','Vérification SMS'],0)}
         <div class="card mt20"><div class="pad">
@@ -4569,7 +4581,7 @@ add({id:'pro-siret', g:'P1 — Côté agence', n:'11', title:'Inscription agence
         </div></div>
       </div></div>`;
     return `
-      <div class="appnav"><div class="logo hot" onclick="go('accueil')" title="Retour à l'accueil">LOGO</div></div>
+      <div class="appnav"><div class="logo hot" onclick="go('accueil')" title="Retour à l'accueil">hauzmy</div></div>
       <div class="sec"><div style="max-width:640px;margin:0 auto">
         ${stepper(['Entreprise','Responsable','Vérification SMS'],0)}
         <div class="card mt20"><div class="pad">
@@ -5154,7 +5166,7 @@ add({id:'pro-bien', g:'P1 — Côté agence', n:'', title:'Fiche bien côté age
               <span class="txt" style="font-weight:600;color:var(--ink)">Payé à ce jour</span>
               <span class="mid2 num">${nbsp('40 €')}</span></div>
           </div>
-          <div class="bandeau mt14">${pin(1)} Les frais de service First Mundi — <b>0,16 % du
+          <div class="bandeau mt14">${pin(1)} Les frais de service Hauzmy — <b>0,16 % du
           prix de vente</b> — ne sont dus que maintenant que la vente est conclue. Vos honoraires
           ne nous regardent pas : nous ne vous les demandons pas.</div>
         </div></div>`}
@@ -5270,7 +5282,7 @@ add({id:'pro-depot', g:'P1 — Côté agence', n:'13', title:'Dépôt d\'un bien
           <div class="card flat pad">
             <div class="row mid" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
               <h5 class="wt">Le texte que nous publions</h5>
-              <span class="chip o">rédigé par First Mundi</span>
+              <span class="chip o">rédigé par Hauzmy</span>
             </div>
             <p class="txt mt8" style="line-height:1.6">T3 de 62 m² au 3ᵉ étage sur 5, avec ascenseur, dans une
             copropriété de 34 lots à Lyon 7ᵉ, quartier Jean Macé. Trois pièces dont deux chambres, balcon de
@@ -5731,7 +5743,7 @@ add({id:'pro-factures', g:'P2 — Monétisation', n:'16', title:'Paiements & fac
         <tbody>
           ${[['04/08/2026','Qualification — recherche + financement','Marc D. · T3 Lyon 7ᵉ','40 €'],
              ['02/08/2026','Qualification — recherche','Karim B. · Immeuble Vaise','20 €'],
-             ['29/07/2026','Frais de service First Mundi (0,16 %)','T4 Lyon 3ᵉ · 415 000 €','664 €'],
+             ['29/07/2026','Frais de service Hauzmy (0,16 %)','T4 Lyon 3ᵉ · 415 000 €','664 €'],
              ['24/07/2026','Qualification — financement (déclaratif)','Sophie L. · T2 Villeurbanne','30 €'],
              ['18/07/2026','Publication de biens (23)','juillet 2026','0 €']]
             .map(r=>`<tr><td class="sub">${r[0]}</td><td><b style="color:var(--ink)">${r[1]}</b></td>
@@ -5742,7 +5754,7 @@ add({id:'pro-factures', g:'P2 — Monétisation', n:'16', title:'Paiements & fac
       <div class="mobonly col gap8 pad">
         ${[['04/08/2026','Qualification — recherche + financement','Marc D. · T3 Lyon 7ᵉ','40 €'],
            ['02/08/2026','Qualification — recherche','Karim B. · Immeuble Vaise','20 €'],
-           ['29/07/2026','Frais de service First Mundi (0,16 %)','T4 Lyon 3ᵉ · 415 000 €','664 €'],
+           ['29/07/2026','Frais de service Hauzmy (0,16 %)','T4 Lyon 3ᵉ · 415 000 €','664 €'],
            ['24/07/2026','Qualification — financement (déclaratif)','Sophie L. · T2 Villeurbanne','30 €'],
            ['18/07/2026','Publication de biens (23)','juillet 2026','0 €']]
           .map(([date,objet,ref,montant])=>`
@@ -5804,7 +5816,7 @@ add({id:'pro-vente', g:'P2 — Monétisation', n:'17', title:'Déclaration de ve
           </div>
 
           <div class="card flat pad mt20" style="background:var(--fill-2)">
-            <div class="lbl">${pin(2)} Frais de service First Mundi</div>
+            <div class="lbl">${pin(2)} Frais de service Hauzmy</div>
             <div class="col gap6 mt8">
               <div class="row mid" style="justify-content:space-between"><span class="txt">Prix de vente final</span><span class="num">415 000 €</span></div>
               <div class="row mid" style="justify-content:space-between"><span class="txt">Frais de service — 0,16 %</span><span class="num">664 €</span></div>
