@@ -3272,7 +3272,7 @@ add({id:'fiche', g:'P0 — Parcours acquéreur', n:'03', title:'Fiche bien — l
     ['Historique de prix visible','deux baisses en 87 jours est une information de négociation — un portail classique la cache, nous en faisons un argument.'],
     ['Photos jamais stockées','on affiche depuis les URLs sources ; le fallback doit donc être élégant et fréquent, pas un cas rare.'],
     ['« Retiré de la vente », jamais « vendu »','le flux ne porte aucun statut de vente : dire « vendu » serait inventer. Cet état est un traitement à part entière, pas un message d’erreur — c’est le bénéfice n°1 de l’avatar acquéreur.'],
-    ['Hypothèses éditables sur la fiche + export','l’investisseur ne renonce pas à son tableur. Un bloc qui affiche un résultat sans laisser modifier ni exporter sera lu comme publicitaire.'],
+    ['La formule visible, les hypothèses dans le compte','l’investisseur ne renonce pas à son tableur : la formule complète reste à un clic depuis Résultats. Les hypothèses de calcul, elles, vivent dans Paramètres du compte — réglées une fois, appliquées à toutes les fiches, on ne les redemande pas ici.'],
     ['On publie les FAITS, jamais le TEXTE d’une agence','surface, étage, DPE, charges, prix, mouvements : des faits, non protégeables, que nous remettons en forme nous-mêmes. Le texte et les photos d’une agence restent à elle — nous n’en reproduisons aucun. C’est précisément ce qui rend l’annonce unique possible sans contrefaçon.'],
     ['AUCUNE agence n’est « le contact » de la fiche','trois mandats, c’est trois contacts possibles — en mettre un en colonne droite reviendrait à en désigner un, donc à arbitrer entre des agences dont nous sommes le partenaire et non l’arbitre. La colonne ne porte donc que le bien : son prix, son analyse, le bouton. Les agences vivent dans le détail du prix, à égalité, chacune avec le sien — et la demande part à toutes, l’acquéreur en retirant qui il veut. Ce qui reste ici, c’est la provenance des DONNÉES, qui n’est pas une identité de contact.'],
     ['La description doit prouver qu’elle sort de la donnée','chaque phrase est rattachable à un champ : 62 m², DPE C, 140 €/mois, 63 ventes DVF. Un texte génératif qui vante « le charme de l’ancien » détruirait exactement la crédibilité qu’on cherche à construire — la contrainte est donc écrite dans le prompt, et affichée à l’utilisateur.'],
@@ -3321,8 +3321,12 @@ add({id:'fiche', g:'P0 — Parcours acquéreur', n:'03', title:'Fiche bien — l
         </div>
         <div class="sub" style="margin-top:8px">Hors travaux d'isolation à prévoir (DPE G) —
           <span class="linkish" onclick="POP.dpe('G')">détail</span></div>`;
+      /* L'onglet « Hypothèses » a été retiré : ses réglages vivent dans Paramètres du compte
+         (« Hypothèses de calcul » — on ne les demande pas à chaque fiche), et la formule reste
+         à un clic depuis Résultats. Trois onglets pour deux jeux de chiffres, c'était un de trop. */
+      if (SIDETAB==='hyp') SIDETAB = 'res';
       const tabs = `<div class="sidetabs">
-        ${[['res','Résultats'],['data','Mes données'],['hyp','Hypothèses']].map(([t,l])=>
+        ${[['res','Résultats'],['data','Mes données']].map(([t,l])=>
           `<button class="${SIDETAB===t?'on':''}" onclick="setSide('${t}')">${l}</button>`).join('')}
       </div>`;
       if (SIDETAB==='data') return tabs + `
@@ -3334,17 +3338,6 @@ add({id:'fiche', g:'P0 — Parcours acquéreur', n:'03', title:'Fiche bien — l
               + inp('Loyer retenu','1 050 €',{suffix:'/mois',hint:'donnée de marché — modifiable'})}
         </div>
         <button class="btn sm full" style="margin-top:12px" onclick="setSide('res')">Enregistrer — appliqué à toutes les fiches</button>`;
-      if (SIDETAB==='hyp') return tabs + `
-        <div class="col" style="gap:2px;margin-top:10px">
-          ${(acq
-            ? [['Frais de notaire','inclus'],['Assurance emprunteur','non incluse'],['Énergie','depuis le DPE'],['Charges copro','déclarées']]
-            : [['Charges retenues','8 % du loyer'],['Vacance locative','1 mois / an'],['Taxe foncière','incluse'],['Apport','15 % du total']]
-          ).map(([k,v])=>`<div class="siderow"><span>${k}</span><span class="num">${nbsp(v)}</span></div>`).join('')}
-        </div>
-        <div class="row mid gap8" style="margin-top:10px;justify-content:space-between">
-          <span class="linkish sub" onclick="POP.calc()">Voir la formule</span>
-          ${acq?'':'<span class="linkish sub">Exporter (CSV)</span>'}
-        </div>`;
       return tabs + `
         <div class="col" style="gap:2px;margin-top:10px">
           ${(acq
@@ -3353,7 +3346,8 @@ add({id:'fiche', g:'P0 — Parcours acquéreur', n:'03', title:'Fiche bien — l
           ).map(([k,v])=>`<div class="siderow"><span>${k}</span><span class="num">${nbsp(v)}</span></div>`).join('')}
         </div>
         <div class="sub" style="margin-top:8px">Avec votre profil : ${acq?nbsp('78 000 €')+' d\'apport · 3,6 % · 25 ans':nbsp('45 000 €')+' d\'apport · 3,6 % · 20 ans'}
-          — <span class="linkish" onclick="setSide('data')">modifier</span></div>
+          — <span class="linkish" onclick="setSide('data')">modifier</span>
+          · <span class="linkish" onclick="POP.calc()">la formule</span></div>
         <button class="btn sec2 sm full" style="margin-top:10px" onclick="POP.projection()">
           Projection 10 ans & analyse fiscale →</button>`;
     })();
