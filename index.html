@@ -1314,29 +1314,33 @@ const rassurance = () => `
    `deja` = nombre d'agences l'ayant déjà acheté — un chiffre réel, affiché tel quel.
    `bi` = index PRO_BIENS du bien auquel il correspond. `nom` n'apparaît qu'après achat. */
 const ACHETEURS = [
-  {id:'AC-118', zone:'Lyon 7ᵉ', projet:'Investissement locatif',
+  {id:'AC-118', det:[24, 28, 20, 13], zone:'Lyon 7ᵉ', projet:'Investissement locatif',
    crit:'T3 – T4 · 60 m² et plus · jusqu\'à 320 000 €', score:85, fin:false,
    actif:'actif il y a 2 h', deja:2, nom:'Claire F.', bi:0},
-  {id:'AC-092', zone:'Lyon 8ᵉ', projet:'Investissement locatif',
+  {id:'AC-092', det:[35, 29, 18, 10], zone:'Lyon 8ᵉ', projet:'Investissement locatif',
    crit:'Studio – T1 · jusqu\'à 140 000 €', score:92, fin:true,
    actif:'actif il y a 20 min', deja:1, nom:'Romain T.', bi:4},
-  {id:'AC-231', zone:'Villeurbanne', projet:'Résidence principale',
+  {id:'AC-231', det:[30, 20, 16, 12], zone:'Villeurbanne', projet:'Résidence principale',
    crit:'T2 – T3 · 40 m² et plus · jusqu\'à 210 000 €', score:78, fin:true,
    actif:'actif hier', deja:0, nom:'Aïcha M.', bi:1},
-  {id:'AC-164', zone:'Lyon 9ᵉ', projet:'Investissement locatif',
+  {id:'AC-164', det:[22, 18, 18, 13], zone:'Lyon 9ᵉ', projet:'Investissement locatif',
    crit:'Immeuble de rapport · jusqu\'à 450 000 €', score:71, fin:false,
    actif:'actif il y a 3 jours', deja:3, nom:'Paul V.', bi:2},
-  {id:'AC-207', zone:'Sainte-Foy-lès-Lyon', projet:'Résidence principale',
+  {id:'AC-207', det:[35, 26, 15, 12], zone:'Sainte-Foy-lès-Lyon', projet:'Résidence principale',
    crit:'Maison · 100 m² et plus · jusqu\'à 580 000 €', score:88, fin:true,
    actif:'actif il y a 5 h', deja:1, nom:'Inès B.', bi:5},
-  {id:'AC-145', zone:'Lyon 7ᵉ', projet:'Résidence principale',
+  {id:'AC-145', det:[33, 24, 14, 10], zone:'Lyon 7ᵉ', projet:'Résidence principale',
    crit:'T3 · 55 m² et plus · jusqu\'à 300 000 €', score:81, fin:true,
    actif:'actif il y a 40 min', deja:0, nom:'Marion D.', bi:0},
-  {id:'AC-176', zone:'Lyon 7ᵉ – 8ᵉ', projet:'Investissement locatif',
+  {id:'AC-176', det:[31, 17, 14, 12], zone:'Lyon 7ᵉ – 8ᵉ', projet:'Investissement locatif',
    crit:'T2 – T3 · jusqu\'à 340 000 €', score:74, fin:true,
    actif:'actif hier', deja:1, nom:'Hugo L.', bi:0}
 ];
 const ACHPX  = a => a.fin ? '20 à 40 €' : '20 €';
+/* la pastille de score — TOUJOURS cliquable : un chiffre qui ne s'explique pas
+   ne se distingue pas d'un chiffre inventé. Même doctrine que le score du bien. */
+const serieuxChip = a => `<span class="chip k hot" title="Voir le détail du score"
+  onclick="event.stopPropagation();POP.serieux('${a.id}')">sérieux ${a.score} / 100</span>`;
 /* la ligne anonymisée d'un acheteur — la même partout : dashboard, fiche bien, catalogue.
    Règle d'or : assez pour donner envie, pas assez pour contourner l'achat. */
 const acheteurRow = (a, cta=true) => `
@@ -1345,7 +1349,7 @@ const acheteurRow = (a, cta=true) => `
       <div style="min-width:0">
         <div class="row mid gap6 wrap">
           <span class="txt" style="font-weight:600;color:var(--ink)">Acheteur ${a.id}</span>
-          <span class="chip k">sérieux ${a.score} / 100</span>
+          ${serieuxChip(a)}
           <span class="chip">${a.fin?'financement renseigné':'sans financement renseigné'}</span>
         </div>
         <div class="sub" style="margin-top:3px">${a.projet} · ${nbsp(a.crit)} · ${a.zone}</div>
@@ -2723,6 +2727,34 @@ ${LQ ? '' : `<div id="locres">${locResultats()}</div>`}
     <div class="bandeau mt14">Vos réponses ne sont transmises qu'à l'agence que vous contactez sur ce bien —
     pas aux autres mandataires. Rien d'autre, à personne d'autre.</div>`,
     `<button class="btn sec2 sm" onclick="closePop()">Fermer</button>`);
+  },
+
+  /* score de sérieux d'un acheteur — même doctrine que le score du bien :
+     4 composants pondérés, tous visibles, aucun modèle opaque. Sans id (ou id
+     inconnu) : le barème seul — sert aussi au badge « Profil sérieux » côté lead. */
+  serieux(id){
+    const a = ACHETEURS.find(x=>x.id===id);
+    const BAREME = [['Profil renseigné','critères, budget, financement — déclarés par lui',35],
+                    ['Recherche active','fiches ouvertes, alertes, dernière visite',30],
+                    ['Réactivité','répond quand une agence l\'appelle — signalements « injoignable » déduits',20],
+                    ['Constance du projet','critères stables dans la durée, pas de girouette',15]];
+    pop(a ? `Score de sérieux — ${a.score} / 100` : 'Le score de sérieux',
+      '4 composants pondérés, tous visibles. Aucun modèle opaque.', `
+      <div>
+        ${BAREME.map(([k,d,max],i)=>`<div class="crit">
+          <div class="grow" style="min-width:0"><span class="txt">${k}</span>
+            <div class="sub">${d}</div></div>
+          <div class="track2" style="width:120px;flex:none"><i style="width:${a?Math.round(a.det[i]/max*100):100}%"></i></div>
+          <span class="n2" style="white-space:nowrap">${a?a.det[i]:max}<span class="sub">/${max}</span></span></div>`).join('')}
+      </div>
+      <div class="bandeau mt14"><b>Ce que ce score n'est pas : une solvabilité.</b> L'apport et la
+      capacité d'emprunt sont déclarés, jamais vérifiés — ni par nous, ni par une banque. La seule
+      chose vérifiée est le téléphone, par SMS, et ce n'est pas un composant du score : c'est la
+      condition d'entrée au catalogue.</div>
+      <div class="disc mt8">Recalculé chaque nuit. Un acheteur signalé injoignable perd des points ;
+      sous 50, il sort du catalogue. L'acheteur voit son propre score — le même chiffre que vous,
+      au même moment. Le badge « Profil sérieux » d'un lead reçu suit le même barème, seuil 80.</div>`,
+      `<button class="btn sec2 sm" onclick="closePop()">Fermer</button>`);
   },
 
   /* tarification côté agence — la grille entière, gratuit compris */
@@ -5648,7 +5680,8 @@ add({id:'pro-lead', g:'P2 — Monétisation', n:'14', title:'Fiche lead — comp
               <div><div class="mid2">Marc D.</div>
                 <div class="row mid gap6" style="margin-top:3px;flex-wrap:wrap">
                   <span class="chip">${pin(3)} Téléphone vérifié par SMS</span>
-                  <span class="chip k">Profil sérieux</span>
+                  <span class="chip k hot" title="Comment ce badge est attribué"
+                    onclick="POP.serieux()">Profil sérieux</span>
                 </div></div>
             </div>
             <span class="chip k" style="flex:none">${pin(1)} Complet et gratuit — ${nbsp('0 €')}</span>
@@ -5739,6 +5772,7 @@ add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'a
     ['L’argument mandat est affiché, pas sous-entendu','ces acheteurs servent à décrocher des mandats autant qu’à vendre : « j’ai déjà 8 acheteurs qualifiés pour votre bien » gagne le rendez-vous vendeur. C’est ce qui justifie le prix au-delà du lead — l’UI le dit en toutes lettres.'],
     ['Le panier existe ici, et seulement ici','la prospection s’achète par lots — 10 acheteurs pour 150 € au lieu de 20 € l’unité. C’est l’inverse de l’ancienne doctrine « à l’unité seulement », et c’est voulu : on n’achète plus une information sur SON contact, on constitue un vivier.'],
     ['La fraîcheur est honnête ou n’est pas','« actif il y a 2 h », « 2 agences l’ont acheté » : des chiffres réels, affichés tels quels. Jamais de compteur qui descend, jamais de « plus que 3 » — la première fausse urgence détruit toutes les vraies.'],
+    ['Le score de sérieux s’explique d’un clic, partout','même doctrine que le score du bien : 4 composants pondérés, tous visibles, aucun modèle opaque. La pastille ouvre le détail — profil renseigné (35), recherche active (30), réactivité (20), constance (15) — avec ce que le score n’est PAS : une solvabilité. Un chiffre qui justifie un achat de 20 à 40 € et qui ne s’explique pas se lit comme un chiffre inventé.'],
     ['Ce qui rassure est sur l’écran d’achat, pas dans les CGU','remboursé si injoignable · le premier est offert · jamais refacturé deux fois · déclaratif affiché. Le risque du premier achat est l’obstacle n°1 — chaque garantie est à un clic du bouton payer.'],
     ['Chaque acheteur a dit oui','case jamais pré-cochée, révocable à tout moment, côté acquéreur. C’est une obligation légale stricte et la condition du modèle — l’écran de consentement est maquetté côté B2C (mise en relation, profil, paramètres).']
   ],
@@ -5835,7 +5869,7 @@ add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'a
                     <div style="min-width:0">
                       <div class="row mid gap6 wrap">
                         <span class="txt" style="font-weight:600;color:var(--ink)">Acheteur ${a.id}</span>
-                        <span class="chip k">sérieux ${a.score} / 100</span>
+                        ${serieuxChip(a)}
                       </div>
                       <div class="sub">${a.projet} · ${a.zone} · formule ${f.toLowerCase()}</div>
                     </div>
@@ -5933,7 +5967,8 @@ add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'a
             <div style="min-width:0">
               <div class="row mid gap6 wrap">
                 <span class="txt" style="font-weight:600;color:var(--ink)">Acheteur ${a.id}</span>
-                <span class="chip k">${pin(2)} sérieux ${a.score} / 100</span>
+                <span class="chip k hot" title="Voir le détail du score"
+                  onclick="event.stopPropagation();POP.serieux('${a.id}')">${pin(2)} sérieux ${a.score} / 100</span>
                 <span class="chip">${a.fin?'financement renseigné':'sans financement renseigné'}</span>
               </div>
               <div class="sub" style="margin-top:3px">${a.projet} · ${nbsp(a.crit)} · ${a.zone} — jamais l'adresse</div>
@@ -5952,7 +5987,8 @@ add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'a
 
       <div class="disc mt8">${pin(2)} Avant l'achat : critères, commune, projet, score, financement
       oui / non, activité, agences l'ayant acheté. Après l'achat : nom, téléphone, email, message.
-      Le score et l'activité sont réels — jamais de fausse urgence.</div>
+      Le score et l'activité sont réels — jamais de fausse urgence. ${pin(9)} Le score s'explique :
+      <span class="linkish" onclick="POP.serieux()">appuyez sur une pastille, ou voyez le barème</span>.</div>
       <div class="disc mt8">${pin(8)} Chacun de ces acheteurs a coché lui-même la case « être contacté
       par des agences » — jamais pré-cochée, révocable à tout moment. Quand l'un la décoche, il sort
       du catalogue dans l'heure.</div>
@@ -5967,6 +6003,7 @@ add({id:'pro-achat', g:'P2 — Monétisation', n:'15', title:'Acheter un acheteu
   notes:[
     ['Le prix suit ce que l’acheteur a rempli, jamais un palier','20 € s’il n’y a que la recherche, 30 € s’il n’y a que le financement, 40 € s’il y a les deux. Cet acheteur n’a pas renseigné son financement : il n’y a donc pas de 30 € ni de 40 € à payer — l’écran le dit au lieu de le vendre quand même.'],
     ['Aperçu anonymisé, jamais trompeur','visible : critères, commune, projet, score, financement oui/non, activité, agences l’ayant acheté. Masqué : nom, téléphone, email, message. Ce qui est montré est exact — un aperçu enjolivé se paie sur les trois premiers achats, et l’avatar agence juge sur l’échantillon.'],
+    ['Le score porte son détail au moment de payer','c’est lui qui départage deux acheteurs au même prix — il doit donc s’ouvrir depuis l’aperçu : 4 composants pondérés, et la mention « pas une solvabilité » au même endroit. Le badge « Profil sérieux » d’un lead reçu suit le même barème (seuil 80) : une seule échelle, promise et tenue des deux côtés.'],
     ['« Sans abonnement » écrit noir sur blanc','c’est l’angoisse n°1 d’une agence échaudée. Elle vient de 1 040 €/mois payés d’avance à trois portails : le mot « abonnement » doit apparaître pour être nié.'],
     ['Le partage est dit AVANT le paiement, et il ne fait pas baisser le prix','« 2 agences l’ont déjà acheté » est affiché sur l’aperçu et dans le récapitulatif. Ce qu’elle achète est une information sur l’acheteur, pas une exclusivité sur lui — et ça ne se défend que si c’est écrit avant le bouton.'],
     ['Le doublon n’est jamais refacturé','même acheteur déjà acheté depuis un autre écran → on le dit et on n’encaisse rien. C’est le genre de détail qui achète plus de confiance que trois pages d’argumentaire.'],
@@ -6001,7 +6038,7 @@ add({id:'pro-achat', g:'P2 — Monétisation', n:'15', title:'Acheter un acheteu
                 <div><div class="mid2">${a.nom}</div>
                   <div class="row mid gap6" style="margin-top:3px;flex-wrap:wrap">
                     <span class="chip">Téléphone vérifié par SMS</span>
-                    <span class="chip k">sérieux ${a.score} / 100</span>
+                    ${serieuxChip(a)}
                   </div></div>
               </div>
               <span class="chip k" style="flex:none">acheté ${nbsp('20 €')} — facture disponible</span>
@@ -6084,8 +6121,10 @@ add({id:'pro-achat', g:'P2 — Monétisation', n:'15', title:'Acheter un acheteu
               ${[['Projet',a.projet],['Sa recherche',a.crit],
                  ['Secteur',a.zone+' — jamais l\'adresse'],['Score de sérieux',a.score+' / 100'],
                  ['Financement','non renseigné'],['Activité',a.actif]]
-                .map(([k,v])=>`<div class="card flat pad"><div class="lbl">${k}</div>
-                  <div class="num" style="font-weight:600;margin-top:3px">${nbsp(v)}</div></div>`).join('')}
+                .map(([k,v])=>{const sc=k==='Score de sérieux';return `
+                  <div class="card flat pad ${sc?'hot':''}" ${sc?`onclick="POP.serieux('${a.id}')" title="Voir le détail du score"`:''}>
+                  <div class="lbl">${k}</div>
+                  <div class="num" style="font-weight:600;margin-top:3px">${nbsp(v)}${sc?' <span class="more">détail</span>':''}</div></div>`}).join('')}
             </div>
           </div>
           <div class="pad">
