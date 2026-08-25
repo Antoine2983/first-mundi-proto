@@ -2,7 +2,9 @@
 
 Prototype cliquable d'une plateforme immobilière. **Un seul fichier, aucune dépendance, fonctionne hors ligne** : ouvre `index.html` dans un navigateur (double-clic).
 
-**24 écrans · 69 états**, vérifiés sur 1 656 rendus (écran × état × format × connecté/visiteur × mode d'achat × mode de recherche), en niveau de gris. Pas de direction artistique : on valide ici les **parcours, la hiérarchie de l'information et les états**. La couleur, la typo et le logo viennent après.
+**25 écrans · 74 états**, vérifiés sur 296 rendus (écran × état × connecté/visiteur × desktop/mobile). On valide ici les **parcours, la hiérarchie de l'information et les états**.
+
+> **⚠️ Modèle de leads v2 (brief 08/2026).** L'ancien modèle « contact gratuit mais infos bloquées, qualification à débloquer » est retiré partout. Le nouveau : **tout contact reçu est gratuit, en entier, à vie** — et ce qui se vend est un **acheteur qui n'a pas contacté** (catalogue d'acheteurs anonymisés, 20/30/40 €, identité révélée après achat).
 
 ## Ce que contient le prototype
 
@@ -11,7 +13,7 @@ Prototype cliquable d'une plateforme immobilière. **Un seul fichier, aucune dé
 | **Parcours acquéreur** (10) | Accueil ⭐ · Recherche & résultats · Fiche bien ⭐ · Page agence · Mise en relation 1 & 2 · Vérification SMS · Favoris · Mes recherches (enregistrées & récentes) · Paramètres |
 | **Estimation & IA** (2) | Estimation + score + avis (bascule investisseur / acquéreur) · Complétude du profil acquéreur |
 | **Côté agence** (6) | Choix du profil · Vérification SIRET · Tableau de bord · Mes biens · Fiche bien côté agence · Dépôt d'un bien (4 étapes) |
-| **Leads & facturation** (5) | Mes leads · Fiche lead · Acheter une qualification · Paiements & factures · Déclaration de vente |
+| **Leads & facturation** (6) | Mes leads (tout gratuit) · Fiche lead · Catalogue d'acheteurs (3 portes : annonce · catalogue+panier · alertes) · Acheter un acheteur · Paiements & factures · Déclaration de vente |
 | **Site vitrine** (1) | Landing publique + waitlist |
 
 ## Les écrans qui portent le produit
@@ -79,9 +81,12 @@ Le mode « Décrire » vit **entièrement dans la nav** — pilule dépliée (ch
 
 - **Mes biens** — les colonnes actionnables sont la **complétude** et la **position de contact**, au même rang que le prix : ce sont les deux seules variables que l'agence contrôle et qui changent son classement sur un bien partagé.
 - **Fiche bien côté agence** — complétude en **liste de gestes** (« il vous manque le plan et 4 photos », pas « 72 % »), position de contact expliquée par la règle publiée, sélecteur de statut en colonne collante : l'action la plus fréquente de la journée.
-- **Mes leads** — la distinction gratuit / qualifié est rejouée partout. Le total à débloquer est une **information, pas un bouton** : la vente se fait à l'unité, un panier transformerait un achat réfléchi en regret.
+- **Mes leads — tout est là, gratuitement.** Aucune ligne ne porte de prix : identité, téléphone vérifié, email, message, projet arrivent **en entier avec le contact**. L'ancien « à débloquer » n'existe plus nulle part — une agence qui cherche le piège doit pouvoir scroller tout l'écran sans trouver un euro à payer sur ses contacts.
+- **Ce qui se vend : des acheteurs invisibles.** Le catalogue propose des acquéreurs inscrits, en recherche active, consentants, **qui n'ont contacté personne**. Règle d'or avant/après achat — visible : critères, commune (jamais l'adresse), projet, score de sérieux, financement oui/non, activité, agences l'ayant acheté ; révélé après paiement : nom, téléphone, email, message. Trois portes : « N acheteurs correspondent à ce bien » (le moment fort, rien à configurer), le catalogue avec panier (10 pour 150 €), les alertes (achat en 1 clic). Garanties sur l'écran d'achat, pas en CGU : remboursé si injoignable · premier offert · jamais refacturé · fraîcheur honnête.
+- **L'argument mandat est affiché** : « j'ai déjà 8 acheteurs qualifiés pour votre bien » gagne le rendez-vous vendeur — c'est ce qui justifie le prix au-delà du lead.
+- **Le consentement B2C conditionne tout le modèle.** Case séparée de l'envoi de la demande, jamais pré-cochée, révocable depuis les paramètres (effet dans l'heure). Le message côté acquéreur est un bénéfice réel : « des propositions correspondant à ta recherche, y compris off-market, avant publication ». Maquetté à trois endroits : mise en relation étape 2, complétude du profil, paramètres.
 - **Le lead sans réponse à 48 h est signalé à l'agence avant de l'être à l'acquéreur.** Le cacher serait déloyal ; le dire en fait le rappel le plus efficace du produit. « Nouveau » côté agence est exactement « Envoyée » côté acquéreur.
-- **Un lead partagé le dit avant l'achat, jamais après.** L'acquéreur adresse sa demande à tous les mandataires du bien : plusieurs agences reçoivent le même lead et **chacune paie sa qualification au prix plein**. Ce qu'elle achète est une information sur l'acquéreur, pas une exclusivité sur lui — mais ça ne se défend que si c'est affiché avant le bouton. La mention « Partagé · N agences » est donc dans la liste, dans la fiche et dans l'écran d'achat, aperçu **et** récapitulatif de paiement. Un lead non partagé porte la mention inverse, « Vous seul » : une information qui n'apparaît que dans le mauvais cas se lit comme un avertissement.
+- **Un lead partagé le dit, même gratuit.** L'acquéreur adresse sa demande à tous les mandataires du bien : plusieurs agences reçoivent le même contact. Maintenant que rien ne se paie, le dire ne protège plus un prix — ça change la façon de rappeler. « Partagé · N agences » dans la liste et la fiche ; un lead non partagé porte la mention inverse, « Vous seul ».
 
 ## La règle des deux sources
 

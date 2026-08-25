@@ -1005,7 +1005,7 @@ const mobSearch = () => {
    la nav doit suivre l'état choisi plutôt que la bascule globale de la barre d'outils. */
 const appnav = (active, who='customer', auth=AUTH) => {
   if (who==='pro') {
-    const links = ['Tableau de bord','Mes biens','Mes leads','Facturation'];
+    const links = ['Tableau de bord','Mes biens','Mes leads','Acheteurs','Facturation'];
     return `<div class="appnav">
       <div class="burger"><i></i><i></i><i></i></div>
       <div class="logo hot" onclick="go('pro-dashboard')" title="Retour au tableau de bord">hauzmy</div>
@@ -1033,7 +1033,7 @@ const appnav = (active, who='customer', auth=AUTH) => {
 };
 const GO = {'Recherche':'recherche','Favoris':'favoris','Mes recherches':'recherches',
             'Tableau de bord':'pro-dashboard','Mes biens':'pro-biens','Mes leads':'pro-leads',
-            'Facturation':'pro-factures'};
+            'Acheteurs':'pro-acheteurs','Facturation':'pro-factures'};
 
 /* ---- données réelles (08-CONTENU-EXEMPLE) ----
    Modèle F-010 v2 : UNE annonce par bien, éditée par Hauzmy.
@@ -1258,96 +1258,164 @@ const EQUIP = {
 };
 const eqrow = ([t,on]) => `<div class="eq ${on?'':'off'}"><span class="eqico"></span><span>${t}</span></div>`;
 
-/* ---- grille de leads — MVP-SPECS §4.6 F-102 · BUSINESS-MODEL F3A/B/C ----
-   Deux règles qui ne se négocient sur aucune surface :
-   1. le lead basique est GRATUIT, sans plafond ni date de fin — « gratuits à vie » fait loi
-      (F-102 critère 3, et le CDC dit l'inverse : c'est cette version qui prime) ;
-   2. la capacité de financement est DÉCLARÉE par l'acquéreur, jamais vérifiée (F-102 critère 5).
+/* ---- modèle leads & acheteurs — brief ACHAT-DE-LEADS 08/2026 (remplace F-102 ancien) ----
+   Quatre règles qui ne se négocient sur aucune surface :
+   1. tout contact reçu via une annonce est GRATUIT, EN ENTIER, tout de suite et à vie —
+      identité, téléphone, email, message, projet. Zéro blocage, jamais. C'est la promesse
+      qui nous distingue des portails : « gratuit = vraiment gratuit ».
+   2. ce qui se vend est un ACHETEUR QUI N'A PAS CONTACTÉ — un acquéreur inscrit, en recherche
+      active, qui a donné son accord explicite pour être proposé aux agences. L'agence achète
+      de la demande qu'elle ne pouvait pas voir, pas de l'information sur quelqu'un qu'elle
+      connaît déjà.
+   3. avant l'achat : critères, commune (jamais l'adresse), projet, score de sérieux,
+      financement oui/non, activité récente, nombre d'agences l'ayant déjà acheté.
+      Après l'achat seulement : nom, téléphone, email, message. Assez pour donner envie,
+      pas assez pour contourner l'achat.
+   4. la capacité de financement est DÉCLARÉE par l'acquéreur, jamais vérifiée.
       Le mot « vérifié » ne s'applique QU'AU TÉLÉPHONE. Interdits partout — UI, e-mail,
       facture, marketing : « capacité vérifiée », « prêt à signer ». */
 const DECLA = '<span class="chip o">capacité déclarative — non vérifiée</span>';
-const LEADS = [
-  {k:'base', n:'Lead basique',            p:'0 €',  s:'gratuit, à vie',
-   c:'Son identité, son téléphone vérifié par SMS, son message et le bien concerné.'},
-  {k:'rech', n:'+ Recherche',             p:'20 €', s:'à l\'acte',
-   c:'Ses critères précis : budget maximum, secteurs visés, surface, délai d\'acquisition.'},
-  {k:'fin',  n:'+ Financement',           p:'30 €', s:'à l\'acte',
-   c:'Son apport et sa capacité de remboursement — déclarés par lui, non vérifiés.'},
-  {k:'full', n:'Recherche + financement', p:'40 €', s:'à l\'acte',
-   c:'Les deux blocs réunis. C\'est le lead le plus complet que nous vendons.'}
+
+/* les 3 formules d'achat d'un acheteur — les prix de l'ancienne grille, le contenu change */
+const FORMULES = [
+  {k:'rech', n:'Sa recherche',             p:'20 €',
+   c:'Ses critères complets — budget, secteurs, surface, délai — et son score de sérieux.'},
+  {k:'fin',  n:'Son financement',          p:'30 €',
+   c:'Apport, capacité d\'emprunt, pré-accord bancaire — déclarés par lui, non vérifiés.'},
+  {k:'full', n:'Recherche + financement',  p:'40 €',
+   c:'Le profil entier. Le plus complet que nous vendons.'}
 ];
-const grilleLeads = (actif) => `
+const grilleAcheteurs = (actif) => `
   <div class="col gap6">
-    ${LEADS.map(l=>`
+    ${FORMULES.map(l=>`
       <div class="card flat pad" style="${l.k===actif?'border-color:var(--ink)':''}">
         <div class="row mid" style="justify-content:space-between;gap:12px;flex-wrap:wrap">
           <div style="min-width:0">
             <div class="row mid gap6 wrap">
               <span class="txt" style="font-weight:600;color:var(--ink)">${l.n}</span>
-              ${l.k==='base' ? '<span class="chip k">toujours inclus</span>' : ''}
-              ${l.k===actif && l.k!=='base' ? '<span class="chip k">ce lead</span>' : ''}
+              ${l.k===actif ? '<span class="chip k">cet acheteur</span>' : ''}
             </div>
             <div class="sub">${l.c}</div>
           </div>
           <div style="text-align:right;flex:none">
             <div class="mid2 num">${nbsp(l.p)}</div>
-            <div class="sub">${l.s}</div>
+            <div class="sub">à l'acte</div>
           </div>
         </div>
       </div>`).join('')}
   </div>
-  <div class="disc mt8">Le prix ne dépend pas d'un forfait, mais de ce que l'acquéreur a rempli.
-  S'il n'a renseigné que ses critères, le lead est à ${nbsp('20 €')} — il n'y a pas ${nbsp('40 €')}
-  à payer pour une information qui n'existe pas.</div>`;
+  <div class="disc mt8">Dans tous les cas, l'identité — nom, téléphone, email — n'est révélée
+  qu'après l'achat. Et le prix suit ce que l'acheteur a rempli : s'il n'a renseigné que ses
+  critères, il n'y a pas ${nbsp('30 €')} ni ${nbsp('40 €')} à payer pour une information qui
+  n'existe pas. Par lots : <b>10 acheteurs pour ${nbsp('150 €')}</b> au lieu de ${nbsp('20 €')} l'unité.</div>`;
 
-/* libellé unique d'un lead, partagé par la liste, la fiche, le dashboard et les factures.
-   Le mot « lead » est celui de l'agence (et celui de F-102) — on ne le traduit pas. */
-const LEADLBL = {base:'Lead gratuit', rech:'Lead qualifié — recherche',
-                 fin:'Lead qualifié — financement', full:'Lead qualifié — recherche + financement'};
-const LEADPX  = {base:'0 €', rech:'20 €', fin:'30 €', full:'40 €'};
+/* ce qui rassure au moment de payer — répété sur le catalogue et l'écran d'achat */
+const rassurance = () => `
+  <div class="grid2" style="gap:10px">
+    ${[['Remboursé si injoignable','Un acheteur dont le numéro ne répond jamais est recrédité, sans justification à fournir.'],
+       ['Le premier est offert','Votre premier acheteur est gratuit — pour goûter la valeur avant de payer quoi que ce soit.'],
+       ['Jamais refacturé','Un même acheteur ne vous est jamais facturé deux fois, quel que soit l\'écran d\'où vous l\'achetez.'],
+       ['Fraîcheur honnête','« Actif il y a 2 h » et « 2 agences l\'ont acheté » sont des chiffres réels. Jamais de fausse urgence.']]
+      .map(([t,d])=>`<div class="card flat pad">
+        <div class="txt" style="font-weight:600;color:var(--ink)">${t}</div>
+        <div class="sub" style="margin-top:3px">${d}</div></div>`).join('')}
+  </div>`;
 
-/* ---- portefeuille de l'agence — source unique du dashboard, de « Mes biens » et de la fiche bien ---- */
+/* ---- le catalogue d'acheteurs — anonymisés tant qu'ils ne sont pas achetés ----
+   `fin` = a renseigné son financement (l'agence voit OUI/NON avant l'achat, jamais le montant).
+   `deja` = nombre d'agences l'ayant déjà acheté — un chiffre réel, affiché tel quel.
+   `bi` = index PRO_BIENS du bien auquel il correspond. `nom` n'apparaît qu'après achat. */
+const ACHETEURS = [
+  {id:'AC-118', zone:'Lyon 7ᵉ', projet:'Investissement locatif',
+   crit:'T3 – T4 · 60 m² et plus · jusqu\'à 320 000 €', score:85, fin:false,
+   actif:'actif il y a 2 h', deja:2, nom:'Claire F.', bi:0},
+  {id:'AC-092', zone:'Lyon 8ᵉ', projet:'Investissement locatif',
+   crit:'Studio – T1 · jusqu\'à 140 000 €', score:92, fin:true,
+   actif:'actif il y a 20 min', deja:1, nom:'Romain T.', bi:4},
+  {id:'AC-231', zone:'Villeurbanne', projet:'Résidence principale',
+   crit:'T2 – T3 · 40 m² et plus · jusqu\'à 210 000 €', score:78, fin:true,
+   actif:'actif hier', deja:0, nom:'Aïcha M.', bi:1},
+  {id:'AC-164', zone:'Lyon 9ᵉ', projet:'Investissement locatif',
+   crit:'Immeuble de rapport · jusqu\'à 450 000 €', score:71, fin:false,
+   actif:'actif il y a 3 jours', deja:3, nom:'Paul V.', bi:2},
+  {id:'AC-207', zone:'Sainte-Foy-lès-Lyon', projet:'Résidence principale',
+   crit:'Maison · 100 m² et plus · jusqu\'à 580 000 €', score:88, fin:true,
+   actif:'actif il y a 5 h', deja:1, nom:'Inès B.', bi:5},
+  {id:'AC-145', zone:'Lyon 7ᵉ', projet:'Résidence principale',
+   crit:'T3 · 55 m² et plus · jusqu\'à 300 000 €', score:81, fin:true,
+   actif:'actif il y a 40 min', deja:0, nom:'Marion D.', bi:0},
+  {id:'AC-176', zone:'Lyon 7ᵉ – 8ᵉ', projet:'Investissement locatif',
+   crit:'T2 – T3 · jusqu\'à 340 000 €', score:74, fin:true,
+   actif:'actif hier', deja:1, nom:'Hugo L.', bi:0}
+];
+const ACHPX  = a => a.fin ? '20 à 40 €' : '20 €';
+/* la ligne anonymisée d'un acheteur — la même partout : dashboard, fiche bien, catalogue.
+   Règle d'or : assez pour donner envie, pas assez pour contourner l'achat. */
+const acheteurRow = (a, cta=true) => `
+  <div class="card flat pad ${cta?'hot':''}" ${cta?`onclick="go('pro-achat')"`:''}>
+    <div class="row mid agrow" style="justify-content:space-between;gap:10px">
+      <div style="min-width:0">
+        <div class="row mid gap6 wrap">
+          <span class="txt" style="font-weight:600;color:var(--ink)">Acheteur ${a.id}</span>
+          <span class="chip k">sérieux ${a.score} / 100</span>
+          <span class="chip">${a.fin?'financement renseigné':'sans financement renseigné'}</span>
+        </div>
+        <div class="sub" style="margin-top:3px">${a.projet} · ${nbsp(a.crit)} · ${a.zone}</div>
+        <div class="sub">${a.actif} · ${a.deja===0?'aucune agence ne l\'a encore acheté'
+          :a.deja===1?'1 agence l\'a déjà acheté':a.deja+' agences l\'ont déjà acheté'}</div>
+      </div>
+      <div class="row mid gap8" style="flex:none">
+        <div class="mid2 num">${nbsp(ACHPX(a))}</div>
+        ${cta?'<span class="sub">aperçu →</span>':''}
+      </div>
+    </div>
+  </div>`;
+
+/* ---- portefeuille de l'agence — source unique du dashboard, de « Mes biens » et de la fiche bien ----
+   `ctc` = contacts reçus (tous gratuits, en entier) · `match` = acheteurs du catalogue
+   correspondant au bien · `achq` = acheteurs achetés depuis ce bien. */
 const PRO_BIENS = [
-  {t:'T3 · 62 m² · Lyon 7ᵉ (Jean Macé)', p:'289 000 €', st:'Disponible', vues:'1 284', grat:8, qual:1,
+  {t:'T3 · 62 m² · Lyon 7ᵉ (Jean Macé)', p:'289 000 €', st:'Disponible', vues:'1 284', ctc:9, match:12, achq:1,
    compl:100, rang:'1ᵉʳ sur 3', motif:'Mandat exclusif', todo:null, maj:'aujourd\'hui', jours:41},
-  {t:'T2 · 44 m² · Villeurbanne (Gratte-Ciel)', p:'198 000 €', st:'Disponible', vues:'642', grat:4, qual:0,
+  {t:'T2 · 44 m² · Villeurbanne (Gratte-Ciel)', p:'198 000 €', st:'Disponible', vues:'642', ctc:4, match:5, achq:0,
    compl:72, rang:'2ᵉ sur 2', motif:'Dépôt direct — à égalité',
    todo:'Ajoutez le plan et 4 photos pour être affiché en contact', maj:'hier', jours:28},
-  {t:'Immeuble · 210 m² · Lyon 9ᵉ (Vaise)', p:'392 000 €', st:'Sous offre', vues:'311', grat:1, qual:1,
+  {t:'Immeuble · 210 m² · Lyon 9ᵉ (Vaise)', p:'392 000 €', st:'Sous offre', vues:'311', ctc:2, match:3, achq:1,
    compl:58, rang:'3ᵉ sur 3', motif:'Complétude insuffisante',
    todo:'DPE manquant — bloquant : sans lui le bien n\'est pas publiable', maj:'il y a 3 jours', jours:52},
-  {t:'T4 · 89 m² · Lyon 3ᵉ (Montchat)', p:'415 000 €', st:'Vendu', vues:'88', grat:7, qual:1,
+  {t:'T4 · 89 m² · Lyon 3ᵉ (Montchat)', p:'415 000 €', st:'Vendu', vues:'88', ctc:7, match:0, achq:1,
    compl:100, rang:'seul mandat', motif:'Mandat exclusif', todo:null, maj:'il y a 14 jours', jours:64},
-  {t:'Studio · 27 m² · Lyon 8ᵉ (Monplaisir)', p:'132 000 €', st:'Disponible', vues:'214', grat:1, qual:0,
+  {t:'Studio · 27 m² · Lyon 8ᵉ (Monplaisir)', p:'132 000 €', st:'Disponible', vues:'214', ctc:1, match:7, achq:0,
    compl:86, rang:'seul mandat', motif:'Dépôt direct', todo:null, maj:'il y a 2 jours', jours:12},
-  {t:'Maison · 118 m² · Sainte-Foy-lès-Lyon', p:'549 000 €', st:'Disponible', vues:'96', grat:0, qual:0,
+  {t:'Maison · 118 m² · Sainte-Foy-lès-Lyon', p:'549 000 €', st:'Disponible', vues:'96', ctc:0, match:2, achq:0,
    compl:94, rang:'seul mandat', motif:'Mandat exclusif', todo:null, maj:'il y a 5 jours', jours:9}
 ];
+/* le total d'acheteurs correspondant au portefeuille — un bien vendu n'est plus proposé */
+const MATCHTOT = PRO_BIENS.filter(b=>b.st!=='Vendu').reduce((a,b)=>a+b.match,0);
 
-/* ---- leads reçus — `achete` distingue ce qui est déjà à l'agence de ce qui reste à débloquer.
-   Un lead `base` est toujours `achete:true` : le gratuit n'a jamais rien à débloquer. ---- */
+/* ---- contacts reçus — TOUS gratuits, TOUS complets, tout de suite et à vie.
+   `plein` = a rempli les champs facultatifs (budget, financement) de sa demande — l'agence
+   reçoit tout ce qu'il a rempli, gratuitement. Il n'y a rien à débloquer, jamais. ---- */
 /* `part` = nombre d'agences destinataires de la demande. L'acquéreur envoie à toutes celles
-   qui détiennent un mandat et décoche celles qu'il écarte ; chacune paie sa qualification au
-   prix plein, donc chacune doit le savoir AVANT de débloquer. part:1 = elle est seule. */
+   qui détiennent un mandat et décoche celles qu'il écarte ; chacune reçoit le même contact,
+   gratuitement — le partage reste dit, parce qu'il change la façon de rappeler. */
 const PRO_LEADS = [
-  {n:'Marc D.',   b:'T3 · 62 m² · Lyon 7ᵉ',        k:'full', achete:true,  etat:'Rappelé',      d:'il y a 12 min',    part:3},
-  {n:'Sophie L.', b:'T2 · 44 m² · Villeurbanne',   k:'base', achete:true,  etat:'Nouveau',      d:'il y a 3 h',       part:1},
-  {n:'Karim B.',  b:'Immeuble · 210 m² · Lyon 9ᵉ', k:'rech', achete:false, etat:'Nouveau',      d:'hier',             part:2},
-  {n:'Élodie R.', b:'T4 · 89 m² · Lyon 3ᵉ',        k:'base', achete:true,  etat:'Traité',       d:'hier',             part:1},
-  {n:'Thomas P.', b:'T3 · 62 m² · Lyon 7ᵉ',        k:'fin',  achete:false, etat:'Nouveau',      d:'il y a 2 jours',   part:3},
-  {n:'Nadia K.',  b:'Studio · 27 m² · Lyon 8ᵉ',    k:'base', achete:true,  etat:'Sans réponse', d:'il y a 2 jours',   part:1, tard:true},
-  {n:'Julien M.', b:'T2 · 44 m² · Villeurbanne',   k:'full', achete:false, etat:'Nouveau',      d:'il y a 3 jours',   part:2}
+  {n:'Marc D.',   b:'T3 · 62 m² · Lyon 7ᵉ',        plein:true,  etat:'Rappelé',      d:'il y a 12 min',    part:3},
+  {n:'Sophie L.', b:'T2 · 44 m² · Villeurbanne',   plein:false, etat:'Nouveau',      d:'il y a 3 h',       part:1},
+  {n:'Karim B.',  b:'Immeuble · 210 m² · Lyon 9ᵉ', plein:true,  etat:'Nouveau',      d:'hier',             part:2},
+  {n:'Élodie R.', b:'T4 · 89 m² · Lyon 3ᵉ',        plein:false, etat:'Traité',       d:'hier',             part:1},
+  {n:'Thomas P.', b:'T3 · 62 m² · Lyon 7ᵉ',        plein:true,  etat:'Nouveau',      d:'il y a 2 jours',   part:3},
+  {n:'Nadia K.',  b:'Studio · 27 m² · Lyon 8ᵉ',    plein:false, etat:'Sans réponse', d:'il y a 2 jours',   part:1, tard:true},
+  {n:'Julien M.', b:'T2 · 44 m² · Villeurbanne',   plein:true,  etat:'Nouveau',      d:'il y a 3 jours',   part:2}
 ];
-/* la mention de partage — jamais en petits caractères, jamais après l'achat */
+/* la mention de partage — toujours dite, jamais en petits caractères */
 const partChip = l => l.part>1
   ? `<span class="chip o">Partagé · ${l.part} agences</span>`
   : `<span class="chip k">Vous seul</span>`;
-const ADEBLOQUER = PRO_LEADS.filter(l=>!l.achete);
-const TOTALDEB   = ADEBLOQUER.reduce((a,l)=>a+eur(LEADPX[l.k]),0);
-
-/* la pastille d'un lead : verte-neutre s'il est déjà à l'agence, contour s'il reste à débloquer */
-const leadChip = l => `<span class="chip ${l.achete?(l.k==='base'?'k':''):'o'}">${
-  nbsp(LEADLBL[l.k])}${l.k==='base'?'':' · '+nbsp(LEADPX[l.k])}${l.achete||l.k==='base'?'':' — à débloquer'}</span>`;
+/* le projet du contact, en une ligne — tout est inclus dans le gratuit */
+const projetChip = l => `<span class="chip k">${l.plein
+  ? 'Projet complet — budget et financement renseignés'
+  : 'Projet renseigné — sans les champs facultatifs'}</span>`;
 
 /* les deux colonnes qui répondent à « vous vous payez sur quoi ? » — côté agence */
 const gratuitPayant = () => `
@@ -1356,7 +1424,7 @@ const gratuitPayant = () => `
       <div class="row mid gap6"><span class="chip k">Gratuit</span><span class="sub">pour toujours</span></div>
       <div class="col gap6 mt8">
         ${['Publier vos biens, sans limite de nombre ni de durée',
-           'Recevoir les contacts : identité, téléphone vérifié par SMS, message',
+           'Recevoir vos contacts EN ENTIER : identité, téléphone vérifié par SMS, email, message, projet — rien n\'est bloqué, jamais',
            'Le tableau de bord, les statuts, les factures']
           .map(t=>`<div class="row gap8" style="align-items:flex-start">
             <span class="num" style="flex:none;color:var(--ink-3)">✓</span><span class="txt">${t}</span></div>`).join('')}
@@ -1365,13 +1433,13 @@ const gratuitPayant = () => `
     <div class="card flat pad">
       <div class="row mid gap6"><span class="chip">Payant</span><span class="sub">à l'acte, jamais d'abonnement</span></div>
       <div class="col gap6 mt8">
-        ${[['La qualification d\'un contact', '20 à 40 €'],
+        ${[['Un acheteur qualifié du catalogue — un acquéreur qui ne vous a pas contactés', '20 à 40 €'],
            ['Une vente conclue grâce à nous', '0,16 % du prix de vente']]
           .map(([t,v])=>`<div class="row mid" style="justify-content:space-between;gap:10px">
             <span class="txt">${t}</span><span class="num" style="font-weight:600;flex:none">${nbsp(v)}</span></div>`).join('')}
       </div>
-      <div class="disc mt8">Vous décidez lead par lead. Ne rien acheter ne vous retire rien :
-      les contacts continuent d'arriver gratuitement.</div>
+      <div class="disc mt8">Vous décidez acheteur par acheteur. Ne rien acheter ne vous retire
+      rien : vos contacts continuent d'arriver, complets et gratuits.</div>
     </div>
   </div>`;
 
@@ -2671,8 +2739,8 @@ ${LQ ? '' : `<div id="locres">${locResultats()}</div>`}
 
   /* tarification côté agence — la grille entière, gratuit compris */
   tarif(){ pop('Ce que vous payez, et ce que vous ne payez jamais',
-    'À l’acte, sans abonnement ni engagement. Le prix suit le contenu, pas un forfait.', `
-    ${grilleLeads(null)}
+    'À l’acte, sans abonnement ni engagement. Vos contacts sont gratuits — ce qui s’achète, ce sont des acheteurs que vous ne connaissez pas.', `
+    ${grilleAcheteurs(null)}
     <div class="hr" style="margin:16px 0"></div>
     <div class="row mid" style="justify-content:space-between;gap:12px;flex-wrap:wrap">
       <div style="min-width:0"><div class="txt" style="font-weight:600;color:var(--ink)">Vente conclue</div>
@@ -2681,10 +2749,12 @@ ${LQ ? '' : `<div id="locres">${locResultats()}</div>`}
       <span class="mid2 num" style="flex:none">0,16 %</span>
     </div>
     <div class="bandeau mt14"><b>Ce qui reste gratuit, sans plafond ni date de fin :</b> publier vos biens,
-    recevoir les contacts, le tableau de bord, les factures. Ne rien acheter ne vous retire rien.</div>
-    <div class="disc mt8">Un contact injoignable est recrédité, sans justification à fournir. Un même
-    acquéreur n’est jamais facturé deux fois à la même agence. Ce que nous vérifions : son téléphone,
-    par SMS. Ce que nous ne vérifions pas : son apport et sa capacité de remboursement — il les déclare.</div>`,
+    recevoir vos contacts en entier — identité, téléphone, email, message, projet —, le tableau de bord,
+    les factures. Ne rien acheter ne vous retire rien.</div>
+    <div class="disc mt8">Le premier acheteur est offert. Un acheteur injoignable est recrédité, sans
+    justification à fournir. Un même acheteur n’est jamais facturé deux fois à la même agence. Ce que
+    nous vérifions : son téléphone, par SMS. Ce que nous ne vérifions pas : son apport et sa capacité
+    d’emprunt — il les déclare.</div>`,
     `<button class="btn sec2 sm" onclick="closePop()">Fermer</button>`);
   }
 };
@@ -3779,17 +3849,17 @@ add({id:'lead1', g:'P0 — Parcours acquéreur', n:'04', title:'Mise en relation
   }
 });
 
-add({id:'lead2', g:'P0 — Parcours acquéreur', n:'05', title:'Mise en relation — étape 2 : qualification',
+add({id:'lead2', g:'P0 — Parcours acquéreur', n:'05', title:'Mise en relation — étape 2 : votre projet',
   states:['Votre projet','Bien à mandat unique','Demande envoyée'],
-  intro:"L'étape qui transforme un contact en lead vendable. Chaque question posée ici est une ligne de la fiche que l'agence achètera — elles doivent toutes être justifiables côté acquéreur. C'est aussi ici que se choisissent les **destinataires** : la demande part à toutes les agences qui détiennent un mandat sur le bien, l'acquéreur décoche celles qu'il ne veut pas.",
+  intro:"L'étape qui donne à l'agence de quoi répondre utilement. Tout ce qui est rempli ici part **avec la demande, gratuitement pour l'agence** — c'est la promesse « gratuit = vraiment gratuit » vue de l'autre côté. C'est aussi ici que se choisissent les **destinataires** : la demande part à toutes les agences qui détiennent un mandat sur le bien, l'acquéreur décoche celles qu'il ne veut pas. Et c'est ici que vit **l'écran de consentement du catalogue** : la case, jamais pré-cochée, qui permet d'être proposé à d'autres agences.",
   notes:[
-    ['Qualification = valeur du lead','recherche seule, financement, les deux : les réponses ici déterminent littéralement le prix de la fiche. Aucune question gratuite.'],
+    ['Tout ce qui est rempli part avec la demande, gratuitement','budget, financement, délai arrivent chez l\'agence AVEC le contact — rien n\'est retenu pour lui être vendu. Les questions doivent donc se justifier par une seule chose : aider l\'agence à répondre utilement dès le premier échange.'],
     ['Formulé côté acquéreur','« pour que l’agence vous propose des biens pertinents », jamais « pour mieux vous vendre ». La transparence est aussi une exigence RGPD.'],
     ['Toutes les agences par défaut, décocher est le geste','un bien porte N mandats ; envoyer à une seule obligerait l’acquéreur à choisir entre des agences qu’il ne connaît pas, sur un critère qu’il n’a pas — et à recommencer si elle ne répond pas. On envoie donc aux N, et on lui laisse la main pour en retirer. Cocher n’est pas un geste ; décocher en est un — le défaut doit être le cas utile.'],
     ['La liste montre POURQUOI on peut vouloir décocher','le prix demandé par chacune et la nature du mandat sont affichés : ce sont les deux seules informations dont l’acquéreur dispose pour trancher, et elles sont factuelles. Aucun tri, aucun classement, aucune recommandation — nous sommes le partenaire des agences, pas leur arbitre.'],
     ['La dernière case se verrouille','une demande sans destinataire n’est pas une demande. Plutôt que d’échouer à l’envoi, la dernière agence cochée refuse d’être décochée et le dit.'],
     ['Consentement explicite et NOMMÉ','le bandeau liste les destinataires retenus, pas « nos partenaires ». Sur un bien à trois mandats, nommer qui reçoit quoi n’est pas une formalité — c’est la seule façon de tenir la promesse.'],
-    ['Un envoi, N leads — l’effet de bord à trancher','trois agences contactées d’un coup, ce sont trois fiches vendables sur une seule demande. C’est bon pour l’acquéreur (il est rappelé plus vite) et pour le CA, mais ça vide la bascule 48 h de son objet : il n’y a plus d’agence 2 à proposer, elle a déjà reçu la demande. À arbitrer côté modèle économique.'],
+    ['Le consentement catalogue est un 2ᵉ oui, jamais fusionné avec l’envoi','envoyer sa demande aux mandataires du bien et accepter d’être proposé à D’AUTRES agences sont deux choses différentes — une seule case pour les deux serait un consentement forcé. La case catalogue est séparée, jamais pré-cochée, révocable depuis les paramètres, et son bénéfice est réel côté acquéreur : des propositions correspondant à sa recherche, y compris des biens off-market, avant leur publication. Obligation légale stricte, et condition de tout le modèle.'],
     ['Champs facultatifs assumés','un lead partiel vaut mieux qu’un abandon. Le marquage « facultatif » est visible.']
   ],
   render:(st)=>{
@@ -3911,12 +3981,34 @@ add({id:'lead2', g:'P0 — Parcours acquéreur', n:'05', title:'Mise en relation
           classons pas et ne les commentons pas — le choix vous appartient.</div>`}
       </div>
 
+      <div class="field mt20" style="border-top:1px solid var(--line-2);padding-top:18px">
+        <h4 class="wt">Et pour la suite de votre recherche${pin(7)}</h4>
+        <div class="card flat pad hot mt14" onclick="toggleOptin()" style="${OPTIN?'border-color:var(--ink)':''}">
+          <div class="row gap8" style="align-items:flex-start">
+            <div style="width:17px;height:17px;flex:none;margin-top:2px;border-radius:4px;
+                 border:1.5px solid ${OPTIN?'var(--ink)':'var(--line)'};
+                 background:${OPTIN?'var(--ink)':'transparent'};color:#fff;
+                 font-size:11px;line-height:15px;text-align:center;font-weight:700">${OPTIN?'✓':''}</div>
+            <div style="min-width:0">
+              <div class="txt" style="font-weight:600;color:var(--ink)">Recevoir des propositions d'agences
+              correspondant à ma recherche — y compris des biens off-market, avant leur publication.</div>
+              <div class="sub" style="margin-top:4px">Des agences dont les biens correspondent à vos
+              critères pourront vous appeler. Elles voient d'abord votre recherche sans votre identité —
+              vos coordonnées ne leur sont transmises que si elles s'engagent auprès de vous.</div>
+              <div class="sub" style="margin-top:4px">Facultatif, jamais coché d'avance, révocable à tout
+              moment depuis vos paramètres. Ni obligatoire pour envoyer cette demande, ni lié à elle.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="bandeau mt20">${pin(6)}
         <div class="row gap8" style="align-items:flex-start">
           <div class="ph solid" style="width:16px;height:16px;flex:none;margin-top:1px"></div>
           <div>En envoyant ce formulaire, vous acceptez que vos coordonnées et votre projet soient transmis à
           ${liste}${sel.length>1?', qui détiennent chacune un mandat sur ce bien':", l'agence que vous contactez sur ce bien"}.
-          Rien d'autre, à personne d'autre.</div>
+          Rien d'autre, à personne d'autre${OPTIN?' — et, parce que vous l\'avez coché, les agences dont les biens correspondent à votre recherche'
+          :''}.</div>
         </div>
       </div>
 
@@ -4128,7 +4220,8 @@ add({id:'compte', g:'P0 — Parcours acquéreur', n:'09', title:'Paramètres du 
   notes:[
     ['Hypothèses de calcul par défaut','déplacées du bloc analyse vers le compte : on ne demande pas ces réglages à chaque fiche.'],
     ['Complétude du profil','85/100 débloque le badge « Profil sérieux », qui augmente la valeur perçue du lead côté agence. Le lien effort → bénéfice doit être explicite.'],
-    ['RGPD actionnable','export et suppression accessibles en deux clics, pas enterrés dans les CGU.']
+    ['RGPD actionnable','export et suppression accessibles en deux clics, pas enterrés dans les CGU.'],
+    ['La révocation du consentement catalogue vit ici','le oui s’est donné dans le tunnel ou le profil ; le non doit être aussi simple — un bouton dans les paramètres, effet dans l’heure, jamais un email au support. C’est la condition légale du modèle, et elle se prouve par l’UI.']
   ],
   render:()=>`${appnav('')}
   <div class="sec"><div class="row stackm gap20">
@@ -4166,8 +4259,23 @@ add({id:'compte', g:'P0 — Parcours acquéreur', n:'09', title:'Paramètres du 
       </div></div>
 
       <div class="card"><div class="pad">
+        <div class="row mid" style="justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div style="min-width:0"><h5 class="wt">Propositions d'agences${pin(4)}</h5>
+            <div class="sub" style="margin-top:3px">Être proposé aux agences dont les biens correspondent
+            à votre recherche — profil anonymisé, coordonnées transmises seulement si une agence
+            s'engage auprès de vous.</div></div>
+          <span class="chip ${OPTIN?'k':'o'}" style="flex:none">${OPTIN?'Activé':'Désactivé'}</span>
+        </div>
+        <div class="row gap8 mt14 wrap">
+          <button class="btn sec2 sm hot" onclick="toggleOptin()">${OPTIN?'Désactiver':'Activer'}</button>
+          <span class="sub">Effet dans l'heure — sans email à envoyer, sans justification.</span>
+        </div>
+      </div></div>
+
+      <div class="card"><div class="pad">
         <h5 class="wt">Données & RGPD${pin(3)}</h5>
-        <div class="txt mt8">Vos coordonnées ne sont transmises qu'aux agences que vous contactez, bien par bien.</div>
+        <div class="txt mt8">Vos coordonnées ne sont transmises qu'aux agences que vous contactez, bien
+        par bien — et, si vous l'avez activé ci-dessus, aux agences qui s'engagent sur votre recherche.</div>
         <div class="row gap8 mt14 wrap">
           <button class="btn sec2 sm">Exporter mes données</button>
           <button class="btn sec2 sm">Historique des transmissions</button>
@@ -4407,10 +4515,11 @@ add({id:'analyse-avancee', g:'P0+ — Cachet & IA (scope v2)', n:'', scope:'v2',
 });
 
 add({id:'profil-completude', g:'P0+ — Cachet & IA (scope v2)', n:'', scope:'v2c', title:'Complétude du profil acquéreur (F-160)',
-  intro:"La feature qui augmente la valeur du lead que l'agence achètera. Tout le design tient dans une équation à rendre évidente : ce que je remplis ici, l'agence le voit, et elle me répond plus vite. Sans cette contrepartie visible, personne ne complète.",
+  intro:"Tout le design tient dans une équation à rendre évidente : ce que je remplis ici, l'agence le voit, et elle me répond plus vite. Sans cette contrepartie visible, personne ne complète. Et pour qui a coché la case catalogue, ce profil **est** la fiche anonymisée que les agences découvrent : le remplir, c'est recevoir de meilleures propositions.",
   states:['En cours (60 / 100)','Complété (100 / 100)'],
   notes:[
     ['Montrer la contrepartie, pas la jauge','un pourcentage seul ne motive personne. L’aperçu « ce que l’agence voit » est placé à côté de la jauge : c’est lui qui fait remplir.'],
+    ['Le profil complet est aussi la fiche du catalogue','pour l’acquéreur qui a donné son accord, les agences voient cette fiche SANS l’identité — critères, commune, score, financement oui/non. La jauge et le score de sérieux servent donc les deux faces : réponses plus rapides sur ses demandes, meilleures propositions entrantes.'],
     ['Progression par blocs, pas par champs','cinq blocs identifiables, chacun complétable en moins d’une minute. Une longue liste de champs se lit comme une corvée.'],
     ['Jamais bloquant','le profil incomplet n’empêche ni la recherche ni la mise en relation. C’est un accélérateur, pas un péage — le seuil « sérieux » est à 80.'],
     ['Le badge est nommé côté agence','« Profil sérieux » apparaît sur la fiche lead. La promesse faite ici doit être exactement celle tenue là-bas.'],
@@ -4460,6 +4569,22 @@ add({id:'profil-completude', g:'P0+ — Cachet & IA (scope v2)', n:'', scope:'v2
 
         ${!plein?`<div class="bandeau">${pin(5)} Le financement est <b>déclaratif</b> : vous indiquez où vous en êtes,
         aucun justificatif ne vous est demandé au moment de la mise en relation.</div>`:''}
+
+        <div class="card"><div class="pad">
+          <div class="row mid" style="justify-content:space-between;gap:12px;flex-wrap:wrap">
+            <div style="min-width:0"><h5 class="wt">Recevoir des propositions d'agences${pin(2)}</h5>
+              <div class="sub" style="margin-top:3px">Des agences dont les biens correspondent à votre
+              recherche peuvent vous contacter — y compris pour des biens off-market, avant leur
+              publication. Elles voient ce profil <b>sans votre identité</b> ; vos coordonnées ne leur
+              sont transmises que si elles s'engagent auprès de vous.</div></div>
+            <span class="chip ${OPTIN?'k':'o'}" style="flex:none">${OPTIN?'Activé':'Désactivé'}</span>
+          </div>
+          <div class="row gap8 mt14 wrap">
+            <button class="btn sec2 sm hot" onclick="toggleOptin()">${OPTIN?'Ne plus être proposé aux agences':'Activer — révocable à tout moment'}</button>
+          </div>
+          <div class="disc mt8">Jamais activé sans votre geste. Se coupe d'un clic, ici ou dans les
+          paramètres — vous sortez alors des propositions dans l'heure.</div>
+        </div></div>
       </div>
 
       <div class="side">
@@ -4597,19 +4722,19 @@ add({id:'pro-siret', g:'P1 — Côté agence', n:'11', title:'Inscription agence
 });
 
 add({id:'pro-dashboard', g:'P1 — Côté agence', n:'12', title:'Tableau de bord agence — les 5 âges du compte',
-  intro:"Le cœur opérationnel quotidien de l'agence, et l'écran qui doit lui faire comprendre le modèle **avant** qu'elle ait à payer quoi que ce soit. Il change de contenu selon l'avancement : compte vide, biens publiés mais aucun contact, premier contact reçu, régime de croisière, vente à déclarer. À chaque âge, une seule question à traiter — et la distinction gratuit / payant se rejoue à chaque fois, jamais comme un slogan.",
+  intro:"Le cœur opérationnel quotidien de l'agence, et l'écran qui doit lui faire comprendre le modèle **avant** qu'elle ait à payer quoi que ce soit. Il change de contenu selon l'avancement : compte vide, biens publiés mais aucun contact, premier contact reçu, régime de croisière, vente à déclarer. À chaque âge, une seule question à traiter — et la distinction se rejoue à chaque fois : **vos contacts sont gratuits, en entier ; ce qui s'achète, ce sont des acheteurs que vous ne connaissez pas.**",
   states:['Jour 1 — compte vérifié','Biens en ligne, aucun lead','Premier lead reçu','En régime','Vente à déclarer'],
   notes:[
     ['Cinq âges, un seul message à la fois','un compte vide n’a pas besoin de la grille tarifaire, et une agence en régime n’a pas besoin qu’on lui réexplique que publier est gratuit. Le même écran, cinq contenus — c’est le seul moyen de ne jamais parler dans le vide.'],
-    ['Le modèle éco est expliqué AVANT la première facture','au jour 1, avec deux colonnes : ce qui est gratuit pour toujours, ce qui est payant à l’acte. Une agence échaudée par les portails cherche le piège dès la première minute — si elle ne le trouve pas ici, elle le cherchera au premier prélèvement, et là il sera trop tard.'],
-    ['Le premier lead reçu est LE moment pédagogique','c’est le seul instant où l’agence a sous les yeux, côte à côte, un lead gratuit ouvert et le même acquéreur en version qualifiée. Un tableau de prix abstrait ne convainc pas ; deux fiches côte à côte, si.'],
-    ['« Gratuit » se prouve par une ligne à 0 €, pas par un adjectif','la ligne « Publication de biens — 0 € » dans les factures et le compteur « 43 leads gratuits reçus » font le travail qu’un slogan ne fait pas.'],
-    ['Le prix d’un lead est expliqué par son CONTENU, jamais par un palier','20 € parce qu’il y a les critères, 30 € parce qu’il y a le financement déclaré, 40 € parce qu’il y a les deux. L’agence doit pouvoir refaire le calcul elle-même — c’est ce qui la distingue d’un abonnement qu’elle subit.'],
-    ['« Déclarative, non vérifiée » figure partout, sans exception','F-102 critère 5 : liste, fiche, e-mail, facture. La seule chose que nous vérifions est le téléphone, par SMS. Un seul « prêt à signer » dans l’UI et les trois premiers leads décideront contre nous — l’avatar agence juge sur l’échantillon, pas sur le discours.'],
+    ['Le modèle éco est expliqué AVANT la première facture','au jour 1, avec deux colonnes : ce qui est gratuit pour toujours (dont les contacts, EN ENTIER), ce qui est payant à l’acte (des acheteurs du catalogue). Une agence échaudée par les portails cherche le piège dès la première minute — si elle ne le trouve pas ici, elle le cherchera au premier prélèvement, et là il sera trop tard.'],
+    ['Le premier lead reçu est LE moment pédagogique','c’est l’instant où l’agence vérifie la promesse : le contact est là, complet, rien à débloquer. Et c’est le bon moment pour montrer l’autre moitié du modèle — les acheteurs qui correspondent à ses biens et qu’elle n’aurait jamais connus. Un contact ouvert d’un côté, de la demande invisible de l’autre : deux fiches côte à côte valent mieux qu’un tableau de prix.'],
+    ['« Gratuit » se prouve par une ligne à 0 €, pas par un adjectif','la ligne « Publication de biens — 0 € » dans les factures et le compteur « 47 contacts reçus — 0 € » font le travail qu’un slogan ne fait pas.'],
+    ['Ce qui s’achète est introuvable ailleurs','l’agence n’achète pas de l’information sur quelqu’un qu’elle connaît — un coup de fil la lui donnerait gratuitement. Elle achète des acheteurs qu’elle ignore : inscrits, en recherche active, consentants. « N acheteurs correspondent à ce bien » est l’écran qui vend le produit, et l’agence n’a rien à configurer — ses annonces sont déjà là.'],
+    ['« Déclarative, non vérifiée » figure partout, sans exception','liste, fiche, e-mail, facture. La seule chose que nous vérifions est le téléphone, par SMS. Un seul « prêt à signer » dans l’UI et les trois premiers achats décideront contre nous — l’avatar agence juge sur l’échantillon, pas sur le discours.'],
     ['Les leads passent avant les biens','c’est l’information périssable — un bien attend, un contact non traité se refroidit.'],
     ['« Publier un bien » toujours accessible','bouton primaire permanent, jamais enfoui : c’est l’acte gratuit qu’on veut encourager sans limite.'],
     ['La position de contact est affichée AVEC son motif','« 2ᵉ sur 3 — il vous manque le plan et 4 photos ». Une position sans explication est vécue comme un classement acheté ; avec le critère manquant, elle devient une to-do. C’est le levier d’incitation au dépôt direct, et la seule façon de tenir « rien ne s’achète, ni un rang ».'],
-    ['Ce que l’agence perd est nommé, pas escamoté','elle ne publie plus « son » annonce : le texte public est le nôtre, identique pour les trois mandataires. Le dashboard dit donc ce qu’elle contrôle encore — les données, les photos, le prix, le statut, et le lead.']
+    ['L’argument mandat est rendu visible','ces acheteurs ne servent pas qu’à vendre un bien : une agence qui dit à un propriétaire « j’ai déjà 8 acheteurs qualifiés pour votre bien » décroche le mandat face à ses concurrents. C’est ce qui justifie le prix, bien au-delà du lead — le dashboard le dit en toutes lettres.']
   ],
   render:(st)=>{
     const J1     = st==='Jour 1 — compte vérifié';
@@ -4639,8 +4764,8 @@ add({id:'pro-dashboard', g:'P1 — Côté agence', n:'12', title:'Tableau de bor
           <span class="chip o">aucun abonnement, aucun engagement</span>
         </div>
         <div class="mt14">${gratuitPayant()}</div>
-        <div class="bandeau mt14">Tant que vous ne vendez pas et que vous n'achetez aucune qualification,
-        <b>vous ne payez rien</b>. Ce n'est pas une offre de lancement : c'est le modèle.</div>
+        <div class="bandeau mt14">Tant que vous ne vendez pas et que vous n'achetez aucun acheteur
+        au catalogue, <b>vous ne payez rien</b>. Ce n'est pas une offre de lancement : c'est le modèle.</div>
       </div>`;
 
     /* ---------- âge 2 : des biens, pas encore de contact ---------- */
@@ -4651,8 +4776,8 @@ add({id:'pro-dashboard', g:'P1 — Côté agence', n:'12', title:'Tableau de bor
           <button class="btn hot" onclick="go('pro-depot')">+ Publier un bien</button>
         </div>
         <div class="grid4 mt20">
-          ${[['Biens en ligne','3','publiés il y a 2 jours'],['Leads reçus','0','les gratuits arrivent en premier'],
-             ['Qualifications achetées','0','0 € ce mois'],['Ventes déclarées','0','frais de service 0,16 %']]
+          ${[['Biens en ligne','3','publiés il y a 2 jours'],['Contacts reçus','0','gratuits, en entier, à vie'],
+             ['Acheteurs achetés','0','le premier est offert'],['Ventes déclarées','0','frais de service 0,16 %']]
             .map(([k,v,s2])=>`<div class="card flat pad">
               <div class="lbl">${k}</div><div class="big num" style="margin-top:3px">${nbsp(v)}</div>
               <div class="sub">${nbsp(s2)}</div></div>`).join('')}
@@ -4661,18 +4786,19 @@ add({id:'pro-dashboard', g:'P1 — Côté agence', n:'12', title:'Tableau de bor
       <div class="sec">
         <div class="card"><div class="empty">
           <div class="ico"></div>
-          <h5 class="wt">Vos premiers leads arriveront ici</h5>
-          <p>Chaque contact reçu est <b>gratuit</b>. Vous ne payez que si vous choisissez d'acheter
-          sa qualification — et seulement ce qu'elle contient vraiment.</p>
+          <h5 class="wt">Vos premiers contacts arriveront ici</h5>
+          <p>Chaque contact reçu est <b>gratuit, en entier</b> : identité, téléphone vérifié par SMS,
+          email, message, projet. Rien à débloquer — aujourd'hui comme dans un an.</p>
           <button class="btn sec2 hot" onclick="go('pro-depot')">Compléter mes fiches</button>
           <div class="disc" style="margin-top:6px">Un bien avec 6 photos ou plus reçoit en moyenne
-          3 fois plus de leads. Deux de vos trois biens en ont moins de 4.</div>
+          3 fois plus de contacts. Deux de vos trois biens en ont moins de 4.</div>
         </div></div>
       </div>
       <div class="sec">
         <h5 class="wt">Ce que vous pourrez acheter, et à quel prix${pin(5)}</h5>
-        <div class="sub">Rien n'est obligatoire. Rien n'est un forfait.</div>
-        <div class="mt14">${grilleLeads(null)}</div>
+        <div class="sub">Des <b>acheteurs qui ne vous ont pas contactés</b> — inscrits, en recherche
+        active, consentants. Rien n'est obligatoire. Rien n'est un forfait.</div>
+        <div class="mt14">${grilleAcheteurs(null)}</div>
       </div>`;
 
     /* ---------- âge 3 : le premier contact, le moment pédagogique ---------- */
@@ -4682,9 +4808,10 @@ add({id:'pro-dashboard', g:'P1 — Côté agence', n:'12', title:'Tableau de bor
           <div><h4 class="wt">Agence du Parc</h4><div class="sub">Lyon 6ᵉ · 8 collaborateurs · Pro vérifié</div></div>
           <button class="btn hot" onclick="go('pro-depot')">+ Publier un bien</button>
         </div>
-        <div class="bandeau mt20">${pin(3)} <b>Votre premier lead est arrivé — et il est gratuit.</b>
-        Vous pouvez le rappeler tout de suite, sans rien payer. Ce qui est payant, c'est uniquement
-        de savoir ce qu'il cherche et ce qu'il peut financer.</div>
+        <div class="bandeau mt20">${pin(3)} <b>Votre premier lead est arrivé — complet, et gratuit.</b>
+        Tout ce qu'il a rempli est là : identité, téléphone, email, message, projet. Rien à débloquer,
+        aujourd'hui comme dans un an. Ce qui s'achète, c'est autre chose : des acheteurs qui ne vous
+        ont <b>pas</b> contactés.</div>
       </div>
       <div class="sec">
         <div class="grid2" style="gap:14px;align-items:start">
@@ -4692,7 +4819,7 @@ add({id:'pro-dashboard', g:'P1 — Côté agence', n:'12', title:'Tableau de bor
           <div class="card">
             <div class="pad" style="border-bottom:1px solid var(--line-2)">
               <div class="row mid" style="justify-content:space-between;gap:8px;flex-wrap:wrap">
-                <h5 class="wt">Ce que vous avez déjà</h5><span class="chip k">Gratuit</span>
+                <h5 class="wt">Votre contact — en entier</h5><span class="chip k">Gratuit</span>
               </div>
             </div>
             <div class="pad">
@@ -4702,7 +4829,8 @@ add({id:'pro-dashboard', g:'P1 — Côté agence', n:'12', title:'Tableau de bor
                   <div class="sub">Téléphone vérifié par SMS</div></div>
               </div>
               <div class="col gap6 mt14">
-                ${[['Téléphone','06 42 18 77 42'],['Email','marc.d@…'],['Bien concerné','T3 · 62 m² · Lyon 7ᵉ']]
+                ${[['Téléphone','06 42 18 77 42'],['Email','marc.d@…'],['Bien concerné','T3 · 62 m² · Lyon 7ᵉ'],
+                   ['Son projet','Investissement · budget 320 000 €']]
                   .map(([k,v])=>`<div class="row mid" style="justify-content:space-between;gap:10px">
                     <span class="lbl">${k}</span><span class="num" style="font-weight:600">${nbsp(v)}</span></div>`).join('')}
               </div>
@@ -4710,35 +4838,28 @@ add({id:'pro-dashboard', g:'P1 — Côté agence', n:'12', title:'Tableau de bor
                 <div class="lbl">Son message</div>
                 <div class="txt" style="margin-top:5px">« Disponible pour visiter en semaine, y compris en journée. »</div>
               </div>
-              <button class="btn full mt14 hot" onclick="goState('pro-lead','Lead basique — gratuit')">Ouvrir le lead</button>
-              <div class="disc mt8">Gratuit, sans plafond et sans date de fin. Ce droit ne s'achète pas
-              et ne s'épuise pas.</div>
+              <button class="btn full mt14 hot" onclick="goState('pro-lead','Tout est renseigné')">Ouvrir le lead</button>
+              <div class="disc mt8">Gratuit, en entier, sans plafond et sans date de fin. Ce droit
+              ne s'achète pas et ne s'épuise pas.</div>
             </div>
           </div>
 
           <div class="card">
             <div class="pad" style="border-bottom:1px solid var(--line-2)">
               <div class="row mid" style="justify-content:space-between;gap:8px;flex-wrap:wrap">
-                <h5 class="wt">Ce que vous pouvez acheter</h5><span class="chip">40 €</span>
+                <h5 class="wt">Ce que vous ne pouviez pas voir</h5><span class="chip">dès ${nbsp('20 €')}</span>
               </div>
             </div>
             <div class="pad">
-              <div class="sub">Marc D. a rempli les deux volets du formulaire. Sa qualification contient
-              donc les critères <b>et</b> le financement — c'est ce qui fait le prix, pas un palier.</div>
+              <div class="sub">${pin(5)} Pendant que Marc D. vous contactait, <b>${PRO_BIENS[0].match} acheteurs
+              correspondant à « T3 · 62 m² · Lyon 7ᵉ »</b> cherchaient sans vous connaître. Inscrits,
+              en recherche active, d'accord pour être contactés par des agences.</div>
               <div class="col gap6 mt14">
-                ${[['Ce qu\'il cherche','budget, secteurs, surface, délai','20 €'],
-                   ['Ce qu\'il peut financer','apport et capacité de remboursement déclarés','30 €'],
-                   ['Les deux','sa qualification complète','40 €']]
-                  .map(([k,v,px],i)=>`<div class="card flat pad" style="${i===2?'border-color:var(--ink)':''}">
-                    <div class="row mid" style="justify-content:space-between;gap:10px">
-                      <div style="min-width:0"><div class="txt" style="font-weight:600;color:var(--ink)">${k}</div>
-                        <div class="sub">${v}</div></div>
-                      <span class="mid2 num" style="flex:none">${nbsp(px)}</span></div>
-                  </div>`).join('')}
+                ${ACHETEURS.filter(a=>a.bi===0).slice(0,2).map(a=>acheteurRow(a,false)).join('')}
               </div>
-              <button class="btn full mt14 hot" onclick="go('pro-achat')">Voir l'aperçu avant d'acheter</button>
+              <button class="btn full mt14 hot" onclick="go('pro-acheteurs')">Voir les ${PRO_BIENS[0].match} acheteurs — le premier est offert</button>
               <div class="row mid gap6 mt8 wrap">${DECLA}
-                <span class="sub">Seul le téléphone est vérifié.</span></div>
+                <span class="sub">Identité révélée après l'achat seulement.</span></div>
             </div>
           </div>
         </div>
@@ -4750,14 +4871,12 @@ add({id:'pro-dashboard', g:'P1 — Côté agence', n:'12', title:'Tableau de bor
     /* ---------- âges 4 et 5 : le régime de croisière, avec ou sans vente à déclarer ---------- */
     const stats = VENTE
       ? [['Biens en ligne','23','publication gratuite, sans limite'],['Leads ce mois','47','+9 vs mois dernier'],
-         ['Qualifications achetées','4','120 € ce mois'],['Ventes déclarées','2','frais de service 0,16 %']]
-      : [['Biens en ligne','23','publication gratuite, sans limite'],['Leads ce mois','47','dont 43 gratuits'],
-         ['Qualifications achetées','4','120 € ce mois'],['Ventes déclarées','2','frais de service 0,16 %']];
+         ['Acheteurs achetés','4','120 € ce mois'],['Ventes déclarées','2','frais de service 0,16 %']]
+      : [['Biens en ligne','23','publication gratuite, sans limite'],['Leads ce mois','47','gratuits, en entier'],
+         ['Acheteurs achetés','4','120 € ce mois'],['Ventes déclarées','2','frais de service 0,16 %']];
 
     const RECENTS = PRO_LEADS.slice(0,4);
-    const destLead = l => l.achete
-      ? `goState('pro-lead','${l.k==='base'?'Lead basique — gratuit':'Qualification achetée — 40 €'}')`
-      : `go('pro-achat')`;
+    const destLead = l => `goState('pro-lead','${l.plein?'Tout est renseigné':'Champs facultatifs vides'}')`;
 
     return `${nav}
     <div class="sec">
@@ -4779,8 +4898,8 @@ add({id:'pro-dashboard', g:'P1 — Côté agence', n:'12', title:'Tableau de bor
         <div class="row mid stackm" style="justify-content:space-between;gap:12px">
           <div class="grow" style="min-width:0">
             <div class="lbl">Sur ce bien, depuis sa mise en ligne</div>
-            <div class="txt" style="margin-top:4px">64 jours de diffusion, 7 leads gratuits reçus,
-            1 lead qualifié acheté à ${nbsp('40 €')}.</div>
+            <div class="txt" style="margin-top:4px">64 jours de diffusion, 7 contacts reçus — gratuits,
+            en entier —, 1 acheteur acheté au catalogue à ${nbsp('40 €')}.</div>
           </div>
           <div style="flex:none;text-align:right">
             <div class="lbl">Total payé à ce jour</div>
@@ -4798,20 +4917,19 @@ add({id:'pro-dashboard', g:'P1 — Côté agence', n:'12', title:'Tableau de bor
     <div class="sec">
       <div class="row mid" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
         <div><h5 class="wt">Leads récents${pin(7)}</h5>
-          <div class="sub">Tous sont gratuits à recevoir. Seule la qualification s'achète.</div></div>
+          <div class="sub">Tous gratuits, tous complets — identité, téléphone, projet. Rien à débloquer.</div></div>
         <div class="row gap8 wrap">
-          <span class="chip o">${ADEBLOQUER.length} à débloquer · ${nbsp(TOTALDEB+' €')}</span>
           <button class="btn sec2 sm hot" onclick="go('pro-leads')">Tous mes leads →</button>
         </div>
       </div>
       <div class="card mt14">
         <table class="wt">
-          <thead><tr><th>Contact</th><th>Bien</th><th>Ce que vous avez</th><th>Reçu</th><th class="n">Action</th></tr></thead>
+          <thead><tr><th>Contact</th><th>Bien</th><th>Son projet</th><th>Reçu</th><th class="n">Action</th></tr></thead>
           <tbody>
             ${RECENTS.map(l=>`<tr class="hot" onclick="${destLead(l)}">
               <td><b style="color:var(--ink)">${l.n}</b><div class="sub">téléphone vérifié par SMS</div></td>
-              <td>${l.b}</td><td>${leadChip(l)}</td><td class="sub">${l.d}</td>
-              <td class="n"><button class="btn sm ${l.achete?'sec2':''}">${l.achete?'Ouvrir':'Débloquer'}</button></td>
+              <td>${l.b}</td><td>${projetChip(l)}</td><td class="sub">${l.d}</td>
+              <td class="n"><button class="btn sm sec2">Ouvrir</button></td>
             </tr>`).join('')}
           </tbody>
         </table>
@@ -4823,15 +4941,42 @@ add({id:'pro-dashboard', g:'P1 — Côté agence', n:'12', title:'Tableau de bor
                   <div class="txt" style="font-weight:600;color:var(--ink)">${l.n}</div>
                   <div class="sub">${l.b} · ${l.d}</div>
                 </div>
-                <button class="btn sm ${l.achete?'sec2':''}" style="flex:none">${l.achete?'Ouvrir':'Débloquer'}</button>
+                <button class="btn sm sec2" style="flex:none">Ouvrir</button>
               </div>
-              <div class="row mt8">${leadChip(l)}</div>
+              <div class="row mt8">${projetChip(l)}</div>
             </div>`).join('')}
         </div>
       </div>
-      <div class="disc mt8">${pin(6)} Une qualification contient ce que l'acquéreur a déclaré — ses critères,
-      son apport, sa capacité de remboursement. Nous ne vérifions que son téléphone, par SMS.
-      <span class="linkish" onclick="POP.tarif()">Le détail de la grille</span></div>
+      <div class="disc mt8">${pin(6)} Le projet contient ce que l'acquéreur a déclaré — ses critères,
+      son apport, sa capacité d'emprunt. Nous ne vérifions que son téléphone, par SMS. Et tout est
+      inclus dans le gratuit. <span class="linkish" onclick="POP.tarif()">Ce qui est payant, et pourquoi</span></div>
+    </div>
+
+    <div class="sec">
+      <div class="row mid" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div><h5 class="wt">Des acheteurs pour vos biens${pin(5)}</h5>
+          <div class="sub"><b class="num">${MATCHTOT}</b> acheteurs du catalogue correspondent à vos biens
+          en ligne — aucun ne vous a contacté, aucun n'est visible ailleurs.</div></div>
+        <button class="btn sec2 sm hot" onclick="go('pro-acheteurs')">Ouvrir le catalogue →</button>
+      </div>
+      <div class="col gap8 mt14">
+        ${PRO_BIENS.filter(b=>b.st==='Disponible'&&b.match>0).slice(0,3).map(b=>`
+          <div class="card flat pad hot" onclick="go('pro-acheteurs')">
+            <div class="row mid agrow" style="justify-content:space-between;gap:10px">
+              <div style="min-width:0">
+                <div class="txt" style="font-weight:600;color:var(--ink)">${b.t}</div>
+                <div class="sub">aucun ne vous a contacté · identité révélée après achat · dès ${nbsp('20 €')}</div>
+              </div>
+              <div class="row mid gap8" style="flex:none">
+                <span class="chip k">${b.match} acheteurs correspondent</span>
+                <span class="sub">voir →</span>
+              </div>
+            </div>
+          </div>`).join('')}
+      </div>
+      <div class="bandeau mt14">${pin(10)} Ces acheteurs servent aussi à <b>décrocher des mandats</b> :
+      « j'ai déjà ${PRO_BIENS[0].match} acheteurs qualifiés pour votre bien » gagne un rendez-vous
+      vendeur face à n'importe quel concurrent.</div>
     </div>
     <div class="sec">
       <div class="row mid" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
@@ -4878,7 +5023,7 @@ add({id:'pro-dashboard', g:'P1 — Côté agence', n:'12', title:'Tableau de bor
             ${PRO_BIENS.slice(0,4).map(b=>`<tr class="hot" onclick="goState('pro-bien','${b.st==='Vendu'?'Vendu — à déclarer':b.st}')">
               <td><b style="color:var(--ink)">${b.t}</b></td>
               <td class="n">${nbsp(b.p)}</td><td class="n">${nbsp(b.vues)}</td>
-              <td class="n">${b.grat+b.qual}<div class="sub">${b.grat} gratuits${b.qual?' · '+b.qual+' qualifié':''}</div></td>
+              <td class="n">${b.ctc}<div class="sub">${b.match?b.match+' acheteurs corr.':'gratuits'}</div></td>
               <td><span class="chip ${b.st==='Vendu'?'k':''}">${b.st} ▾</span></td>
               <td class="n">${b.st==='Vendu'
                 ? `<button class="btn sm hot" onclick="event.stopPropagation();go('pro-vente')">Déclarer la vente</button>`
@@ -4892,7 +5037,7 @@ add({id:'pro-dashboard', g:'P1 — Côté agence', n:'12', title:'Tableau de bor
               <div class="row mid" style="justify-content:space-between;gap:10px">
                 <div style="min-width:0">
                   <div class="txt" style="font-weight:600;color:var(--ink)">${b.t}</div>
-                  <div class="sub num">${nbsp(b.p)} · ${nbsp(b.vues)} vues · ${b.grat+b.qual} leads</div>
+                  <div class="sub num">${nbsp(b.p)} · ${nbsp(b.vues)} vues · ${b.ctc} leads</div>
                 </div>
                 <span class="chip ${b.st==='Vendu'?'k':''}" style="flex:none">${b.st}</span>
               </div>
@@ -4916,7 +5061,7 @@ add({id:'pro-biens', g:'P1 — Côté agence', n:'13', title:'Mes biens — la l
     ['La complétude est une colonne, pas un écran de réglages','c’est la seule variable que l’agence contrôle et qui change son classement sur un bien partagé. L’enterrer dans la fiche revient à lui dire que ça n’a pas d’importance.'],
     ['Un DPE manquant est bloquant, et on le dit à la ligne','obligation légale : sans lui le bien n’est pas publiable. Ce n’est pas une pénalité maison, et la formulation doit le rendre évident — sinon l’agence la lit comme une brimade.'],
     ['La sélection multiple sert le statut, jamais la suppression','passer 4 biens en « Sous offre » après une salve de visites est le geste de masse réel. La suppression groupée n’existe pas : un bien retiré par erreur casse une URL, donc une preuve de diffusion.'],
-    ['Le compteur de leads est scindé gratuits / qualifiés','« 9 leads » ne dit rien. « 8 gratuits · 1 qualifié » dit ce que le bien a rapporté et ce qu’il a coûté — c’est la lecture ROI que l’agence fait de toute façon, autant la lui donner juste.'],
+    ['Le compteur porte deux chiffres : contacts reçus, acheteurs correspondants','« 9 leads » ne dit rien. « 9 contacts · 12 acheteurs correspondent » dit ce que le bien a rapporté gratuitement ET la demande invisible qui l’attend au catalogue — c’est la lecture ROI que l’agence fait de toute façon, autant la lui donner juste.'],
     ['« Vendus & archivés » est un état, pas un filtre caché','un bien vendu sort des résultats de recherche mais reste dans le portefeuille : c’est là que se déclarent les frais de service, et c’est l’historique que l’agence montre à un vendeur en rendez-vous mandat.'],
     ['Zéro tri par performance par défaut','trier par vues décroissantes ferait remonter les biens qui marchent et enterrerait ceux qui ont besoin d’attention. Le tri par défaut est la date de mise à jour.']
   ],
@@ -5011,7 +5156,7 @@ add({id:'pro-biens', g:'P1 — Côté agence', n:'13', title:'Mes biens — la l
               <td class="n">${nbsp(b.p)}</td>
               <td><span class="chip ${b.st==='Vendu'?'k':''}">${b.st} ▾</span></td>
               <td class="n">${nbsp(b.vues)}</td>
-              <td class="n"><b>${b.grat+b.qual}</b><div class="sub">${b.grat} gratuits${b.qual?' · '+b.qual+' qualifié':''}</div></td>
+              <td class="n"><b>${b.ctc}</b><div class="sub">${b.match?b.match+' acheteurs corr.':'—'}</div></td>
               <td>${complBar(b)}${b.todo?`<div class="sub">${b.compl<60?'DPE manquant':'plan et photos'}</div>`:''}</td>
               <td><span class="chip ${b.rang.startsWith('1')?'k':''}">${b.rang}</span></td>
               <td class="n"><button class="btn sm sec2">Ouvrir</button></td>
@@ -5024,7 +5169,7 @@ add({id:'pro-biens', g:'P1 — Côté agence', n:'13', title:'Mes biens — la l
               <div class="row mid" style="justify-content:space-between;gap:10px">
                 <div style="min-width:0">
                   <div class="txt" style="font-weight:600;color:var(--ink)">${b.t}</div>
-                  <div class="sub num">${nbsp(b.p)} · ${nbsp(b.vues)} vues · ${b.grat+b.qual} leads</div>
+                  <div class="sub num">${nbsp(b.p)} · ${nbsp(b.vues)} vues · ${b.ctc} leads</div>
                 </div>
                 <span class="chip ${b.st==='Vendu'?'k':''}" style="flex:none">${b.st}</span>
               </div>
@@ -5059,7 +5204,8 @@ add({id:'pro-bien', g:'P1 — Côté agence', n:'', title:'Fiche bien côté age
     ['Le sélecteur de statut est l’objet principal de la colonne droite','c’est l’action la plus fréquente de la journée, et le déclencheur de la Success Fee (F-106). Elle ne doit jamais demander de chercher.'],
     ['La complétude est une liste de gestes, pas un pourcentage','« il vous manque le plan et 4 photos » se fait ; « 72 % » ne se fait pas. Chaque ligne manquante porte son bouton.'],
     ['La position de contact est expliquée par la règle publiée','mandat exclusif › dépôt direct › complétude › rotation. L’agence voit son rang, le critère qui lui manque, et la règle entière — c’est ce qui l’empêche de croire que la place s’achète.'],
-    ['Les leads du bien sont listés ici, pas seulement dans « Mes leads »','le rapprochement bien ↔ contact est la lecture ROI naturelle : ce bien m’a coûté 40 € et m’a rapporté 9 contacts. Sans elle, l’agence ne sait pas ce qu’elle achète.'],
+    ['Les leads du bien sont listés ici, pas seulement dans « Mes leads »','le rapprochement bien ↔ contact est la lecture ROI naturelle : ce bien m’a rapporté 9 contacts gratuits, et 12 acheteurs du catalogue l’attendent. Sans elle, l’agence ne sait pas ce que le bien lui rapporte.'],
+    ['« N acheteurs correspondent à ce bien » est LE moment fort','c’est l’écran qui vend le produit : l’agence n’a rien à configurer, ses annonces sont déjà là. Elle clique, voit la liste anonymisée, achète. Et l’argument mandat est affiché avec — « j’ai déjà N acheteurs qualifiés pour votre bien » gagne un rendez-vous vendeur.'],
     ['« Voir la fiche publique » est un lien de confiance','l’agence doit pouvoir vérifier à tout moment ce que nous publions en son nom — c’est la contrepartie de l’annonce unique rédigée par nous.']
   ],
   render:(st)=>{
@@ -5087,14 +5233,37 @@ add({id:'pro-bien', g:'P1 — Côté agence', n:'', title:'Fiche bien côté age
             <button class="btn sec2 sm hot" style="flex:none" onclick="go('fiche')">${pin(5)} Voir la fiche publique ↗</button>
           </div>
           <div class="grid4 mt20">
-            ${[['Vues',bb.vues],['Leads gratuits',String(bb.grat)],['Leads qualifiés achetés',String(bb.qual)],
-               ['Dépensé sur ce bien', bb.qual?nbsp(bb.qual===1&&vendu?'40 €':'20 €'):'0 €']]
+            ${[['Vues',bb.vues],['Contacts reçus',String(bb.ctc)],['Acheteurs correspondants',vendu?'—':String(bb.match)],
+               ['Dépensé sur ce bien', bb.achq?nbsp(bb.achq===1&&vendu?'40 €':'20 €'):'0 €']]
               .map(([k,v])=>`<div class="card flat pad"><div class="lbl">${k}</div>
                 <div class="mid2 num" style="margin-top:3px">${nbsp(v)}</div></div>`).join('')}
           </div>
-          <div class="disc mt8">${pin(4)} Recevoir les ${bb.grat} leads gratuits n'a rien coûté.
-          ${bb.qual?'Seule la qualification achetée est facturée.':'Aucune qualification n\'a été achetée sur ce bien.'}</div>
+          <div class="disc mt8">${pin(4)} Recevoir les ${bb.ctc} contacts — en entier — n'a rien coûté.
+          ${bb.achq?'Seul l\'acheteur pris au catalogue est facturé.':'Aucun acheteur n\'a été acheté depuis ce bien.'}</div>
         </div></div>
+
+        ${!vendu && bb.match ? `
+        <div class="card">
+          <div class="pad" style="border-bottom:1px solid var(--line-2)">
+            <div class="row mid" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
+              <div><h5 class="wt">${bb.match} acheteurs correspondent à ce bien${pin(6)}</h5>
+                <div class="sub">Aucun ne vous a contacté — ils sont inscrits, en recherche active,
+                et d'accord pour être contactés par des agences.</div></div>
+              <span class="chip k">dès ${nbsp('20 €')}</span>
+            </div>
+          </div>
+          <div class="pad">
+            <div class="col gap6">
+              ${ACHETEURS.filter(a=>a.bi===1).map(a=>acheteurRow(a)).join('')}
+            </div>
+            <button class="btn sec2 full mt14 hot" onclick="go('pro-acheteurs')">Voir les ${bb.match} acheteurs →</button>
+            <div class="bandeau mt14">Un argument pour vos rendez-vous vendeurs : « j'ai déjà
+            ${bb.match} acheteurs qualifiés pour votre bien ». C'est ce que ces profils valent,
+            au-delà du contact lui-même.</div>
+            <div class="disc mt8">L'identité n'est révélée qu'après l'achat. Remboursé si injoignable ·
+            le premier acheteur est offert.</div>
+          </div>
+        </div>` : ''}
 
         ${!vendu ? `
         <div class="card">
@@ -5157,8 +5326,8 @@ add({id:'pro-bien', g:'P1 — Côté agence', n:'', title:'Fiche bien côté age
         <div class="card"><div class="pad">
           <h5 class="wt">Ce que ce bien vous a coûté, en tout</h5>
           <div class="col gap6 mt14">
-            ${[['64 jours de diffusion','0 €'],['7 leads gratuits reçus','0 €'],
-               ['1 lead qualifié acheté le 04/08','40 €']]
+            ${[['64 jours de diffusion','0 €'],['7 contacts reçus — en entier','0 €'],
+               ['1 acheteur acheté au catalogue le 04/08','40 €']]
               .map(([k,v])=>`<div class="row mid" style="justify-content:space-between">
                 <span class="txt">${k}</span><span class="num" style="font-weight:600">${nbsp(v)}</span></div>`).join('')}
             <div class="hr" style="margin:8px 0"></div>
@@ -5181,9 +5350,11 @@ add({id:'pro-bien', g:'P1 — Côté agence', n:'', title:'Fiche bien côté age
           <div style="padding:5px">
             ${leads.length ? leads.map(l=>`
               <div class="rrow" style="justify-content:space-between;padding:11px 12px"
-                onclick="${l.achete?`goState('pro-lead','${l.k==='base'?'Lead basique — gratuit':'Qualification achetée — 40 €'}')`:`go('pro-achat')`}">
-                <div class="rtx"><b>${l.n} · ${l.d}</b><span>${LEADLBL[l.k]}${l.k==='base'?'':' · '+LEADPX[l.k]}</span></div>
-                <span class="sub" style="flex:none">${l.achete?'→':'à débloquer →'}</span>
+                onclick="goState('pro-lead','${l.plein?'Tout est renseigné':'Champs facultatifs vides'}')">
+                <div class="rtx"><b>${l.n} · ${l.d}</b><span>${l.plein
+                  ?'Projet complet — budget et financement renseignés'
+                  :'Projet renseigné — sans les champs facultatifs'} · gratuit</span></div>
+                <span class="sub" style="flex:none">→</span>
               </div>`).join('')
               : `<div class="empty" style="padding:22px 10px"><div class="ico"></div>
                  <p>Aucun lead sur ce bien pour l'instant. Une fiche complète en reçoit en moyenne trois fois plus.</p></div>`}
@@ -5328,17 +5499,17 @@ add({id:'pro-depot', g:'P1 — Côté agence', n:'13', title:'Dépôt d\'un bien
 });
 
 /* ---------------- MONÉTISATION ---------------- */
-add({id:'pro-leads', g:'P2 — Monétisation', n:'15', title:'Mes leads — la liste et le tri du quotidien',
-  intro:"L'écran le plus consulté du compte agence, et celui qui décide si le modèle est compris. Chaque ligne doit répondre à deux questions en un coup d'œil : **qu'est-ce que j'ai déjà** (gratuit, à vie) et **qu'est-ce qui reste à débloquer** (20, 30 ou 40 € selon ce que l'acquéreur a rempli). Le reste — le tri, le statut de traitement, la relance — est de la mécanique de rappel.",
-  states:['Tous les leads','À débloquer','Gratuits','Aucun lead'],
+add({id:'pro-leads', g:'P2 — Monétisation', n:'15', title:'Mes leads — tout est là, gratuitement',
+  intro:"L'écran le plus consulté du compte agence, et celui qui prouve la promesse : **tout contact reçu est gratuit, en entier, tout de suite et à vie**. Identité, téléphone vérifié, email, message, projet — rien à débloquer, jamais. Le reste — le tri, le statut de traitement, la relance — est de la mécanique de rappel. Et l'écran porte un seul renvoi commercial : les acheteurs du catalogue, qui sont un autre produit, pas une version payante de celui-ci.",
+  states:['Tous les leads','Nouveaux','Sans réponse','Aucun lead'],
   notes:[
-    ['Une colonne « ce que vous avez », pas une colonne « prix »','« 20 € » seul se lit comme un péage. « Lead qualifié — recherche · 20 € — à débloquer » dit ce qu’on achète et rappelle, par contraste, que la ligne du dessus est déjà à l’agence. La distinction gratuit / payant se rejoue à chaque ligne, pas une fois en en-tête.'],
-    ['Le total à débloquer est une information, pas un bouton','on affiche « 3 qualifications disponibles — 90 € au total » sans proposer de tout prendre. F-101 vend **à l’unité** : un bouton de lot transformerait un achat réfléchi en panier, et le premier regret coûterait plus cher que les trois ventes.'],
+    ['Aucune ligne ne porte de prix','c’est le changement de modèle rendu visible : l’ancienne colonne « à débloquer » n’existe plus, nulle part. Une agence qui cherche le piège doit pouvoir scroller tout l’écran sans trouver un seul euro à payer sur ses contacts.'],
+    ['Le projet est affiché dans la liste, pas vendu à part','budget, financement, délai arrivent AVEC le contact. La distinction n’est plus gratuit / payant sur la même personne — elle est contacts reçus (gratuits) / acheteurs du catalogue (payants), deux populations différentes.'],
     ['« Nouveau » côté agence = « Envoyée » côté acquéreur','les deux statuts sont les deux faces du même événement. Ouvrir le lead fait passer l’acquéreur à « Consultée par l’agence » sur sa page d’accueil — c’est la seule chose que nous savons vraiment, et elle est donc affichée des deux côtés à l’identique.'],
     ['Le lead sans réponse à 48 h est signalé à l’agence AVANT de l’être à l’acquéreur','la règle ne joue que sur un bien où l’acquéreur n’a retenu qu’une agence : à 48 h sans réponse, on lui rappelle que celle qu’il avait écartée propose toujours le bien. Le cacher côté agence serait déloyal ; le dire en fait le rappel le plus efficace du produit — et personne ne peut nous reprocher la règle, elle est publiée.'],
-    ['Un lead partagé le dit AVANT l’achat, pas après','l’acquéreur envoie sa demande à toutes les agences qui détiennent un mandat : sur un bien à trois mandats, trois agences reçoivent le même lead et **chacune paie sa qualification au prix plein**. C’est défendable — chacune reçoit un contact réel, vérifié, avec un projet chiffré — mais uniquement si c’est dit avant de cliquer « débloquer ». Une agence qui découvre le partage après coup se sent facturée deux fois pour le même acquéreur ; celle qui le sait avant arbitre en connaissance de cause et décroche son téléphone plus vite. La mention « Partagé avec N agences » est donc dans la liste, dans la fiche et dans l’écran d’achat — jamais en petits caractères.'],
+    ['Un lead partagé le dit, même gratuit','l’acquéreur envoie sa demande à toutes les agences qui détiennent un mandat : sur un bien à trois mandats, trois agences reçoivent le même contact. Maintenant que rien ne se paie, le dire ne protège plus un prix — ça change la façon de rappeler : celle qui sait qu’elles sont trois décroche son téléphone plus vite.'],
     ['Le statut de traitement est déclaratif et sert l’agence, pas nous','Nouveau · Rappelé · Sans réponse · Traité. Aucune conséquence tarifaire, aucun scoring caché derrière : c’est un outil de suivi, et il doit rester perçu comme tel.'],
-    ['Un lead injoignable est recrédité, et le bouton est dans la liste','pas dans un formulaire de support. La promesse ne vaut que si elle est à un clic — sinon elle n’est qu’une phrase de CGU.']
+    ['Le renvoi au catalogue est une porte, pas une pression','une carte en tête d’écran, une seule, qui dit ce que c’est : des acheteurs qui n’ont PAS contacté. Le glisser entre les lignes de contacts ferait croire que certains contacts se paient — exactement ce qu’on vient d’abolir.']
   ],
   render:(st)=>{
     const vide = st==='Aucun lead';
@@ -5350,89 +5521,86 @@ add({id:'pro-leads', g:'P2 — Monétisation', n:'15', title:'Mes leads — la l
         <div class="card mt20"><div class="empty">
           <div class="ico"></div>
           <h5 class="wt">Vos leads arriveront ici</h5>
-          <p>Chaque contact reçu est <b>gratuit, à vie</b> : identité, téléphone vérifié par SMS,
-          message et bien concerné. Vous ne payez que si vous choisissez d'acheter sa qualification.</p>
+          <p>Chaque contact reçu est <b>gratuit, en entier, à vie</b> : identité, téléphone vérifié
+          par SMS, email, message, projet. Rien à débloquer, jamais.</p>
           <div class="row gap8">
             <button class="btn hot" onclick="go('pro-depot')">Publier un bien</button>
-            <button class="btn sec2 hot" onclick="POP.tarif()">Voir la grille</button>
+            <button class="btn sec2 hot" onclick="go('pro-acheteurs')">Voir les acheteurs disponibles</button>
           </div>
           <div class="disc" style="margin-top:6px">Un bien avec 6 photos ou plus reçoit en moyenne
-          3 fois plus de leads.</div>
+          3 fois plus de contacts.</div>
         </div></div>
       </div>`;
 
-    const filtre = st==='À débloquer' ? PRO_LEADS.filter(l=>!l.achete)
-                 : st==='Gratuits'    ? PRO_LEADS.filter(l=>l.k==='base')
+    const filtre = st==='Nouveaux'      ? PRO_LEADS.filter(l=>l.etat==='Nouveau')
+                 : st==='Sans réponse'  ? PRO_LEADS.filter(l=>l.etat==='Sans réponse')
                  : PRO_LEADS;
     const tard = PRO_LEADS.find(l=>l.tard);
-    const dest = l => l.achete
-      ? `goState('pro-lead','${l.k==='base'?'Lead basique — gratuit':'Qualification achetée — 40 €'}')`
-      : `go('pro-achat')`;
+    const dest = l => `goState('pro-lead','${l.plein?'Tout est renseigné':'Champs facultatifs vides'}')`;
     const etatChip = l => `<span class="chip ${l.etat==='Traité'?'k':(l.etat==='Sans réponse'?'o':'')}">${l.etat}</span>`;
 
     return `${nav}
     <div class="sec">
       <div class="row mid" style="justify-content:space-between;flex-wrap:wrap;gap:10px">
         <div><h4 class="wt">Mes leads</h4>
-          <div class="sub"><b class="num">47</b> reçus ce mois · <b class="num">43</b> gratuits ·
-            <b class="num">4</b> qualifications achetées</div></div>
-        <button class="btn sec2 hot" onclick="POP.tarif()">Comment sont fixés les prix</button>
+          <div class="sub"><b class="num">47</b> reçus ce mois · tous complets, tous gratuits —
+            <b class="num">0 €</b></div></div>
+        <button class="btn sec2 hot" onclick="POP.tarif()">Ce qui est payant, et pourquoi</button>
       </div>
 
       <div class="grid2 mt20" style="gap:14px">
         <div class="card flat pad">
           <div class="row mid" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
             <div><div class="row mid gap6"><span class="chip k">Gratuit</span>
-              <span class="txt" style="font-weight:600;color:var(--ink)">43 leads ce mois</span></div>
-              <div class="sub" style="margin-top:3px">Identité, téléphone vérifié par SMS, message,
-              bien concerné. Sans plafond et sans date de fin.</div></div>
+              <span class="txt" style="font-weight:600;color:var(--ink)">47 leads ce mois — en entier</span></div>
+              <div class="sub" style="margin-top:3px">${pin(1)} Identité, téléphone vérifié par SMS, email,
+              message, projet. Sans plafond, sans date de fin, sans rien à débloquer.</div></div>
             <div class="big num" style="flex:none">${nbsp('0 €')}</div>
           </div>
         </div>
-        <div class="card flat pad">
+        <div class="card flat pad hot" onclick="go('pro-acheteurs')">
           <div class="row mid" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
-            <div><div class="row mid gap6"><span class="chip">À débloquer</span>
-              <span class="txt" style="font-weight:600;color:var(--ink)">${ADEBLOQUER.length} qualifications disponibles</span></div>
-              <div class="sub" style="margin-top:3px">${pin(2)} ${nbsp(TOTALDEB+' €')} au total si vous les prenez
-              toutes — mais l'achat se fait lead par lead, jamais en lot.</div></div>
+            <div><div class="row mid gap6"><span class="chip">Catalogue</span>
+              <span class="txt" style="font-weight:600;color:var(--ink)">${MATCHTOT} acheteurs correspondent à vos biens</span></div>
+              <div class="sub" style="margin-top:3px">${pin(7)} Des acquéreurs qui ne vous ont <b>pas</b>
+              contactés — un autre produit, pas une version payante de vos leads.</div></div>
             <div class="big num" style="flex:none">${nbsp('20 à 40 €')}</div>
           </div>
         </div>
       </div>
 
-      ${tard && st!=='Gratuits' ? `
+      ${tard && st!=='Nouveaux' ? `
       <div class="bandeau mt14" style="border-left-width:4px">${pin(4)}
         <b>${tard.n} attend une réponse depuis 2 jours.</b> Cet acquéreur ne vous a contacté que vous
         sur ce bien. Passé 48 h, nous lui rappelons que l'autre mandataire le propose toujours —
         la règle est publiée, et elle joue pour tout le monde.
         <div class="row gap8 mt8 wrap">
           <button class="btn sm hot" onclick="${dest(tard)}">Ouvrir le lead</button>
-          <button class="btn sec2 sm hot">Ce numéro ne répond pas — recréditer</button>
         </div>
       </div>` : ''}
 
       <div class="fbar mt20">
-        ${[['Tous les leads','Tous'],['Gratuits','Gratuits (43)'],['À débloquer','À débloquer ('+ADEBLOQUER.length+')']]
+        ${[['Tous les leads','Tous (47)'],['Nouveaux','Nouveaux (4)'],['Sans réponse','Sans réponse (1)']]
           .map(([s2,l])=>`<span class="chip hot ${st===s2?'k':''}" onclick="setState('${s2}')">${l}</span>`).join('')}
         <span class="fsep"></span>
-        ${['Nouveaux','Sans réponse','Traités'].map(f=>`<span class="chip hot">${f}</span>`).join('')}
+        ${['Rappelés','Traités'].map(f=>`<span class="chip hot">${f}</span>`).join('')}
         <span class="fsep"></span>
         <button class="btn sec2 sm hot">Trier : plus récents ▾</button>
       </div>
 
       <div class="card mt14">
         <table class="wt">
-          <thead><tr><th>Contact</th><th>Bien</th><th>Ce que vous avez</th><th>Destinataires</th><th>Reçu</th>
+          <thead><tr><th>Contact</th><th>Bien</th><th>Son projet</th><th>Destinataires</th><th>Reçu</th>
             <th>Traitement</th><th class="n">Action</th></tr></thead>
           <tbody>
             ${filtre.map(l=>`<tr class="hot" onclick="${dest(l)}">
               <td><b style="color:var(--ink)">${l.n}</b><div class="sub">téléphone vérifié par SMS</div></td>
               <td>${l.b}</td>
-              <td>${leadChip(l)}</td>
+              <td>${projetChip(l)}</td>
               <td>${partChip(l)}</td>
               <td class="sub">${l.d}</td>
               <td>${etatChip(l)}</td>
-              <td class="n"><button class="btn sm ${l.achete?'sec2':''}">${l.achete?'Ouvrir':'Débloquer'}</button></td>
+              <td class="n"><button class="btn sm sec2">Ouvrir</button></td>
             </tr>`).join('')}
           </tbody>
         </table>
@@ -5446,40 +5614,40 @@ add({id:'pro-leads', g:'P2 — Monétisation', n:'15', title:'Mes leads — la l
                 </div>
                 ${etatChip(l)}
               </div>
-              <div class="row mid gap6 mt8 wrap">${leadChip(l)}${partChip(l)}
-                <button class="btn sm ${l.achete?'sec2':''}" style="margin-left:auto">${l.achete?'Ouvrir':'Débloquer'}</button></div>
+              <div class="row mid gap6 mt8 wrap">${projetChip(l)}${partChip(l)}
+                <button class="btn sm sec2" style="margin-left:auto">Ouvrir</button></div>
             </div>`).join('')}
         </div>
       </div>
 
       <div class="disc mt8">${pin(5)} <b>« Partagé · 3 agences »</b> veut dire que l'acquéreur a envoyé la
       même demande aux trois mandataires du bien — c'est son droit, et il a pu en retirer avant d'envoyer.
-      Chacune de vous reçoit un contact réel et vérifié, et chacune paie sa qualification au même prix.
-      Nous vous le disons avant que vous débloquiez, jamais après.</div>
+      Chacune de vous reçoit le même contact, gratuitement. Nous vous le disons parce que ça change
+      votre façon de le rappeler, pas parce que ça change un prix : il n'y en a pas.</div>
 
       <div class="disc mt8">${pin(3)} Un lead marqué « Nouveau » n'a pas encore été ouvert : de son côté,
       l'acquéreur voit « Demande envoyée ». Dès que vous l'ouvrez, il voit « Consultée par l'agence ».
       C'est la seule chose que nous savons — nous ne prétendons pas savoir si vous l'avez rappelé.</div>
-      <div class="disc mt8">${pin(7)} Un numéro qui ne répond jamais est recrédité, sans justification à
-      fournir. Ce que nous vérifions : le téléphone, par SMS. Ce que nous ne vérifions pas : l'apport et la
-      capacité de remboursement — l'acquéreur les déclare, nous vous les transmettons tels quels.</div>
+      <div class="disc mt8">${pin(2)} Ce que nous vérifions : le téléphone, par SMS. Ce que nous ne
+      vérifions pas : l'apport et la capacité d'emprunt — l'acquéreur les déclare, nous vous les
+      transmettons tels quels, avec le contact, gratuitement.</div>
     </div>`;
   }
 });
 
-add({id:'pro-lead', g:'P2 — Monétisation', n:'14', title:'Fiche contact — gratuite ou qualifiée',
-  intro:"Les deux faces du modèle, sur le même écran et avec le même acquéreur. **Gratuit** : qui c'est, comment le joindre, sur quel bien — pour toujours, sans plafond. **Qualifié** : ce qu'il cherche et ce qu'il déclare pouvoir financer. L'agence doit pouvoir passer de l'un à l'autre et comprendre en trois secondes ce que les 40 € ont ajouté.",
-  states:['Lead basique — gratuit','Qualification achetée — 40 €'],
+add({id:'pro-lead', g:'P2 — Monétisation', n:'14', title:'Fiche lead — complète, gratuite',
+  intro:"La preuve de la promesse, contact par contact. **Tout ce que l'acquéreur a rempli est là** : qui c'est, comment le joindre, sur quel bien, ce qu'il cherche, ce qu'il déclare pouvoir financer. Aucun bloc masqué, aucun bouton d'achat — la seule différence entre deux fiches est ce que l'acquéreur a choisi de remplir, et on le dit plutôt que de le faire payer.",
+  states:['Tout est renseigné','Champs facultatifs vides'],
   notes:[
-    ['Le lead gratuit n’est pas une démo bridée','identité, téléphone, e-mail, message, bien concerné : tout est là, rappelable immédiatement. Si le gratuit ressemble à un teaser, l’agence conclut que le vrai produit est payant et que le discours est un appât — exactement le réflexe qu’elle a acquis chez les portails.'],
-    ['La différence est montrée, pas décrite','le même acquéreur, deux fiches, un bloc en plus. Une phrase « le lead qualifié contient aussi… » ne vaut rien à côté.'],
+    ['Le gratuit n’est pas une démo — c’est le produit entier','identité, téléphone, e-mail, message, projet, financement déclaré : tout est là, rappelable immédiatement. C’est le contraste avec les portails qui fait la conversion : l’agence cherche le bloc verrouillé, ne le trouve pas, et comprend le modèle.'],
+    ['Un champ vide est un fait, pas un manque à vendre','si l’acquéreur n’a pas rempli son financement, la fiche dit « non renseigné — champ facultatif ». L’ancienne réponse était « payez pour le voir » ; la nouvelle est la vérité. C’est toute la différence entre vendre de l’information et la transmettre.'],
     ['Le téléphone vérifié est notre seule affirmation de vérification','et elle porte sur le numéro, pas sur la personne ni sur ses revenus. C’est notre garantie différenciante face aux faux contacts des portails — elle ne vaut que si on ne l’étend jamais à autre chose.'],
-    ['« Déclaratif, non vérifié » colle au bloc financement, pas au bas de page','F-102 critère 5. Placé en note de pied, personne ne le lit ; placé sur le bloc, il devient une information de lecture — et il protège autant l’agence que nous.'],
+    ['« Déclaratif, non vérifié » colle au bloc financement, pas au bas de page','placé en note de pied, personne ne le lit ; placé sur le bloc, il devient une information de lecture — et il protège autant l’agence que nous.'],
     ['Rappel du bien concerné','l’agence gère 23 biens — sans le contexte, le contact est inexploitable.'],
     ['Action de rappel immédiate','téléphone et e-mail cliquables ; le délai de réponse est notre promesse aux acquéreurs (8 h).']
   ],
   render:(st)=>{
-    const paye = st==='Qualification achetée — 40 €';
+    const plein = st==='Tout est renseigné';
     return `${appnav('Mes leads','pro')}
     <div class="sec"><div style="max-width:820px;margin:0 auto">
       <div class="row mid gap8 sub"><span class="linkish hot" onclick="go('pro-leads')">← Mes leads</span>
@@ -5493,12 +5661,9 @@ add({id:'pro-lead', g:'P2 — Monétisation', n:'14', title:'Fiche contact — g
                 <div class="row mid gap6" style="margin-top:3px;flex-wrap:wrap">
                   <span class="chip">${pin(3)} Téléphone vérifié par SMS</span>
                   <span class="chip k">Profil sérieux</span>
-                  ${paye?'<span class="sub">renseigné à 85 / 100, déclaratif</span>':''}
                 </div></div>
             </div>
-            <span class="chip ${paye?'k':''}" style="flex:none">${paye
-              ? 'Qualification achetée — recherche + financement · '+nbsp('40 €')
-              : 'Contact gratuit — '+nbsp('0 €')}</span>
+            <span class="chip k" style="flex:none">${pin(1)} Complet et gratuit — ${nbsp('0 €')}</span>
           </div>
         </div>
 
@@ -5507,63 +5672,55 @@ add({id:'pro-lead', g:'P2 — Monétisation', n:'14', title:'Fiche contact — g
           <div class="row mid gap8 mt8">
             ${ph('photo',44).replace('height:44px','height:44px;width:62px;flex:none')}
             <div><div class="txt" style="font-weight:500;color:var(--ink)">${BIENS[0].t}</div>
-            <div class="sub num">${nbsp('289 000 €')} · votre mandat depuis 3 jours · 9 leads</div>
+            <div class="sub num">${nbsp('289 000 €')} · votre mandat depuis 3 jours · 9 contacts</div>
             <div class="row mid gap6 mt8 wrap"><span class="chip o">Partagé · 3 agences</span>
               <span class="sub">Marc D. a contacté les 3 mandataires du bien, le même jour</span></div></div>
           </div>
         </div>
 
-        <div class="pad" ${paye?'style="border-bottom:1px solid var(--line-2)"':''}>
+        <div class="pad" style="border-bottom:1px solid var(--line-2)">
           <div class="row mid" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
             <h5 class="wt">Son message</h5>
-            <span class="chip k">inclus dans le gratuit${pin(1)}</span>
+            <span class="chip k">inclus, comme tout le reste${pin(1)}</span>
           </div>
           <div class="card flat pad mt8" style="background:var(--fill-2)">
             <div class="txt">« Disponible pour visiter en semaine, y compris en journée. »</div>
           </div>
         </div>
 
-        ${paye ? `
         <div class="pad">
           <div class="row mid" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
-            <h5 class="wt">${pin(2)} Ce que la qualification a ajouté</h5>
-            <span class="chip">acheté ${nbsp('40 €')} le 04/08</span>
+            <h5 class="wt">${pin(2)} Son projet</h5>
+            <span class="chip k">transmis avec le contact — ${nbsp('0 €')}</span>
           </div>
 
-          <div class="lbl mt14">Ce qu'il cherche <span class="sub">— volet recherche, ${nbsp('20 €')}</span></div>
+          <div class="lbl mt14">Ce qu'il cherche</div>
           <div class="grid2 mt8">
-            ${[['Type de projet','Investissement locatif'],['Budget maximum','320 000 €'],
-               ['Délai','moins de 3 mois'],['Déjà acquis','2 biens en portefeuille']]
+            ${[['Type de projet','Investissement locatif'],['Budget maximum', plein?'320 000 €':'non renseigné'],
+               ['Délai','moins de 3 mois'],['Déjà acquis', plein?'2 biens en portefeuille':'non renseigné']]
               .map(([k,v])=>`<div class="card flat pad"><div class="lbl">${k}</div>
-                <div class="num" style="font-weight:600;margin-top:3px">${nbsp(v)}</div></div>`).join('')}
+                <div class="num" style="${v==='non renseigné'?'color:var(--ink-3);':'font-weight:600;'}margin-top:3px">${nbsp(v)}</div></div>`).join('')}
           </div>
 
           <div class="row mid mt20" style="justify-content:space-between;gap:8px;flex-wrap:wrap">
-            <div class="lbl">Ce qu'il déclare pouvoir financer <span class="sub">— volet financement, ${nbsp('30 €')}</span></div>
+            <div class="lbl">Ce qu'il déclare pouvoir financer</div>
             ${DECLA}
           </div>
           <div class="grid2 mt8">
-            ${[['Apport annoncé','45 000 €'],['Situation de financement','pré-accord bancaire déclaré']]
+            ${(plein
+              ? [['Apport annoncé','45 000 €'],['Situation de financement','pré-accord bancaire déclaré']]
+              : [['Apport annoncé','non renseigné'],['Situation de financement','non renseignée']])
               .map(([k,v])=>`<div class="card flat pad"><div class="lbl">${k}</div>
-                <div class="num" style="font-weight:600;margin-top:3px">${nbsp(v)}</div></div>`).join('')}
+                <div class="num" style="${v.startsWith('non renseigné')?'color:var(--ink-3);':'font-weight:600;'}margin-top:3px">${nbsp(v)}</div></div>`).join('')}
           </div>
+          ${plein ? `
           <div class="disc mt8">${pin(4)} Ces deux montants sont <b>déclarés par l'acquéreur</b> et ne sont
           pas vérifiés — ni par nous, ni par une banque. Nous ne vous dirons jamais qu'un contact est
-          « prêt à signer » : nous vous disons ce qu'il a écrit, et que son numéro répond.</div>
-        </div>` : `
-        <div class="pad">
-          <div class="card flat pad" style="background:var(--fill-2)">
-            <div class="row mid stackm" style="justify-content:space-between;gap:12px">
-              <div class="grow" style="min-width:0">
-                <div class="txt" style="font-weight:600;color:var(--ink)">Marc D. a aussi rempli sa qualification.${pin(2)}</div>
-                <div class="sub" style="margin-top:3px">Ses critères de recherche (${nbsp('20 €')}), ce qu'il déclare
-                pouvoir financer (${nbsp('30 €')}), ou les deux (${nbsp('40 €')}). Vous n'êtes pas obligé :
-                le contact ci-dessus reste à vous, gratuitement.</div>
-              </div>
-              <button class="btn sm hot" style="flex:none" onclick="go('pro-achat')">Voir l'aperçu</button>
-            </div>
-          </div>
-        </div>`}
+          « prêt à signer » : nous vous disons ce qu'il a écrit, et que son numéro répond.</div>` : `
+          <div class="disc mt8">${pin(2)} Ces champs étaient <b>facultatifs</b> : Marc D. ne les a pas
+          remplis, ils n'existent donc pas. Personne ne vous les vendra — une information qui n'existe
+          pas ne s'achète pas, elle se demande au téléphone.</div>`}
+        </div>
 
         <div class="pad" style="border-top:1px solid var(--line-2)">
           <div class="row mid stackm" style="justify-content:space-between;gap:10px">
@@ -5576,138 +5733,396 @@ add({id:'pro-lead', g:'P2 — Monétisation', n:'14', title:'Fiche contact — g
               <button class="btn">${pin(6)} Appeler</button>
             </div>
           </div>
-          <div class="disc mt8">Coordonnées disponibles sans achat : recevoir un contact est gratuit,
-          sans plafond et sans date de fin.</div>
+          <div class="disc mt8">Tout ce que vous lisez est arrivé avec le contact, gratuitement.
+          Recevoir est gratuit, en entier, sans plafond et sans date de fin.</div>
         </div>
       </div>
     </div></div>`;
   }
 });
 
-add({id:'pro-achat', g:'P2 — Monétisation', n:'15', title:'Acheter une qualification — 20 / 30 / 40 €',
-  intro:"Le seul écran où l'agence sort sa carte pour un contact. Trois conditions pour que ça marche : elle voit assez pour juger sans qu'on lui donne ce qu'elle n'a pas payé, elle comprend que le prix vient du **contenu** et pas d'un palier, et elle sait qu'elle ne s'abonne à rien. Le contact lui-même reste gratuit quoi qu'elle décide — c'est écrit à l'écran, pas dans les CGU.",
-  states:['Aperçu avant achat','Paiement','Débloqué','Doublon — jamais refacturé'],
+add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'acheteurs — la demande que vous ne voyiez pas',
+  intro:"Le produit payant, et il ne ressemble à rien de ce que les portails vendent : des **acheteurs qui n'ont contacté personne**. Inscrits, en recherche active, d'accord pour être proposés aux agences. Trois portes d'entrée — depuis une annonce (« 12 acheteurs correspondent à ce bien »), le catalogue avec ses critères et son panier, et les alertes. Partout, la même règle d'or : assez pour donner envie, pas assez pour contourner l'achat.",
+  states:['Depuis une annonce','Catalogue','Panier — 3 acheteurs','Alerte créée','Aucun résultat'],
   notes:[
-    ['Le prix vient du contenu, jamais d’un palier','20 € s’il n’y a que les critères, 30 € s’il n’y a que le financement, 40 € s’il y a les deux. La grille est affichée avec le niveau applicable mis en évidence : l’agence refait le calcul elle-même, ce qu’aucun abonnement ne lui permet.'],
-    ['Aperçu partiel, jamais trompeur','on montre ce qui permet de juger (type de projet, budget, délai) et on masque ce qui a de la valeur (identité, coordonnées). Ce qui est montré est exact — un aperçu enjolivé se paie sur les trois premiers achats, et l’avatar agence juge sur l’échantillon.'],
-    ['« Sans abonnement » écrit noir sur blanc','c’est l’angoisse n°1 d’une agence échaudée. Elle vient de 1 040 €/mois payés d’avance à trois portails : le mot « abonnement » doit apparaître pour être nié.'],
-    ['Rappeler que le refus ne coûte rien','ne pas acheter ne retire pas le contact. Sans cette phrase, le bouton se lit comme un péage et le lead gratuit perd sa crédibilité.'],
-    ['Le doublon n’est jamais refacturé','F-102 critère 6 : même acquéreur déjà acheté sur un autre bien → l’écran le dit et n’encaisse rien. C’est le genre de détail qui achète plus de confiance que trois pages d’argumentaire.'],
-    ['Carte enregistrée = un clic','le second achat doit être plus rapide que le premier, sinon le modèle à l’acte ne décolle pas.'],
-    ['Le partage est dit AVANT le paiement, et il ne fait pas baisser le prix','l’acquéreur adresse sa demande à tous les mandataires du bien : sur deux mandats, deux agences reçoivent le même lead et **chacune paie le prix plein**. Le défendre tient en une phrase — chacune reçoit un contact réel, vérifié, avec un projet chiffré, et ce qu’elle achète est une information sur l’acquéreur, pas une exclusivité sur lui. Mais ça ne se défend que si c’est affiché avant le bouton : découvrir le partage après avoir payé, c’est la rupture de confiance qui coûte l’abonné. On l’écrit donc deux fois, sur l’aperçu et dans le récapitulatif de paiement, et on dit pourquoi on le dit — ça change la façon de rappeler, pas le tarif.']
+    ['« N acheteurs correspondent à ce bien » est l’écran qui vend','l’agence n’a rien à configurer : ses annonces sont déjà sur la plateforme, le matching est fait. Elle clique, voit la liste anonymisée, achète. Les deux autres portes — catalogue et alertes — servent la prospection et le retour régulier.'],
+    ['La règle d’or : avant / après achat','visible avant : critères, commune (jamais l’adresse), projet, score de sérieux, financement oui/non (jamais le montant), activité récente, combien d’agences l’ont acheté. Révélé après : nom, téléphone, email, message. Un seul champ de trop côté « avant » et l’achat se contourne ; un de moins et l’envie ne vient pas.'],
+    ['Ce qu’on vend est introuvable autrement','l’ancien modèle vendait des infos qu’un coup de fil donnait gratuitement — aucune agence ne payait deux fois. Celui-ci vend des acheteurs que l’agence ne peut pas appeler : elle ignore leur existence.'],
+    ['L’argument mandat est affiché, pas sous-entendu','ces acheteurs servent à décrocher des mandats autant qu’à vendre : « j’ai déjà 8 acheteurs qualifiés pour votre bien » gagne le rendez-vous vendeur. C’est ce qui justifie le prix au-delà du lead — l’UI le dit en toutes lettres.'],
+    ['Le panier existe ici, et seulement ici','la prospection s’achète par lots — 10 acheteurs pour 150 € au lieu de 20 € l’unité. C’est l’inverse de l’ancienne doctrine « à l’unité seulement », et c’est voulu : on n’achète plus une information sur SON contact, on constitue un vivier.'],
+    ['La fraîcheur est honnête ou n’est pas','« actif il y a 2 h », « 2 agences l’ont acheté » : des chiffres réels, affichés tels quels. Jamais de compteur qui descend, jamais de « plus que 3 » — la première fausse urgence détruit toutes les vraies.'],
+    ['Ce qui rassure est sur l’écran d’achat, pas dans les CGU','remboursé si injoignable · le premier est offert · jamais refacturé deux fois · déclaratif affiché. Le risque du premier achat est l’obstacle n°1 — chaque garantie est à un clic du bouton payer.'],
+    ['Chaque acheteur a dit oui','case jamais pré-cochée, révocable à tout moment, côté acquéreur. C’est une obligation légale stricte et la condition du modèle — l’écran de consentement est maquetté côté B2C (mise en relation, profil, paramètres).']
   ],
   render:(st)=>{
-    if (st==='Doublon — jamais refacturé') return `${appnav('Mes leads','pro')}
+    const b0 = PRO_BIENS[0];
+    const nav = appnav('Acheteurs','pro');
+
+    if (st==='Aucun résultat') return `${nav}
+      <div class="sec">
+        <h4 class="wt">Catalogue d'acheteurs</h4>
+        <div class="sub">Vos critères : Maison · Sainte-Foy-lès-Lyon · jusqu'à 300 000 €</div>
+        <div class="card mt20"><div class="empty">
+          <div class="ico"></div>
+          <h5 class="wt">Aucun acheteur ne correspond à ces critères aujourd'hui</h5>
+          <p>Le catalogue bouge tous les jours : des acquéreurs s'inscrivent, précisent leur recherche,
+          donnent leur accord. Plutôt que de revenir vérifier, laissez une alerte faire le travail.</p>
+          <div class="row gap8">
+            <button class="btn hot" onclick="setState('Alerte créée')">Me prévenir dès qu'un acheteur correspond</button>
+            <button class="btn sec2 hot" onclick="setState('Catalogue')">Élargir mes critères</button>
+          </div>
+          <div class="disc" style="margin-top:6px">Nous n'affichons que des acheteurs réels et
+          consentants — jamais de profil de remplissage pour meubler une liste.</div>
+        </div></div>
+      </div>`;
+
+    if (st==='Alerte créée') return `${nav}
+      <div class="sec">
+        <div class="row mid" style="justify-content:space-between;flex-wrap:wrap;gap:10px">
+          <div><h4 class="wt">Mes alertes acheteurs${pin(1)}</h4>
+            <div class="sub">Prévenu dès qu'un acheteur correspond — achat en 1 clic depuis la notification.</div></div>
+          <button class="btn sec2 hot" onclick="setState('Catalogue')">← Retour au catalogue</button>
+        </div>
+        <div class="bandeau mt20"><b>Alerte créée.</b> Dès qu'un acheteur correspondant à
+        « T3 – T4 · Lyon 7ᵉ + 5 km · jusqu'à 350 000 € » rejoint le catalogue, vous recevez un email —
+        avec son profil anonymisé et le bouton d'achat. Une alerte = un email, jamais une relance.</div>
+        <div class="col gap8 mt14">
+          ${[['T3 – T4 · Lyon 7ᵉ + 5 km · jusqu\'à 350 000 €','créée à l\'instant','k'],
+             ['Immeubles · Lyon 9ᵉ · jusqu\'à 500 000 €','2 acheteurs signalés ce mois',''],
+             ['Studios · Lyon 8ᵉ · financement renseigné','1 acheteur signalé ce mois','']]
+            .map(([q,s,k])=>`
+            <div class="card flat pad">
+              <div class="row mid agrow" style="justify-content:space-between;gap:10px">
+                <div style="min-width:0">
+                  <div class="txt" style="font-weight:600;color:var(--ink)">${q}</div>
+                  <div class="sub">${s}</div>
+                </div>
+                <div class="row mid gap8" style="flex:none">
+                  <span class="chip ${k}">${k?'nouvelle':'active'}</span>
+                  <span class="linkish sub">suspendre</span>
+                </div>
+              </div>
+            </div>`).join('')}
+        </div>
+        <div class="card mt20">
+          <div class="pad" style="border-bottom:1px solid var(--line-2)">
+            <div class="row mid" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
+              <h5 class="wt">À quoi ressemble la notification</h5>
+              <span class="chip">aperçu de l'email</span>
+            </div>
+          </div>
+          <div class="pad">
+            <div class="card flat pad" style="background:var(--fill-2)">
+              <div class="lbl">Un nouvel acheteur correspond à votre alerte</div>
+              <div class="mt8">${acheteurRow(ACHETEURS[0])}</div>
+              <div class="row gap8 mt8 wrap">
+                <button class="btn sm hot" onclick="go('pro-achat')">Voir l'aperçu et acheter</button>
+                <span class="sub">L'identité n'est révélée qu'après l'achat.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    if (st==='Panier — 3 acheteurs'){
+      const panier = [[ACHETEURS[1],'Recherche + financement','40 €'],
+                      [ACHETEURS[2],'Sa recherche','20 €'],
+                      [ACHETEURS[4],'Recherche + financement','40 €']];
+      return `${nav}
+      <div class="sec"><div style="max-width:720px;margin:0 auto">
+        <div class="row mid gap8 sub"><span class="linkish hot" onclick="setState('Catalogue')">← Catalogue</span>
+          <span>·</span><span>Panier</span></div>
+        <div class="card mt14">
+          <div class="pad" style="border-bottom:1px solid var(--line-2)">
+            <div class="row mid" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
+              <h4 class="wt">3 acheteurs${pin(5)}</h4>
+              <span class="chip k">${nbsp('100 €')}</span>
+            </div>
+          </div>
+          <div class="pad" style="border-bottom:1px solid var(--line-2)">
+            <div class="col gap6">
+              ${panier.map(([a,f,px])=>`
+                <div class="card flat pad">
+                  <div class="row mid agrow" style="justify-content:space-between;gap:10px">
+                    <div style="min-width:0">
+                      <div class="row mid gap6 wrap">
+                        <span class="txt" style="font-weight:600;color:var(--ink)">Acheteur ${a.id}</span>
+                        <span class="chip k">sérieux ${a.score} / 100</span>
+                      </div>
+                      <div class="sub">${a.projet} · ${a.zone} · formule ${f.toLowerCase()}</div>
+                    </div>
+                    <div class="row mid gap8" style="flex:none">
+                      <span class="mid2 num">${nbsp(px)}</span>
+                      <span class="linkish sub">retirer</span>
+                    </div>
+                  </div>
+                </div>`).join('')}
+            </div>
+            <div class="disc mt8">La formule se choisit acheteur par acheteur — et suit ce que chacun
+            a rempli : pas de ${nbsp('40 €')} pour un profil sans financement renseigné.</div>
+          </div>
+          <div class="pad">
+            <div class="col gap6">
+              <div class="row mid" style="justify-content:space-between"><span class="txt">3 acheteurs à l'unité</span><span class="num">${nbsp('100 €')}</span></div>
+              <div class="row mid" style="justify-content:space-between"><span class="sub">Abonnement</span><span class="num sub">aucun</span></div>
+              <div class="hr" style="margin:8px 0"></div>
+              <div class="row mid" style="justify-content:space-between">
+                <span class="txt" style="font-weight:600;color:var(--ink)">À régler, une fois</span>
+                <span class="mid2 num">${nbsp('100 €')}</span></div>
+            </div>
+            <div class="bandeau mt14">À partir de 10 acheteurs, le lot passe à <b>${nbsp('150 €')}</b>
+            au lieu de ${nbsp('20 €')} l'unité. Votre panier n'y est pas : on vous le dira quand il y sera,
+            pas avant — pas de compte à rebours, pas de presque.</div>
+            <div class="row mid gap8 mt14">
+              <div class="ph solid" style="width:34px;height:22px;flex:none">••••</div>
+              <div class="grow"><div class="txt">Visa se terminant par 4218</div><div class="sub">expire 09/29</div></div>
+            </div>
+            <button class="btn full mt14 hot" onclick="go('pro-achat')">Payer ${nbsp('100 €')} et révéler les 3 identités</button>
+            <div class="sub" style="text-align:center;margin-top:10px">Remboursé si injoignable, acheteur
+            par acheteur · aucun abonnement</div>
+          </div>
+        </div>
+      </div></div>`;
+    }
+
+    if (st==='Depuis une annonce') return `${nav}
+      <div class="sec"><div style="max-width:820px;margin:0 auto">
+        <div class="row mid gap8 sub"><span class="linkish hot" onclick="goState('pro-bien','Disponible')">← Fiche du bien</span>
+          <span>·</span><span>Acheteurs correspondants</span></div>
+        <div class="card mt14">
+          <div class="pad" style="border-bottom:1px solid var(--line-2)">
+            <div class="row mid stackm" style="justify-content:space-between;gap:12px">
+              <div class="row mid gap8">
+                ${ph('photo',44).replace('height:44px','height:44px;width:62px;flex:none')}
+                <div><div class="mid2">${b0.t}</div>
+                  <div class="sub num">${nbsp(b0.p)} · votre mandat exclusif</div></div>
+              </div>
+              <span class="chip k" style="flex:none">${pin(1)} ${b0.match} acheteurs correspondent</span>
+            </div>
+          </div>
+          <div class="pad">
+            <div class="sub">${pin(2)} Aucun d'eux ne vous a contacté. Leurs critères recouvrent ce bien —
+            type, budget, secteur. Voici ce qu'on montre avant l'achat, et rien de plus.</div>
+            <div class="col gap6 mt14">
+              ${ACHETEURS.filter(a=>a.bi===0).map(a=>acheteurRow(a)).join('')}
+            </div>
+            <div class="row mid" style="justify-content:center;margin-top:14px">
+              <button class="btn sec2 sm hot" onclick="setState('Catalogue')">Voir les ${b0.match} dans le catalogue →</button>
+            </div>
+            <div class="bandeau mt14">${pin(4)} En rendez-vous mandat, ce chiffre est votre argument :
+            « j'ai déjà ${b0.match} acheteurs qualifiés pour votre bien ». C'est ce que ces profils
+            valent au-delà du contact lui-même.</div>
+            <div class="mt14">${rassurance()}</div>
+          </div>
+        </div>
+      </div></div>`;
+
+    /* ---------- Catalogue — l'onglet de prospection ---------- */
+    return `${nav}
+    <div class="sec">
+      <div class="row mid" style="justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div><h4 class="wt">Catalogue d'acheteurs</h4>
+          <div class="sub"><b class="num">${MATCHTOT}</b> acheteurs correspondent à vos critères ·
+          aucun ne vous a contacté · les plus actifs d'abord</div></div>
+        <div class="row gap8 wrap">
+          <button class="btn sec2 hot" onclick="setState('Alerte créée')">${pin(1)} Créer une alerte</button>
+          <button class="btn hot" onclick="setState('Panier — 3 acheteurs')">Panier · 3</button>
+        </div>
+      </div>
+
+      <div class="fbar mt20">
+        ${['Lyon + 10 km ✕','Jusqu\'à 350 000 € ✕','T2 à T4 ✕'].map(f=>`<span class="chip k hot">${f}</span>`).join('')}
+        <span class="fsep"></span>
+        ${['Financement renseigné','Résidence principale','Investisseurs'].map(f=>`<span class="chip hot">${f}</span>`).join('')}
+        <span class="fsep"></span>
+        <button class="btn sec2 sm hot">Trier : activité récente ▾</button>
+      </div>
+
+      <div class="col gap8 mt14">
+        ${ACHETEURS.map(a=>`
+        <div class="card flat pad">
+          <div class="row mid agrow" style="justify-content:space-between;gap:10px">
+            <div style="min-width:0">
+              <div class="row mid gap6 wrap">
+                <span class="txt" style="font-weight:600;color:var(--ink)">Acheteur ${a.id}</span>
+                <span class="chip k">${pin(2)} sérieux ${a.score} / 100</span>
+                <span class="chip">${a.fin?'financement renseigné':'sans financement renseigné'}</span>
+              </div>
+              <div class="sub" style="margin-top:3px">${a.projet} · ${nbsp(a.crit)} · ${a.zone} — jamais l'adresse</div>
+              <div class="sub">${pin(6)} ${a.actif} · ${a.deja===0?'aucune agence ne l\'a encore acheté'
+                :a.deja===1?'1 agence l\'a déjà acheté':a.deja+' agences l\'ont déjà acheté'}</div>
+            </div>
+            <div class="row mid gap8" style="flex:none">
+              <div style="text-align:right"><div class="mid2 num">${nbsp(ACHPX(a))}</div>
+                <div class="sub">l'identité après achat</div></div>
+              <button class="btn sec2 sm hot" onclick="event.stopPropagation();setState('Panier — 3 acheteurs')">+ Panier</button>
+              <button class="btn sm hot" onclick="event.stopPropagation();go('pro-achat')">Aperçu</button>
+            </div>
+          </div>
+        </div>`).join('')}
+      </div>
+
+      <div class="disc mt8">${pin(2)} Avant l'achat : critères, commune, projet, score, financement
+      oui / non, activité, agences l'ayant acheté. Après l'achat : nom, téléphone, email, message.
+      Le score et l'activité sont réels — jamais de fausse urgence.</div>
+      <div class="disc mt8">${pin(8)} Chacun de ces acheteurs a coché lui-même la case « être contacté
+      par des agences » — jamais pré-cochée, révocable à tout moment. Quand l'un la décoche, il sort
+      du catalogue dans l'heure.</div>
+      <div class="mt14">${rassurance()}</div>
+    </div>`;
+  }
+});
+
+add({id:'pro-achat', g:'P2 — Monétisation', n:'15', title:'Acheter un acheteur — 20 / 30 / 40 €',
+  intro:"Le seul écran où l'agence sort sa carte. Ce qu'elle achète n'est pas une information sur un contact qu'elle a déjà — c'est un acquéreur qu'elle ne connaît pas, et qu'elle ne peut connaître nulle part ailleurs. Trois conditions pour que ça marche : l'aperçu montre assez pour juger sans rien donner qui permette de contourner, le prix suit ce que l'acheteur a rempli, et les garanties — remboursé si injoignable, premier offert, jamais refacturé — sont sur l'écran, pas dans les CGU.",
+  states:['Aperçu anonymisé','Paiement','Identité révélée','Déjà acheté — jamais refacturé'],
+  notes:[
+    ['Le prix suit ce que l’acheteur a rempli, jamais un palier','20 € s’il n’y a que la recherche, 30 € s’il n’y a que le financement, 40 € s’il y a les deux. Cet acheteur n’a pas renseigné son financement : il n’y a donc pas de 30 € ni de 40 € à payer — l’écran le dit au lieu de le vendre quand même.'],
+    ['Aperçu anonymisé, jamais trompeur','visible : critères, commune, projet, score, financement oui/non, activité, agences l’ayant acheté. Masqué : nom, téléphone, email, message. Ce qui est montré est exact — un aperçu enjolivé se paie sur les trois premiers achats, et l’avatar agence juge sur l’échantillon.'],
+    ['« Sans abonnement » écrit noir sur blanc','c’est l’angoisse n°1 d’une agence échaudée. Elle vient de 1 040 €/mois payés d’avance à trois portails : le mot « abonnement » doit apparaître pour être nié.'],
+    ['Le partage est dit AVANT le paiement, et il ne fait pas baisser le prix','« 2 agences l’ont déjà acheté » est affiché sur l’aperçu et dans le récapitulatif. Ce qu’elle achète est une information sur l’acheteur, pas une exclusivité sur lui — et ça ne se défend que si c’est écrit avant le bouton.'],
+    ['Le doublon n’est jamais refacturé','même acheteur déjà acheté depuis un autre écran → on le dit et on n’encaisse rien. C’est le genre de détail qui achète plus de confiance que trois pages d’argumentaire.'],
+    ['Carte enregistrée = un clic','le second achat doit être plus rapide que le premier, sinon le modèle à l’acte ne décolle pas.'],
+    ['La révélation donne le contexte du premier appel','cet acheteur n’a pas contacté l’agence : l’écran d’après-achat rappelle d’où il vient et ce qu’il a accepté, pour que le premier appel ne ressemble jamais à du démarchage subi.']
+  ],
+  render:(st)=>{
+    const a = ACHETEURS[0];
+    if (st==='Déjà acheté — jamais refacturé') return `${appnav('Acheteurs','pro')}
       <div class="sec"><div style="max-width:640px;margin:0 auto">
         <div class="card"><div class="empty" style="padding:28px 22px">
           <div class="ico"></div>
-          <h4 class="wt">Vous avez déjà cette qualification${pin(5)}</h4>
-          <p>Vous avez acheté la qualification de <b>Karim B.</b> le 24/07, sur un autre de vos biens.
-          Elle est la même : nous ne vous la refacturons pas.</p>
+          <h4 class="wt">Vous avez déjà cet acheteur${pin(5)}</h4>
+          <p>Vous avez acheté l'acheteur <b>${a.id}</b> le 24/07, depuis l'alerte « T3 – T4 · Lyon ».
+          Son identité est déjà dans vos contacts : nous ne vous la refacturons pas.</p>
           <div class="row gap8">
-            <button class="btn hot" onclick="goState('pro-lead','Qualification achetée — 40 €')">Ouvrir la qualification</button>
-            <button class="btn sec2 hot" onclick="go('pro-dashboard')">Retour aux contacts</button>
+            <button class="btn hot" onclick="setState('Identité révélée')">Ouvrir sa fiche</button>
+            <button class="btn sec2 hot" onclick="go('pro-acheteurs')">Retour au catalogue</button>
           </div>
-          <div class="disc" style="margin-top:6px">Un même acquéreur n'est jamais facturé deux fois à la
-          même agence, quel que soit le nombre de vos biens qu'il contacte.</div>
+          <div class="disc" style="margin-top:6px">Un même acheteur n'est jamais facturé deux fois à la
+          même agence — quel que soit l'écran d'où vous l'achetez : annonce, catalogue ou alerte.</div>
         </div></div>
       </div></div>`;
 
-    if (st==='Débloqué') return `${appnav('Mes leads','pro')}
+    if (st==='Identité révélée') return `${appnav('Acheteurs','pro')}
       <div class="sec"><div style="max-width:640px;margin:0 auto">
-        <div class="card"><div class="empty">
-          <div class="ico"></div>
-          <h4 class="wt">Qualification débloquée</h4>
-          <p>Les critères de recherche de Karim B. sont maintenant visibles, avec ses coordonnées
-          — son téléphone a été vérifié par SMS. Facture disponible dans votre espace facturation.</p>
-          <div class="row gap8">
-            <button class="btn hot" onclick="goState('pro-lead','Qualification achetée — 40 €')">Ouvrir la fiche</button>
-            <button class="btn sec2 hot" onclick="go('pro-factures')">Voir la facture</button></div>
-        </div></div>
+        <div class="card">
+          <div class="pad" style="border-bottom:1px solid var(--line-2)">
+            <div class="row mid stackm" style="justify-content:space-between;gap:12px">
+              <div class="row mid gap8">
+                <div class="avatar" style="width:40px;height:40px"></div>
+                <div><div class="mid2">${a.nom}</div>
+                  <div class="row mid gap6" style="margin-top:3px;flex-wrap:wrap">
+                    <span class="chip">Téléphone vérifié par SMS</span>
+                    <span class="chip k">sérieux ${a.score} / 100</span>
+                  </div></div>
+              </div>
+              <span class="chip k" style="flex:none">acheté ${nbsp('20 €')} — facture disponible</span>
+            </div>
+          </div>
+          <div class="pad" style="border-bottom:1px solid var(--line-2)">
+            <div class="col gap6">
+              ${[['Téléphone','06 51 20 84 03'],['Email','claire.f@…'],
+                 ['Sa recherche', a.crit],['Secteur', a.zone+' et alentours'],['Projet', a.projet]]
+                .map(([k,v])=>`<div class="row mid" style="justify-content:space-between;gap:10px">
+                  <span class="lbl">${k}</span><span class="num" style="font-weight:600;text-align:right">${nbsp(v)}</span></div>`).join('')}
+            </div>
+          </div>
+          <div class="pad">
+            <div class="bandeau">${pin(7)} ${a.nom} ne vous a pas contactée : elle a accepté d'être
+            appelée par des agences dont les biens correspondent à sa recherche. Dites-le en ouvrant
+            l'appel — c'est le contexte qui transforme un appel à froid en service rendu.</div>
+            <div class="row gap8 mt14">
+              <button class="btn hot">Appeler</button>
+              <button class="btn sec2 hot" onclick="go('pro-acheteurs')">Retour au catalogue</button>
+              <button class="btn sec2 hot" onclick="go('pro-factures')">Voir la facture</button>
+            </div>
+            <div class="disc mt8">Injoignable après plusieurs tentatives ? Recrédité, sans justification
+            à fournir — le bouton est sur cette fiche, pas dans un formulaire de support.</div>
+          </div>
+        </div>
       </div></div>`;
 
-    if (st==='Paiement') return `${appnav('Mes leads','pro')}
+    if (st==='Paiement') return `${appnav('Acheteurs','pro')}
       <div class="sec"><div style="max-width:560px;margin:0 auto">
         <div class="card"><div class="pad" style="padding:22px">
           <h4 class="wt">Paiement</h4>
           <div class="card flat pad mt14" style="background:var(--fill-2)">
             <div class="row mid" style="justify-content:space-between;gap:10px">
-              <div style="min-width:0"><div class="txt" style="font-weight:500;color:var(--ink)">Qualification — recherche</div>
-                <div class="sub">Karim B. · Immeuble · 210 m² · Vaise</div></div>
+              <div style="min-width:0"><div class="txt" style="font-weight:500;color:var(--ink)">Acheteur ${a.id} — sa recherche</div>
+                <div class="sub">correspond à « T3 · 62 m² · Lyon 7ᵉ » · ${a.actif}</div></div>
               <div class="mid2 num" style="flex:none">${nbsp('20 €')}</div>
             </div>
             <div class="hr" style="margin:10px 0"></div>
             <div class="row mid" style="justify-content:space-between">
-              <span class="sub">Recevoir ce contact</span><span class="num sub">${nbsp('0 €')}</span></div>
+              <span class="sub">Vos contacts reçus</span><span class="num sub">toujours gratuits</span></div>
             <div class="row mid" style="justify-content:space-between">
               <span class="sub">Abonnement</span><span class="num sub">aucun</span></div>
             <div class="row mid" style="justify-content:space-between">
-              <span class="sub">${pin(7)} Destinataires de la demande</span>
+              <span class="sub">${pin(4)} Déjà acheté par</span>
               <span class="num sub">2 agences</span></div>
           </div>
-          <div class="disc mt8">Karim B. a adressé la même demande aux 2 mandataires du bien.
-          L'autre agence paiera le même prix que vous pour la même qualification — ni plus, ni moins.
-          Nous vous le disons avant l'achat parce que ça change votre façon de le rappeler,
-          pas parce que ça change le tarif.</div>
+          <div class="disc mt8">Deux agences ont déjà acheté ce profil, au même prix que vous.
+          Vous achetez une information sur cet acheteur, pas une exclusivité sur lui — nous vous le
+          disons avant le paiement parce que ça change votre façon de l'appeler, pas le tarif.</div>
           <div class="row mid gap8 mt20">
             <div class="ph solid" style="width:34px;height:22px;flex:none">••••</div>
             <div class="grow"><div class="txt">Visa se terminant par 4218</div><div class="sub">expire 09/29</div></div>
             <span class="linkish sub">${pin(6)} Changer</span>
           </div>
-          <button class="btn full mt20 hot" onclick="setState('Débloqué')">Payer ${nbsp('20 €')} et ouvrir la qualification</button>
+          <button class="btn full mt20 hot" onclick="setState('Identité révélée')">Payer ${nbsp('20 €')} et révéler son identité</button>
           <div class="sub" style="text-align:center;margin-top:10px">${pin(3)} Débité une seule fois, maintenant.
-          Aucun abonnement, aucun engagement, aucune reconduction.</div>
+          Aucun abonnement, aucun engagement, aucune reconduction. Remboursé si injoignable.</div>
         </div></div>
       </div></div>`;
 
-    return `${appnav('Mes leads','pro')}
+    return `${appnav('Acheteurs','pro')}
       <div class="sec"><div style="max-width:760px;margin:0 auto">
         <div class="card">
           <div class="pad" style="border-bottom:1px solid var(--line-2)">
             <div class="row mid" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
-              <div><h4 class="wt">Qualification disponible — Karim B.</h4>
-                <div class="sub">Sur votre bien « Immeuble · 210 m² · Vaise » · reçu hier</div>
-                <div class="row mid gap6 mt8 wrap"><span class="chip o">Partagé · 2 agences</span>
-                  <span class="sub">${pin(7)} Karim B. a contacté les 2 mandataires du bien</span></div></div>
+              <div><h4 class="wt">Acheteur ${a.id}</h4>
+                <div class="sub">correspond à votre bien « T3 · 62 m² · Lyon 7ᵉ » · ${a.actif}</div>
+                <div class="row mid gap6 mt8 wrap"><span class="chip o">${pin(4)} 2 agences l'ont déjà acheté</span>
+                  <span class="sub">chacune au même prix — jamais d'exclusivité vendue</span></div></div>
               <span class="chip k">${nbsp('20 €')}</span>
             </div>
           </div>
           <div class="pad" style="border-bottom:1px solid var(--line-2)">
             <div class="row mid" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
-              <div class="lbl">${pin(2)} Ce que vous avez déjà, gratuitement</div>
-              <span class="chip k">${nbsp('0 €')}</span>
+              <div class="lbl">${pin(2)} Ce que vous voyez avant d'acheter</div>
+              <span class="chip k">exact, jamais enjolivé</span>
             </div>
             <div class="grid2 mt8">
-              ${[['Identité','Karim B.'],['Téléphone','vérifié par SMS'],
-                 ['Email','disponible'],['Son message','disponible']]
+              ${[['Projet',a.projet],['Sa recherche',a.crit],
+                 ['Secteur',a.zone+' — jamais l\'adresse'],['Score de sérieux',a.score+' / 100'],
+                 ['Financement','non renseigné'],['Activité',a.actif]]
                 .map(([k,v])=>`<div class="card flat pad"><div class="lbl">${k}</div>
                   <div class="num" style="font-weight:600;margin-top:3px">${nbsp(v)}</div></div>`).join('')}
             </div>
-            <div class="disc mt8">${pin(4)} Si vous n'achetez rien, ce contact reste à vous : vous pouvez
-            le rappeler tout de suite. Recevoir est gratuit, sans plafond et sans date de fin.</div>
           </div>
           <div class="pad">
             <div class="row mid" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
-              <div class="lbl">${pin(1)} Ce que la qualification ajoute</div>
-              <span class="chip">aperçu partiel</span>
+              <div class="lbl">${pin(2)} Ce que l'achat révèle</div>
+              <span class="chip">après paiement seulement</span>
             </div>
             <div class="grid2 mt8">
-              ${[['Type de projet','Investissement locatif',false],['Budget maximum','410 000 €',false],
-                 ['Délai','moins de 6 mois',false],['Secteurs et surface visés','•••••',true],
-                 ['Biens déjà consultés chez vous','•••••',true]]
-                .map(([k,v,masq])=>`<div class="card flat pad" ${masq?'style="background:var(--fill)"':''}>
+              ${[['Nom et prénom','•••••'],['Téléphone','•••••'],
+                 ['Email','•••••'],['Son message éventuel','•••••']]
+                .map(([k,v])=>`<div class="card flat pad" style="background:var(--fill)">
                   <div class="lbl">${k}</div>
-                  <div class="num" style="font-weight:600;margin-top:3px;${masq?'letter-spacing:2px;color:var(--ink-3)':''}">${nbsp(v)}</div></div>`).join('')}
+                  <div class="num" style="font-weight:600;margin-top:3px;letter-spacing:2px;color:var(--ink-3)">${nbsp(v)}</div></div>`).join('')}
             </div>
-            <div class="disc mt8">Karim B. n'a pas rempli le volet financement : <b>il n'y a donc pas
-            de ${nbsp('30 €')} ni de ${nbsp('40 €')} à payer ici</b>. Sa qualification s'arrête à ses critères.</div>
+            <div class="disc mt8">${a.id} n'a pas rempli le volet financement : <b>il n'y a donc pas
+            de ${nbsp('30 €')} ni de ${nbsp('40 €')} à payer ici</b>. Sa fiche s'arrête à sa recherche
+            et son score.</div>
 
             <div class="lbl mt20">${pin(1)} Pourquoi ${nbsp('20 €')} et pas ${nbsp('40 €')}</div>
-            <div class="mt8">${grilleLeads('rech')}</div>
+            <div class="mt8">${grilleAcheteurs('rech')}</div>
 
-            <button class="btn full mt20 hot" onclick="setState('Paiement')">Débloquer la qualification — ${nbsp('20 €')}</button>
+            <button class="btn full mt20 hot" onclick="setState('Paiement')">Acheter — ${nbsp('20 €')}, identité révélée ensuite</button>
             <div class="sub" style="text-align:center;margin-top:10px">${pin(3)} Paiement à l'acte, aucun abonnement —
               <span class="more" onclick="POP.tarif()">toute la grille</span></div>
+            <div class="mt14">${rassurance()}</div>
           </div>
         </div>
       </div></div>`;
@@ -5719,13 +6134,14 @@ add({id:'pro-factures', g:'P2 — Monétisation', n:'16', title:'Paiements & fac
   notes:[
     ['La ligne « publication » à 0 €','la montrer explicitement dans le récapitulatif prouve la promesse mieux qu’un slogan.'],
     ['Historique téléchargeable en un clic','PDF par ligne et export mensuel comptable.'],
-    ['Frais de service séparés des leads','deux natures de revenus différentes — les mélanger crée de la confusion au moment du rapprochement comptable.']
+    ['Frais de service séparés des acheteurs','deux natures de revenus différentes — les mélanger crée de la confusion au moment du rapprochement comptable.'],
+    ['Une ligne d\'acheteur porte sa référence anonyme','« AC-231 · via alerte » suffit au rapprochement : l\'identité achetée vit dans les fiches, pas dans un document comptable qui circule.']
   ],
   render:()=>`${appnav('Facturation','pro')}
   <div class="sec">
     <h4 class="wt">Facturation</h4>
     <div class="grid3 mt20">
-      ${[['Ce mois','120 €','4 qualifications achetées'],['Frais de service','1 340 €','2 ventes déclarées'],['Publication de biens','0 €','23 biens · gratuit, sans limite']]
+      ${[['Ce mois','120 €','4 acheteurs achetés'],['Frais de service','1 340 €','2 ventes déclarées'],['Publication & contacts','0 €','23 biens · 47 contacts — gratuit, sans limite']]
         .map(([k,v,s],i)=>`<div class="card flat pad">
           <div class="lbl">${k}</div><div class="big num" style="margin-top:3px">${nbsp(v)}</div>
           <div class="sub">${i===2?pin(1):''} ${nbsp(s)}</div></div>`).join('')}
@@ -5734,29 +6150,29 @@ add({id:'pro-factures', g:'P2 — Monétisation', n:'16', title:'Paiements & fac
   <div class="sec">
     <div class="row mid" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
       <h5 class="wt">Historique</h5>
-      <div class="row gap8 wrap"><span class="chip k">Tout</span><span class="chip">${pin(3)} Leads</span>
+      <div class="row gap8 wrap"><span class="chip k">Tout</span><span class="chip">${pin(3)} Acheteurs</span>
       <span class="chip">Frais de service</span><button class="btn sec2 sm">${pin(2)} Export comptable</button></div>
     </div>
     <div class="card mt14">
       <table class="wt">
         <thead><tr><th>Date</th><th>Objet</th><th>Référence</th><th class="n">Montant</th><th class="n">Facture</th></tr></thead>
         <tbody>
-          ${[['04/08/2026','Qualification — recherche + financement','Marc D. · T3 Lyon 7ᵉ','40 €'],
-             ['02/08/2026','Qualification — recherche','Karim B. · Immeuble Vaise','20 €'],
+          ${[['04/08/2026','Acheteur — recherche + financement (déclaratif)','AC-207 · via le catalogue','40 €'],
+             ['02/08/2026','Acheteur — recherche','AC-118 · via « T3 Lyon 7ᵉ »','20 €'],
              ['29/07/2026','Frais de service Hauzmy (0,16 %)','T4 Lyon 3ᵉ · 415 000 €','664 €'],
-             ['24/07/2026','Qualification — financement (déclaratif)','Sophie L. · T2 Villeurbanne','30 €'],
-             ['18/07/2026','Publication de biens (23)','juillet 2026','0 €']]
+             ['24/07/2026','Acheteur — recherche (premier offert)','AC-092 · via alerte','0 €'],
+             ['18/07/2026','Publication de biens (23) et contacts reçus (47)','juillet 2026','0 €']]
             .map(r=>`<tr><td class="sub">${r[0]}</td><td><b style="color:var(--ink)">${r[1]}</b></td>
               <td class="sub">${nbsp(r[2])}</td><td class="n">${nbsp(r[3])}</td>
               <td class="n"><button class="btn sm sec2">PDF</button></td></tr>`).join('')}
         </tbody>
       </table>
       <div class="mobonly col gap8 pad">
-        ${[['04/08/2026','Qualification — recherche + financement','Marc D. · T3 Lyon 7ᵉ','40 €'],
-           ['02/08/2026','Qualification — recherche','Karim B. · Immeuble Vaise','20 €'],
+        ${[['04/08/2026','Acheteur — recherche + financement (déclaratif)','AC-207 · via le catalogue','40 €'],
+           ['02/08/2026','Acheteur — recherche','AC-118 · via « T3 Lyon 7ᵉ »','20 €'],
            ['29/07/2026','Frais de service Hauzmy (0,16 %)','T4 Lyon 3ᵉ · 415 000 €','664 €'],
-           ['24/07/2026','Qualification — financement (déclaratif)','Sophie L. · T2 Villeurbanne','30 €'],
-           ['18/07/2026','Publication de biens (23)','juillet 2026','0 €']]
+           ['24/07/2026','Acheteur — recherche (premier offert)','AC-092 · via alerte','0 €'],
+           ['18/07/2026','Publication de biens (23) et contacts reçus (47)','juillet 2026','0 €']]
           .map(([date,objet,ref,montant])=>`
           <div class="card flat pad">
             <div class="row mid" style="justify-content:space-between;gap:10px">
@@ -5812,7 +6228,7 @@ add({id:'pro-vente', g:'P2 — Monétisation', n:'17', title:'Déclaration de ve
             ${inp('Date de signature','29/07/2026',{hint:'compromis ou acte authentique'})}
           </div>
           <div class="mt14">
-            ${inp('Acquéreur venu de la plateforme','Oui — Marc D.')}
+            ${inp('Acquéreur venu de la plateforme','Oui — acheté au catalogue (AC-231)')}
           </div>
 
           <div class="card flat pad mt20" style="background:var(--fill-2)">
@@ -5829,7 +6245,8 @@ add({id:'pro-vente', g:'P2 — Monétisation', n:'17', title:'Déclaration de ve
           </div>
 
           <div class="bandeau mt14">${pin(3)} Sur ce bien, vous n'avez rien payé pour la diffusion (64 jours en ligne),
-          rien pour les 7 leads gratuits reçus, et 40 € pour le lead qualifié qui a conclu.</div>
+          rien pour les 7 contacts reçus — en entier —, et 40 € pour l'acheteur trouvé au catalogue,
+          qui a conclu.</div>
 
           <div class="row mid mt20" style="justify-content:space-between;gap:8px;flex-wrap:wrap">
             <span class="linkish sub">${pin(4)} Ce montant ne correspond pas ?</span>
@@ -5900,8 +6317,9 @@ add({id:'site-home', g:'Site vitrine', n:'', scope:'site', title:'Landing publiq
         <span class="chip">Pour les agences</span>
         <h4 class="wt mt14" style="font-size:22px">Publiez autant de biens que vous voulez. Gratuitement.${pin(1)}</h4>
         <p class="txt mt8">Pas d'abonnement de diffusion, pas de forfait d'annonces. Vous déposez les données du bien,
-        nous écrivons l'annonce et vous la relisez. Vous ne payez que les leads qualifiés que vous choisissez
-        d'acheter — et 0,16 % du prix de vente en frais de service si la vente se conclut.</p>
+        nous écrivons l'annonce et vous la relisez. Vos contacts vous arrivent en entier, gratuitement.
+        Vous ne payez que les acheteurs qualifiés que vous choisissez d'acheter au catalogue — des
+        acquéreurs qui ne vous ont pas contactés — et 0,16 % du prix de vente si la vente se conclut.</p>
         <div class="row gap8 mt20 wrap"><button class="btn hot" onclick="go('pro-siret')">Créer un compte agence</button>
         <button class="btn sec2">Voir la grille tarifaire</button></div>
       </div>
@@ -5916,8 +6334,8 @@ add({id:'site-home', g:'Site vitrine', n:'', scope:'site', title:'Landing publiq
     </div>
     <div class="grid4">
       ${[['Publier un bien','0 €','sans limite de nombre ni de durée'],
-         ['Recevoir un contact','0 €','gratuit à vie, sans plafond'],
-         ['Sa qualification','20 à 40 €','à l\'acte, selon ce qu\'il a rempli'],
+         ['Recevoir un contact','0 €','en entier — identité, téléphone, projet — à vie'],
+         ['Un acheteur qualifié','20 à 40 €','un acquéreur qui ne vous a pas contactés'],
          ['Vente conclue','0,16 %','frais de service, du prix de vente · min. 100 €']]
         .map(([k,v,s])=>`<div class="card flat pad"><div class="lbl">${k}</div>
           <div class="big num" style="margin-top:3px">${nbsp(v)}</div><div class="sub">${nbsp(s)}</div></div>`).join('')}
@@ -5984,6 +6402,11 @@ function toggleLeadAg(i){
   show(cur, true);
 }
 function leadAgList(){ return BIENS[0].ags.filter((_,i)=>leadAgs().has(i)); }
+
+/* Consentement catalogue d'acheteurs — JAMAIS pré-coché, révocable (paramètres).
+   Distinct de l'envoi de la demande : deux consentements, deux cases, deux moments. */
+let OPTIN = false;
+function toggleOptin(){ OPTIN = !OPTIN; show(cur, true); }
 
 /* L'OTP sert deux entrées : la création de compte classique, et la fin du tunnel de
    mise en relation d'un visiteur. Le drapeau dit d'où l'on vient — il change le fil
