@@ -1035,10 +1035,11 @@ const BIENS = [
    sc:'7,2', m2:'4 661 €/m²', src:'Dépôt direct agence', maj:'aujourd\'hui',
    dv:'2,7 %', dvl:'en 41 jours', nomove:null, hist:'nominal',
    mens:'1 187 €/mois', btot:'310 700 €', notaire:'21 700 €', notpc:'≈ 7,5 %',
+   hono:'12 500 €', honopc:'4,3 %', netv:'276 500 €',
    m2med:'4 480 €/m²', m2d:'+4,0 % vs le quartier', vente:'41 jours',
-   ags:[['Agence du Parc','289 000 €','Mandat exclusif · données déposées en direct',true,true],
-        ['Rhône Immobilier','297 000 €','Mandat simple · données déposées en direct',false,true],
-        ['Lyon 7 Habitat','292 000 €','Mandat simple · connue par le flux partenaire',false,false]],
+   ags:[['Agence du Parc','289 000 €','Mandat exclusif · données déposées en direct',true,true,'12 500 €'],
+        ['Rhône Immobilier','297 000 €','Mandat simple · données déposées en direct',false,true,'20 500 €'],
+        ['Lyon 7 Habitat','292 000 €','Mandat simple · connue par le flux partenaire',false,false,null]],
    est:{lo:'268 000 €', med:'284 000 €', hi:'301 000 €', pos:56, band:[22,78], tag:'au prix du marché', delta:'+1,8 % vs ventes conclues', ok:true}},
   {f:{z:'Roubaix', dep:'Nord', type:'Immeuble', pc:'T5 et +', ch:6, surf:180, prix:165000, rdt:12.7, mens:678, eq:['Cave']},
    t:'Immeuble 3 lots · 180 m² · Roubaix (Épeule)', p:'165 000 €', d:'3 appartements loués', dpe:'E',
@@ -1048,8 +1049,9 @@ const BIENS = [
    dv:null, dvl:null, nomove:'Aucun mouvement de prix depuis la mise en ligne, il y a 21 jours.', hist:null,
    mens:'678 €/mois', btot:'177 400 €', notaire:'12 400 €', notpc:'≈ 7,5 %',
    m2med:'1 010 €/m²', m2d:'−9,2 % vs le quartier', vente:'21 jours',
-   ags:[['Nord Patrimoine','165 000 €','Mandat simple · connue par le flux partenaire',true,false],
-        ['Roubaix Immobilier','169 000 €','Mandat simple · données déposées en direct',false,true]],
+   hono:null,
+   ags:[['Nord Patrimoine','165 000 €','Mandat simple · connue par le flux partenaire',true,false,null],
+        ['Roubaix Immobilier','169 000 €','Mandat simple · données déposées en direct',false,true,'9 400 €']],
    est:{lo:'158 000 €', med:'176 000 €', hi:'194 000 €', pos:32, band:[15,85], tag:'sous le prix du marché', delta:'−6,3 % vs ventes conclues', ok:true}},
   {f:{z:'Paris 11ᵉ', dep:'Paris', type:'Appartement', pc:'Studio', ch:0, surf:24, prix:245000, rdt:4.7, mens:1006, eq:['Ascenseur']},
    t:'Studio · 24 m² · Paris 11ᵉ (Oberkampf)', p:'245 000 €', d:'1 pièce · encadrement des loyers', dpe:'D',
@@ -1058,7 +1060,8 @@ const BIENS = [
    dv:null, dvl:null, nomove:'En ligne depuis 1 jour — pas encore d\'historique de prix.', hist:null,
    mens:'1 006 €/mois', btot:'263 300 €', notaire:'18 300 €', notpc:'≈ 7,5 %',
    m2med:'9 740 €/m²', m2d:'+4,8 % vs le quartier', vente:'1 jour',
-   ags:[['Oberkampf Immo','245 000 €','Mandat simple · connue par le flux partenaire',true,false]],
+   hono:null,
+   ags:[['Oberkampf Immo','245 000 €','Mandat simple · connue par le flux partenaire',true,false,null]],
    est:{lo:'221 000 €', med:'234 000 €', hi:'249 000 €', pos:74, band:[20,80], tag:'au-dessus du marché', delta:'+4,7 % vs ventes conclues', ok:true}},
   {f:{z:'Mérignac', dep:'Gironde', type:'Maison', pc:'T5 et +', ch:4, surf:145, prix:448500, rdt:0, mens:1842, eq:['Jardin','Garage']},
    t:'Maison 5 pièces · 145 m² · Mérignac', p:'448 500 €', d:'145 m² · prix baissé 2 fois (−6,5 %)', dpe:'G',
@@ -1067,7 +1070,8 @@ const BIENS = [
    dv:'6,5 %', dvl:'en deux fois, sur 87 jours', nomove:null, hist:'lim',
    mens:'1 842 €/mois', btot:'481 700 €', notaire:'33 200 €', notpc:'≈ 7,4 %',
    m2med:'3 240 €/m²', m2d:'−4,5 % vs la commune', vente:'87 jours',
-   ags:[['Sud-Ouest Habitat','448 500 €','Mandat simple · connue par le flux partenaire',true,false]],
+   hono:null,
+   ags:[['Sud-Ouest Habitat','448 500 €','Mandat simple · connue par le flux partenaire',true,false,null]],
    est:{ok:false, tag:'non estimable', delta:'pas assez de ventes comparables'}},
   /* ---- le stock des zones par défaut ----
      La liste ne peut respecter les critères que si elle a de quoi choisir : quatre biens
@@ -1602,8 +1606,12 @@ const POP = {
           ? `Le prix a baissé de <b>${b.dv}</b> ${b.dvl} — c'est un argument de négociation,
              pas un défaut du bien.`
           : b.nomove}</div>
-        <div class="disc mt8">Prix affiché par l'agence, honoraires inclus. Le prix au m² est calculé
-        sur la surface loi Carrez ; la médiane du quartier vient des ventes DVF.</div>
+        <div class="disc mt8">${b.hono
+          ? `Prix affiché honoraires inclus — ${nbsp(b.hono)} (${b.honopc}), à la charge du vendeur,
+             déclarés par l'agence.`
+          : `Prix affiché honoraires inclus, à la charge du vendeur. L'agence n'a pas déclaré leur
+             montant — il figure sur son barème, que la loi l'oblige à publier.`}
+        Le prix au m² est calculé sur la surface loi Carrez ; la médiane du quartier vient des ventes DVF.</div>
       </section>
 
       <section id="anc-marche">
@@ -1661,7 +1669,9 @@ const POP = {
       <section id="anc-budget">
         <div class="row mid" style="margin-bottom:12px"><h5 class="wt">Budget total</h5></div>
         <div class="col gap6">
-          ${[['Prix affiché',b.p],[`Frais de notaire (${b.notpc})`,b.notaire]]
+          ${[['Prix affiché',b.p],
+             ...(b.hono ? [[`— dont net vendeur`,b.netv],[`— dont honoraires d'agence (${b.honopc}, charge vendeur)`,b.hono]] : []),
+             [`Frais de notaire (${b.notpc})`,b.notaire]]
             .map(([k,v])=>`<div class="row mid" style="justify-content:space-between">
               <span class="txt">${k}</span><span class="num" style="font-weight:600">${nbsp(v)}</span></div>`).join('')}
           <div class="hr" style="margin:8px 0"></div>
@@ -1669,7 +1679,14 @@ const POP = {
             <span class="txt" style="font-weight:600;color:var(--ink)">Le vrai chiffre à financer</span>
             <span class="mid2 num">${nbsp(b.btot)}</span></div>
         </div>
-        <div class="disc mt14">Frais de notaire estimés pour de l'ancien, hors frais bancaires et travaux.
+        ${b.hono ? `<div class="bandeau mt14"><b>Le net vendeur borne la négociation.</b>
+          Quelle que soit l'agence, le vendeur part de ${nbsp(b.netv)} — les ${nbsp(b.hono)}
+          d'honoraires sont la marge de l'agence, et c'est la part du prix qui peut bouger
+          sans rien retirer au vendeur.</div>`
+        : `<div class="disc mt14">Le montant des honoraires n'est pas déclaré : demandez-le à
+          l'agence avant de faire une offre — c'est la part du prix qui se négocie sans rien
+          retirer au vendeur.</div>`}
+        <div class="disc mt8">Frais de notaire estimés pour de l'ancien, hors frais bancaires et travaux.
         Estimation indicative, non contractuelle.</div>
       </section>
 
@@ -1679,7 +1696,7 @@ const POP = {
           <span class="chip o">une seule annonce, la nôtre</span>
         </div>
         <div class="col gap6">
-          ${b.ags.map(([ag,px,mand,vit])=>`
+          ${b.ags.map(([ag,px,mand,vit,,ho])=>`
             <div class="card flat pad">
               <div class="row mid agrow" style="justify-content:space-between;gap:10px">
                 <div style="min-width:0">
@@ -1687,13 +1704,20 @@ const POP = {
                     ${vit?'<span class="chip k">En tête de liste</span>':''}</div>
                   <div class="sub">${mand}</div>
                 </div>
-                <div class="mid2 num" style="flex:none">${nbsp(px)}</div>
+                <div style="flex:none;text-align:right">
+                  <div class="mid2 num">${nbsp(px)}</div>
+                  <div class="sub num">${ho?`dont ${nbsp(ho)} d'honoraires`:'honoraires non déclarés'}</div>
+                </div>
               </div>
             </div>`).join('')}
         </div>
         <div class="disc mt14">${multi
-          ? `Les écarts viennent le plus souvent des honoraires d'agence. Nous les affichons, nous ne les
-             classons pas : le prix retenu en tête de fiche est le plus bas connu.`
+          ? (b.netv
+            ? `Le net vendeur est le même partout : ${nbsp(b.netv)}. L'écart entre les prix affichés,
+               ce sont les honoraires de chaque agence — nous les affichons, nous ne les classons pas :
+               le prix retenu en tête de fiche est le plus bas connu.`
+            : `Les écarts viennent le plus souvent des honoraires d'agence. Nous les affichons, nous ne les
+               classons pas : le prix retenu en tête de fiche est le plus bas connu.`)
           : `Une seule agence détient ce bien à notre connaissance.`}</div>
       </section>
     </div>`;
@@ -3526,6 +3550,13 @@ add({id:'fiche', g:'P0 — Parcours acquéreur', n:'03', title:'Fiche bien — l
                 <span class="chip ${b.est.ok?'':'o'}">${b.est.tag[0].toUpperCase()+b.est.tag.slice(1)}</span>
                 <span class="sub num">${nbsp(b.m2)}</span>
               </div>
+              ${/* La mention est obligatoire (arrêté du 10/01/2017), le montant est un levier :
+                   le net vendeur ne change pas d'une agence à l'autre, les honoraires sont la
+                   part du prix qui peut bouger sans rien retirer au vendeur. Déclaré → on
+                   l'affiche. Pas déclaré → on le dit, on n'invente pas de moyenne. */''}
+              <div class="sub" style="margin-top:6px">${b.hono
+                ? `Honoraires ${nbsp(b.hono)} (${b.honopc}) · charge vendeur, inclus`
+                : `Honoraires charge vendeur, inclus — montant non déclaré`}</div>
             </div>
             <div class="hr"></div>
             <div>
@@ -3663,7 +3694,8 @@ add({id:'annonce-agence', g:'P0 — Parcours acquéreur', n:'', scope:'f010',
               <span class="lbl">Prix de cette agence</span><span class="linkish sub">détail ›</span>
             </div>
             <div class="big num">${nbsp('289 000 €')}</div>
-            <div class="sub">Honoraires inclus · budget total ${nbsp('310 700 €')}</div>
+            <div class="sub">dont ${nbsp('12 500 €')} d'honoraires (charge vendeur) ·
+              budget total ${nbsp('310 700 €')}</div>
           </div>
           <div class="hr"></div>
           <div class="col gap6">
