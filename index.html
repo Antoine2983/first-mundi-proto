@@ -6132,7 +6132,7 @@ add({id:'pro-lead', g:'P2 — Monétisation', n:'14', title:'Fiche lead — la m
 
 add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'acheteurs — la demande que vous ne voyiez pas',
   intro:"Le produit payant : des **acheteurs qui n'ont contacté personne** — inscrits, en recherche active, d'accord pour être proposés aux agences. Le flow est **une liste, point** : tous les acheteurs qui correspondent à vos biens en ligne, et des **filtres** pour la travailler — le bien, le budget, le financement, le projet. Venir d'une annonce pose le filtre « bien », rien d'autre ne change. L'achat multiple est une **sélection en place** — on coche, une barre fait le total **en crédits** et débite le solde ; s'il ne suffit pas, elle emmène au paywall (packs dès 150 crédits). Partout, la même règle d'or : assez pour donner envie, pas assez pour contourner le déblocage.",
-  states:['Liste','Filtrée sur un bien','Sélection — 3','Sélection — 10 · solde insuffisant','Solde à 0','Alerte créée','Aucun résultat'],
+  states:['Liste','Filtrée sur un bien','Sélection — 3 · solde ok','Sélection — 10 · solde insuffisant','Solde à 0','Alerte créée','Aucun résultat'],
   notes:[
     ['Une liste et des filtres — pas des vues','l’ancien flow multipliait les habillages du même contenu : groupé par bien, « depuis une annonce », recherche libre, puis un toggle Par bien / Tous. Il n’y a qu’un objet : la liste. Tout le reste est un filtre dans la même barre — posé, retiré, combiné. Le filtre « Bien » est un vrai menu : chacun de vos biens avec son nombre d’acheteurs, ou tous — un clic pour isoler la demande d’un mandat, un clic pour revenir à tout. On sait toujours où on est : au même endroit.'],
     ['Le panier est mort, vive la sélection','un panier persistant est un objet à gérer : il se remplit sur un écran, s’affiche en badge sur un autre, survit à la navigation — l’ancien proto montrait « Panier · 3 » sur une vue où rien ne permettait d’ajouter. La sélection vit dans la liste : on coche, la barre totalise, on paie, elle meurt. Aucun état à retrouver, un seul tunnel d’achat.'],
@@ -6156,13 +6156,13 @@ add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'a
        cocher depuis une vue calme → « Sélection — 3 » ; continuer à cocher → le lot.
        Décocher redescend. La sélection ne survit pas à l'achat : après paiement,
        les profils sont dans « Mes leads », la barre a disparu. */
-    const selIds = st==='Sélection — 3' ? ['AC-118','AC-176','AC-052']
+    const selIds = st==='Sélection — 3 · solde ok' ? ['AC-118','AC-176','AC-052']
                  : st==='Sélection — 10 · solde insuffisant' ? ACHETEURS.map(a=>a.id) : [];
     const ck = a => {
       const on = selIds.includes(a.id);
       return {on, to: on
-        ? (st==='Sélection — 10 · solde insuffisant' ? 'Sélection — 3' : 'Liste')
-        : (st==='Sélection — 3' ? 'Sélection — 10 · solde insuffisant' : 'Sélection — 3')};
+        ? (st==='Sélection — 10 · solde insuffisant' ? 'Sélection — 3 · solde ok' : 'Liste')
+        : (st==='Sélection — 3 · solde ok' ? 'Sélection — 10 · solde insuffisant' : 'Sélection — 3 · solde ok')};
     };
     const unit = ACHETEURS.filter(a=>selIds.includes(a.id)).reduce((s,a)=>s+ACHPXN(a),0);
     const okSolde = unit<=SOLDE;
