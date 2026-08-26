@@ -999,7 +999,7 @@ const mobSearch = () => {
 
 /* `auth` peut être forcé : l'accueil pilote ses états lui-même (visiteur vs connecté),
    la nav doit suivre l'état choisi plutôt que la bascule globale de la barre d'outils. */
-const appnav = (active, who='customer', auth=AUTH) => {
+const appnav = (active, who='customer', auth=AUTH, solde=SOLDE) => {
   if (who==='pro') {
     const links = ['Tableau de bord','Mes biens','Mes leads','Acheteurs','Facturation'];
     return `<div class="appnav">
@@ -1007,8 +1007,8 @@ const appnav = (active, who='customer', auth=AUTH) => {
       <div class="logo hot" onclick="go('pro-dashboard')" title="Retour au tableau de bord">LOGO</div>
       ${links.map(l=>`<div class="lk ${l===active?'on':''}" ${GO[l]?`onclick="go('${GO[l]}')"`:''}>${l}</div>`).join('')}
       <div style="margin-left:auto" class="row mid gap8">
-        <span class="chip k hot num" title="Vos crédits — cliquez pour en acheter"
-          onclick="goState('pro-profil','Acheter des crédits')">◈ ${SOLDE} crédits</span>
+        <span class="chip ${solde===0?'o':'k'} hot num" title="Vos crédits — cliquez pour en acheter"
+          onclick="goState('pro-profil','Acheter des crédits')">◈ ${solde} crédit${solde>1?'s':''}</span>
         <span class="chip">Pro vérifié</span>
         <div class="avatar hot" title="Profil de l'agence" onclick="go('pro-profil')"
           style="display:flex;align-items:center;justify-content:center;color:var(--ink-3)">${USER_SVG}</div>
@@ -1280,8 +1280,11 @@ const DECLA = '<span class="chip o">capacité déclarative — non vérifiée</s
    20 crédits (recherche seule) · 30 (financement seul) · 40 (recherche + financement).
    Les crédits s'achètent par PACKS — 150 minimum — par carte, depuis le paywall
    (déclenché quand le solde ne suffit pas) ou depuis le profil. Ils n'expirent jamais.
-   Le solde est affiché en permanence dans la nav pro. */
-const SOLDE = 120;                       /* le solde maquette de l'Agence du Parc */
+   Le solde est affiché en permanence dans la nav pro.
+   À la création du compte : 40 CRÉDITS OFFERTS — de quoi débloquer un ou deux
+   acheteurs avant de payer quoi que ce soit (remplace l'ancien « premier offert »).
+   Solde maquette : +40 bienvenue −40 AC-092 +150 pack −20 AC-118 −40 AC-207 = 90. */
+const SOLDE = 90;                        /* le solde maquette de l'Agence du Parc */
 const PACKS = [
   {n:150,  p:'150 €', d:'le minimum — 3 à 7 acheteurs selon les profils'},
   {n:400,  p:'360 €', d:'10 % de moins par crédit', k:true},
@@ -1377,7 +1380,7 @@ const grilleAcheteurs = (actif) => `
 const rassurance = () => `
   <div class="grid2" style="gap:10px">
     ${[['Recrédité si injoignable','Un acheteur dont le numéro ne répond jamais est recrédité sur votre solde, sans justification à fournir.'],
-       ['Le premier est offert','Votre premier acheteur ne coûte aucun crédit — pour goûter la valeur avant de payer quoi que ce soit.'],
+       ['40 crédits offerts à l\'inscription','Chaque nouveau compte démarre avec 40 crédits — de quoi débloquer un ou deux acheteurs avant de payer quoi que ce soit.'],
        ['Jamais débité deux fois','Un même acheteur ne vous est jamais débité deux fois, quel que soit l\'écran d\'où vous le débloquez.'],
        ['Vos crédits n\'expirent jamais','Un solde qui expire est une pénalité déguisée. Le vôtre reste valable sans limite de temps.']]
       .map(([t,d])=>`<div class="card flat pad">
@@ -1505,7 +1508,7 @@ const PRO_LEADS = [
   {n:'Claire F.', b:'T3 · 62 m² · Lyon 7ᵉ',                  plein:false, etat:'Rappelé', d:'il y a 6 jours',
    acid:'AC-118', src:'catalogue', px:'20 crédits', deja:2},
   {n:'Romain T.', b:'Studio · 27 m² · Lyon 8ᵉ',              plein:true,  etat:'Traité',  d:'il y a 2 semaines',
-   acid:'AC-092', src:'alerte',    px:'0 crédit', deja:1}
+   acid:'AC-092', src:'alerte',    px:'40 crédits — les crédits de bienvenue', deja:1}
 ];
 /* la mention de partage — toujours dite, jamais en petits caractères */
 const partChip = l => l.part>1
@@ -1514,7 +1517,7 @@ const partChip = l => l.part>1
 /* provenance d'un lead acheté — le prix est affiché comme un fait passé : c'est lui
    qui prouve, par contraste, que les 47 autres lignes sont à 0 € */
 const provLbl = l => (l.src==='alerte' ? 'débloqué via une alerte' : 'débloqué au catalogue')
-  + (l.px==='0 crédit' ? ' — premier offert, 0 crédit' : ' — ' + l.px);
+  + ' — ' + l.px;
 /* qui d'autre a le même profil — l'équivalent du partChip pour un acheté */
 const achatChip = l => l.deja>0
   ? `<span class="chip o">Aussi acheté par ${l.deja} agence${l.deja>1?'s':''}</span>`
@@ -2887,7 +2890,7 @@ ${LQ ? '' : `<div id="locres">${locResultats()}</div>`}
     <div class="bandeau mt14"><b>Ce qui reste gratuit, sans plafond ni date de fin :</b> publier vos biens,
     recevoir vos contacts en entier — identité, téléphone, email, message, projet —, le tableau de bord,
     les factures. Ne rien acheter ne vous retire rien.</div>
-    <div class="disc mt8">Le premier acheteur est offert. Un acheteur injoignable est recrédité, sans
+    <div class="disc mt8">40 crédits sont offerts à la création du compte. Un acheteur injoignable est recrédité, sans
     justification à fournir. Un même acheteur n’est jamais débité deux fois à la même agence, et vos
     crédits n’expirent jamais. Ce que
     nous vérifions : son téléphone, par SMS. Ce que nous ne vérifions pas : son apport et sa capacité
@@ -4885,6 +4888,8 @@ add({id:'pro-dashboard', g:'P1 — Côté agence', n:'12', title:'Tableau de bor
       <div class="sec">
         <h4 class="wt">Bienvenue, Agence du Parc</h4>
         <div class="sub">Votre SIRET est vérifié. Il ne manque que vos biens.</div>
+        <div class="bandeau mt14"><b>40 crédits vous sont offerts</b> — de quoi débloquer un ou deux
+        acheteurs du catalogue quand vos biens seront en ligne. Ils n'expirent jamais.</div>
         <div class="card mt20"><div class="empty">
           <div class="ico"></div>
           <h5 class="wt">Publiez votre premier bien${pin(8)}</h5>
@@ -4914,7 +4919,7 @@ add({id:'pro-dashboard', g:'P1 — Côté agence', n:'12', title:'Tableau de bor
         </div>
         <div class="grid4 mt20">
           ${[['Biens en ligne','3','publiés il y a 2 jours'],['Contacts reçus','0','gratuits, en entier, à vie'],
-             ['Acheteurs achetés','0','le premier est offert'],['Ventes déclarées','0','frais de service 0,16 %']]
+             ['Crédits','40','offerts à l\'inscription — ils n\'expirent jamais'],['Ventes déclarées','0','frais de service 0,16 %']]
             .map(([k,v,s2])=>`<div class="card flat pad">
               <div class="lbl">${k}</div><div class="big num" style="margin-top:3px">${nbsp(v)}</div>
               <div class="sub">${nbsp(s2)}</div></div>`).join('')}
@@ -4994,7 +4999,7 @@ add({id:'pro-dashboard', g:'P1 — Côté agence', n:'12', title:'Tableau de bor
               <div class="col gap6 mt14">
                 ${ACHETEURS.filter(a=>a.bi===0).slice(0,2).map(a=>acheteurRow(a,false)).join('')}
               </div>
-              <button class="btn full mt14 hot" onclick="goState('pro-acheteurs','Filtrée sur un bien')">Voir les ${PRO_BIENS[0].match} acheteurs — le premier est offert</button>
+              <button class="btn full mt14 hot" onclick="goState('pro-acheteurs','Filtrée sur un bien')">Voir les ${PRO_BIENS[0].match} acheteurs — vos 40 crédits offerts les attendent</button>
               <div class="row mid gap6 mt8 wrap">${DECLA}
                 <span class="sub">Identité révélée après l'achat seulement.</span></div>
             </div>
@@ -5398,7 +5403,7 @@ add({id:'pro-bien', g:'P1 — Côté agence', n:'', title:'Fiche bien côté age
             ${bb.match} acheteurs qualifiés pour votre bien ». C'est ce que ces profils valent,
             au-delà du contact lui-même.</div>
             <div class="disc mt8">L'identité n'est révélée qu'après l'achat. Remboursé si injoignable ·
-            le premier acheteur est offert.</div>
+            40 crédits offerts à l'inscription.</div>
           </div>
         </div>` : ''}
 
@@ -5967,7 +5972,7 @@ add({id:'pro-lead', g:'P2 — Monétisation', n:'14', title:'Fiche lead — la m
 
 add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'acheteurs — la demande que vous ne voyiez pas',
   intro:"Le produit payant : des **acheteurs qui n'ont contacté personne** — inscrits, en recherche active, d'accord pour être proposés aux agences. Le flow est **une liste, point** : tous les acheteurs qui correspondent à vos biens en ligne, et des **filtres** pour la travailler — le bien, le budget, le financement, le projet. Venir d'une annonce pose le filtre « bien », rien d'autre ne change. L'achat multiple est une **sélection en place** — on coche, une barre fait le total **en crédits** et débite le solde ; s'il ne suffit pas, elle emmène au paywall (packs dès 150 crédits). Partout, la même règle d'or : assez pour donner envie, pas assez pour contourner le déblocage.",
-  states:['Liste','Filtrée sur un bien','Sélection — 3','Sélection — 10 · solde insuffisant','Alerte créée','Aucun résultat'],
+  states:['Liste','Filtrée sur un bien','Sélection — 3','Sélection — 10 · solde insuffisant','Solde à 0','Alerte créée','Aucun résultat'],
   notes:[
     ['Une liste et des filtres — pas des vues','l’ancien flow multipliait les habillages du même contenu : groupé par bien, « depuis une annonce », recherche libre, puis un toggle Par bien / Tous. Il n’y a qu’un objet : la liste. Tout le reste est un filtre dans la même barre — posé, retiré, combiné. On sait toujours où on est : au même endroit.'],
     ['Le panier est mort, vive la sélection','un panier persistant est un objet à gérer : il se remplit sur un écran, s’affiche en badge sur un autre, survit à la navigation — l’ancien proto montrait « Panier · 3 » sur une vue où rien ne permettait d’ajouter. La sélection vit dans la liste : on coche, la barre totalise, on paie, elle meurt. Aucun état à retrouver, un seul tunnel d’achat.'],
@@ -5979,17 +5984,19 @@ add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'a
     ['La fraîcheur est honnête ou n’est pas','« actif il y a 2 h », « 2 agences l’ont acheté » : des chiffres réels, affichés tels quels. Jamais de compteur qui descend, jamais de « plus que 3 » — la première fausse urgence détruit toutes les vraies.'],
     ['Le score de sérieux s’explique d’un clic, partout','même doctrine que le score du bien : 4 composants pondérés, tous visibles, aucun modèle opaque. La pastille ouvre le détail — profil renseigné (35), recherche active (30), réactivité (20), constance (15) — avec ce que le score n’est PAS : une solvabilité.'],
     ['Chaque acheteur a dit oui','case jamais pré-cochée, révocable à tout moment, côté acquéreur. C’est une obligation légale stricte et la condition du modèle — l’écran de consentement est maquetté côté B2C (mise en relation, profil, paramètres).'],
-    ['Le catalogue ne montre que le pas-encore-acheté','dès le paiement, les profils sortent du catalogue de cette agence et rejoignent « Mes leads » avec leur provenance — c’est là que la barre de sélection emmène après l’achat. Ce qui reste ici est donc toujours à acheter.']
+    ['Le catalogue ne montre que le pas-encore-acheté','dès le paiement, les profils sortent du catalogue de cette agence et rejoignent « Mes leads » avec leur provenance — c’est là que la barre de sélection emmène après l’achat. Ce qui reste ici est donc toujours à acheter.'],
+    ['Un solde à 0 ne cache rien','la liste reste entière, les aperçus restent ouverts, les contacts reçus restent gratuits — seul le déblocage attend. Le bandeau dit le solde, le chemin (packs dès 150) et le fait que les 40 crédits offerts sont passés. Masquer le catalogue à 0 crédit reviendrait à punir — on veut donner envie de recharger, pas frustrer.']
   ],
   render:(st)=>{
     const b0 = PRO_BIENS[0];
-    const nav = appnav('Acheteurs','pro');
+    const zero = st==='Solde à 0';
+    const nav = appnav('Acheteurs','pro',AUTH,zero?0:SOLDE);
 
     /* ---- la sélection en place — l'état maquetté remplace le panier d'avant ----
        cocher depuis une vue calme → « Sélection — 3 » ; continuer à cocher → le lot.
        Décocher redescend. La sélection ne survit pas à l'achat : après paiement,
        les profils sont dans « Mes leads », la barre a disparu. */
-    const selIds = st==='Sélection — 3' ? ['AC-118','AC-145','AC-231']
+    const selIds = st==='Sélection — 3' ? ['AC-118','AC-176','AC-052']
                  : st==='Sélection — 10 · solde insuffisant' ? ACHETEURS.map(a=>a.id) : [];
     const ck = a => {
       const on = selIds.includes(a.id);
@@ -6121,10 +6128,18 @@ add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'a
           ne vous a contacté. Retirez le filtre pour retrouver la liste entière.`
         : `${pin(1)} Une seule liste, les plus actifs d'abord — les filtres font le reste : un bien
           précis, un budget, un financement renseigné.`}
-        ${pin(2)} Cochez pour constituer une sélection : le total s'affiche en bas, l'aperçu reste à un clic.</div>
+        ${zero?'':`${pin(2)} Cochez pour constituer une sélection : le total s'affiche en bas, l'aperçu reste à un clic.`}</div>
+
+      ${zero?`<div class="bandeau mt14" style="border-left-width:4px">${pin(12)}
+        <b>Votre solde est à 0 crédit.</b> La liste reste entière, les aperçus restent ouverts et
+        vos contacts reçus restent gratuits — seul le déblocage attend une recharge.
+        <div class="row mid gap8 mt8 wrap">
+          <button class="btn sm hot" onclick="goState('pro-achat','Acheter des crédits')">Acheter des crédits — packs dès 150</button>
+          <span class="sub">Vos 40 crédits offerts à l'inscription sont déjà passés en déblocages.</span>
+        </div></div>`:''}
 
       <div class="col gap8 mt14">
-        ${liste.map(a=>acheteurRow(a,true,ck(a),filtre?null:bienDe(a))).join('')}
+        ${liste.map(a=>acheteurRow(a,true,zero?null:ck(a),filtre?null:bienDe(a))).join('')}
       </div>
       ${filtre?`<div class="bandeau mt14">${pin(7)} En rendez-vous mandat, ce chiffre est votre argument :
         « j'ai déjà ${b0.match} acheteurs qualifiés pour votre bien ». C'est ce que ces profils
@@ -6144,7 +6159,7 @@ add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'a
 
 
 add({id:'pro-achat', g:'P2 — Monétisation', n:'15', title:'Débloquer un acheteur — 20 / 30 / 40 crédits',
-  intro:"Le déblocage se paie **en crédits, jamais en euros directs** : 20 crédits (recherche seule) · 30 (financement seul) · 40 (les deux). Si le solde couvre, un clic suffit — la carte ne sort pas. Sinon, **le paywall** : des packs de crédits, **150 minimum**, qui n'expirent jamais. Ce que l'agence débloque n'est pas une information sur un contact qu'elle a déjà — c'est un acquéreur qu'elle ne connaît pas, introuvable ailleurs. Les garanties — recrédité si injoignable, premier offert, jamais débité deux fois — sont sur l'écran, pas dans les CGU.",
+  intro:"Le déblocage se paie **en crédits, jamais en euros directs** : 20 crédits (recherche seule) · 30 (financement seul) · 40 (les deux). Si le solde couvre, un clic suffit — la carte ne sort pas. Sinon, **le paywall** : des packs de crédits, **150 minimum**, qui n'expirent jamais. Ce que l'agence débloque n'est pas une information sur un contact qu'elle a déjà — c'est un acquéreur qu'elle ne connaît pas, introuvable ailleurs. Les garanties — recrédité si injoignable, 40 crédits offerts à l'inscription, jamais débité deux fois — sont sur l'écran, pas dans les CGU.",
   states:['Aperçu anonymisé','Acheter des crédits','Identité révélée','Déjà acheté — jamais redébité'],
   notes:[
     ['Le prix suit ce que l’acheteur a rempli, jamais un palier','20 crédits s’il n’y a que la recherche, 30 s’il n’y a que le financement, 40 s’il y a les deux. Cet acheteur n’a pas renseigné son financement : il n’y a donc pas 30 ni 40 crédits à débiter — l’écran le dit au lieu de le vendre quand même.'],
@@ -6310,10 +6325,11 @@ add({id:'pro-profil', g:'P2 — Monétisation', n:'16', title:'Profil de l\'agen
 
     /* ---------- le profil ---------- */
     const mouvements = [
-      ['il y a 6 jours','Déblocage — Acheteur AC-118 (Claire F.)','−20', `goState('pro-lead','Acheté au catalogue')`],
       ['il y a 4 jours','Déblocage — Acheteur AC-207 (Inès B.)','−40', `goState('pro-lead','Acheté au catalogue')`],
+      ['il y a 6 jours','Déblocage — Acheteur AC-118 (Claire F.)','−20', `goState('pro-lead','Acheté au catalogue')`],
       ['04/08','Pack de 150 crédits','+150', `go('pro-factures')`],
-      ['24/07','Premier acheteur offert — AC-092','0', `goState('pro-lead','Acheté au catalogue')`]
+      ['26/07','Déblocage — Acheteur AC-092 (Romain T.)','−40', `goState('pro-lead','Acheté au catalogue')`],
+      ['24/07','40 crédits offerts — création du compte','+40', '']
     ];
     return `${appnav('','pro')}
     <div class="sec">
@@ -6341,13 +6357,13 @@ add({id:'pro-profil', g:'P2 — Monétisation', n:'16', title:'Profil de l\'agen
             </div>
             <div class="pad">
               <div class="sub">${pin(3)} Ils n'expirent jamais, ne se reconduisent pas, ne s'abonnent
-              pas. Un déblocage coûte 20 à 40 crédits selon ce que l'acheteur a rempli — le premier
-              est offert.</div>
+              pas. Un déblocage coûte 20 à 40 crédits selon ce que l'acheteur a rempli —
+              40 crédits sont offerts à la création du compte.</div>
               <div class="col gap6 mt14">
                 ${mouvements.map(([d,t,m,dest])=>`
-                <div class="rrow hot" style="justify-content:space-between;padding:9px 10px" onclick="${dest}">
+                <div class="rrow ${dest?'hot':''}" style="justify-content:space-between;padding:9px 10px" ${dest?`onclick="${dest}"`:''}>
                   <div class="rtx" style="min-width:0"><b>${t}</b><span>${d}</span></div>
-                  <span class="num" style="flex:none;font-weight:600;${m.startsWith('+')?'':m==='0'?'color:var(--ink-3)':''}">${m==='0'?'offert':m}</span>
+                  <span class="num" style="flex:none;font-weight:600">${m}</span>
                 </div>`).join('')}
               </div>
               <div class="row gap8 mt14">
@@ -6480,9 +6496,9 @@ add({id:'pro-factures', g:'P2 — Monétisation', n:'16', title:'Paiements & fac
       <table class="wt">
         <thead><tr><th>Date</th><th>Objet</th><th>Référence</th><th class="n">Montant</th><th class="n">Facture</th></tr></thead>
         <tbody>
-          ${[['04/08/2026','Pack de 150 crédits','solde porté à 162 crédits','150 €'],
+          ${[['04/08/2026','Pack de 150 crédits','solde porté à 150 crédits','150 €'],
                ['29/07/2026','Frais de service First Mundi (0,16 %)','T4 Lyon 3ᵉ · 415 000 €','664 €'],
-             ['24/07/2026','Premier acheteur offert — aucun pack requis','bienvenue','0 €'],
+             ['24/07/2026','40 crédits offerts — création du compte','bienvenue','0 €'],
              ['18/07/2026','Publication de biens (23) et contacts reçus (47)','juillet 2026','0 €']]
             .map(r=>`<tr><td class="sub">${r[0]}</td><td><b style="color:var(--ink)">${r[1]}</b></td>
               <td class="sub">${nbsp(r[2])}</td><td class="n">${nbsp(r[3])}</td>
@@ -6490,9 +6506,9 @@ add({id:'pro-factures', g:'P2 — Monétisation', n:'16', title:'Paiements & fac
         </tbody>
       </table>
       <div class="mobonly col gap8 pad">
-        ${[['04/08/2026','Pack de 150 crédits','solde porté à 162 crédits','150 €'],
+        ${[['04/08/2026','Pack de 150 crédits','solde porté à 150 crédits','150 €'],
            ['29/07/2026','Frais de service First Mundi (0,16 %)','T4 Lyon 3ᵉ · 415 000 €','664 €'],
-           ['24/07/2026','Premier acheteur offert — aucun pack requis','bienvenue','0 €'],
+           ['24/07/2026','40 crédits offerts — création du compte','bienvenue','0 €'],
            ['18/07/2026','Publication de biens (23) et contacts reçus (47)','juillet 2026','0 €']]
           .map(([date,objet,ref,montant])=>`
           <div class="card flat pad">
