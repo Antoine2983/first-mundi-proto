@@ -6339,6 +6339,7 @@ add({id:'pro-achat', g:'P2 — Monétisation', n:'15', title:'Débloquer un ache
     ['Le partage est dit AVANT le paiement, et il ne fait pas baisser le prix','« 2 agences l’ont déjà acheté » est affiché sur l’aperçu et dans le récapitulatif. Ce qu’elle achète est une information sur l’acheteur, pas une exclusivité sur lui — et ça ne se défend que si c’est écrit avant le bouton.'],
     ['Le doublon n’est jamais redébité','même acheteur déjà débloqué depuis un autre écran → on le dit et on ne débite rien. C’est le genre de détail qui achète plus de confiance que trois pages d’argumentaire.'],
     ['Le paywall est le seul écran carte','tout le reste se paie en crédits, sur le solde. La carte ne sort qu’ici : packs de 150, 400 ou 1000 crédits — 150 minimum, jamais d’expiration. Le second déblocage est donc plus rapide que le premier : un clic, zéro paiement.'],
+    ['Le déblocage se voit, il ne se déduit pas','un en-tête de succès dit les trois faits : 20 crédits débités, le solde avant → après (déjà à jour dans la nav), l’identité acquise pour de bon. Le bloc « ce qui vient d’être révélé » isole ce que les ••••• cachaient une seconde plus tôt — sans ce moment, l’écran d’après ressemble à une simple fiche et on doute qu’il se soit passé quelque chose.'],
     ['La révélation donne le contexte du premier appel','cet acheteur n’a pas contacté l’agence : l’écran d’après-achat rappelle d’où il vient et ce qu’il a accepté, pour que le premier appel ne ressemble jamais à du démarchage subi.'],
     ['Une fois débloqué, il devient un lead — et l’écran le dit','dès le débit, il rejoint « Mes leads » : mêmes statuts, même relance, provenance affichée. Il sort du catalogue de l’agence qui l’a débloqué (les autres agences le voient toujours — l’exclusivité ne se vend pas). C’est aussi ce qui rend « jamais débité deux fois » vérifiable : le registre des identités possédées, c’est la liste de leads elle-même.']
   ],
@@ -6360,29 +6361,48 @@ add({id:'pro-achat', g:'P2 — Monétisation', n:'15', title:'Débloquer un ache
         </div></div>
       </div></div>`;
 
-    if (st==='Identité révélée') return `${appnav('Acheteurs','pro')}
+    /* ---------- le moment de succès : on doit VOIR que le déblocage a eu lieu ----------
+       trois faits en tête d'écran (débit · solde avant → après · identité acquise),
+       le solde de la nav déjà à jour, et le bloc identité marqué « révélé à l'instant » :
+       les ••••• de l'aperçu sont devenus des vraies valeurs, l'écran le dit. */
+    if (st==='Identité révélée') return `${appnav('Acheteurs','pro',AUTH,SOLDE-20)}
       <div class="sec"><div style="max-width:640px;margin:0 auto">
-        <div class="card">
+        <div class="card" style="border-color:var(--ink)">
+          <div class="pad" style="border-bottom:1px solid var(--line-2);background:var(--fill-2)">
+            <div class="row mid gap8">
+              <span class="ckb on" style="width:28px;height:28px;font-size:15px;border-radius:50%">✓</span>
+              <div style="min-width:0"><h4 class="wt">Acheteur débloqué</h4>
+                <div class="sub num">20 crédits débités · solde : ${SOLDE} → <b>${SOLDE-20}</b> ·
+                l'identité est à vous, définitivement</div></div>
+            </div>
+          </div>
           <div class="pad" style="border-bottom:1px solid var(--line-2)">
             <div class="row mid stackm" style="justify-content:space-between;gap:12px">
               <div class="row mid gap8">
                 <div class="avatar" style="width:40px;height:40px"></div>
                 <div><div class="mid2">${a.nom}</div>
                   <div class="row mid gap6" style="margin-top:3px;flex-wrap:wrap">
+                    <span class="chip k" style="font-weight:600">${a.projet}</span>
                     <span class="chip">Téléphone vérifié par SMS</span>
                     ${serieuxChip(a)}
                   </div></div>
               </div>
-              <span class="chip k" style="flex:none">débloqué — 20 crédits · solde restant : ${SOLDE-20}</span>
+              <span class="chip" style="flex:none">jusqu'ici : « Acheteur ${a.id} »</span>
             </div>
           </div>
           <div class="pad" style="border-bottom:1px solid var(--line-2)">
-            <div class="col gap6">
-              ${[['Téléphone','06 51 20 84 03'],['Email','claire.f@…'],
-                 ['Sa recherche', a.crit],['Secteur', a.zone+' et alentours'],['Projet', a.projet]]
+            <div class="row mid" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
+              <div class="lbl">Ce qui vient d'être révélé</div>
+              <span class="chip k">masqué il y a un instant</span>
+            </div>
+            <div class="col gap6 mt8">
+              ${[['Nom et prénom', a.nom],['Téléphone','06 51 20 84 03'],['Email','claire.f@…'],
+                 ['Son message','« Je cherche un T3 lumineux, budget 320 000 €, déjà locataire dans le 7ᵉ »']]
                 .map(([k,v])=>`<div class="row mid" style="justify-content:space-between;gap:10px">
                   <span class="lbl">${k}</span><span class="num" style="font-weight:600;text-align:right">${nbsp(v)}</span></div>`).join('')}
             </div>
+            <div class="disc mt8">Ce que vous connaissiez déjà de l'aperçu ne change pas :
+            ${nbsp(a.crit)} · ${a.zone} et alentours · ${a.projet.toLowerCase()}.</div>
           </div>
           <div class="pad">
             <div class="bandeau">${pin(7)} ${a.nom} ne vous a pas contactée : elle a accepté d'être
