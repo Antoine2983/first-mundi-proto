@@ -1541,16 +1541,17 @@ const gratuitPayant = () => `
       </div>
     </div>
     <div class="card flat pad">
-      <div class="row mid gap6"><span class="chip">Payant</span><span class="sub">à l'acte, jamais d'abonnement</span></div>
+      <div class="row mid gap6"><span class="chip">En crédits</span><span class="sub">à l'acte, jamais d'abonnement</span></div>
       <div class="col gap6 mt8">
-        ${[['Un acheteur qualifié du catalogue — un acquéreur qui ne vous a pas contactés', '20 à 40 crédits'],
-           ['Les crédits — par packs, à partir de 150', 'dès 150 €'],
+        ${[['Débloquer un acheteur du catalogue — un acquéreur en recherche active dont les critères correspondent à vos biens, et qui ne vous a pas contactés', '20 à 40 crédits'],
+           ['Recharger votre solde — packs de crédits, ils n\'expirent jamais', 'dès 150 €'],
            ['Une vente conclue grâce à nous', '0,16 % du prix de vente']]
           .map(([t,v])=>`<div class="row mid" style="justify-content:space-between;gap:10px">
             <span class="txt">${t}</span><span class="num" style="font-weight:600;flex:none">${nbsp(v)}</span></div>`).join('')}
       </div>
-      <div class="disc mt8">Vous décidez acheteur par acheteur. Ne rien acheter ne vous retire
-      rien : vos contacts continuent d'arriver, complets et gratuits.</div>
+      <div class="disc mt8"><b>Vos 40 premiers crédits sont offerts à l'inscription</b> — vos premiers
+      acheteurs se débloquent sans rien payer. Ensuite, vous décidez acheteur par acheteur : ne rien
+      débloquer ne vous retire rien, vos contacts continuent d'arriver, complets et gratuits.</div>
     </div>
   </div>`;
 
@@ -2890,7 +2891,8 @@ ${LQ ? '' : `<div id="locres">${locResultats()}</div>`}
     <div class="bandeau mt14"><b>Ce qui reste gratuit, sans plafond ni date de fin :</b> publier vos biens,
     recevoir vos contacts en entier — identité, téléphone, email, message, projet —, le tableau de bord,
     les factures. Ne rien acheter ne vous retire rien.</div>
-    <div class="disc mt8">40 crédits sont offerts à la création du compte. Un acheteur injoignable est recrédité, sans
+    <div class="disc mt8">40 crédits sont offerts à la création du compte — ils débloquent vos premiers
+    acheteurs, des acquéreurs dont la recherche correspond à vos biens. Un acheteur injoignable est recrédité, sans
     justification à fournir. Un même acheteur n’est jamais débité deux fois à la même agence, et vos
     crédits n’expirent jamais. Ce que
     nous vérifions : son téléphone, par SMS. Ce que nous ne vérifions pas : son apport et sa capacité
@@ -4805,12 +4807,13 @@ add({id:'inscription', g:'P1 — Côté agence', n:'10', title:'Inscription — 
 });
 
 add({id:'pro-siret', g:'P1 — Côté agence', n:'11', title:'Inscription agence — vérification SIRET',
-  intro:"La barrière à l'entrée du côté Pro. Elle doit être franchissable en deux minutes tout en produisant le badge « Pro vérifié » qui rassure les acquéreurs. Vérification automatique : on saisit un SIRET, on affiche ce qu'on a trouvé.",
+  intro:"La barrière à l'entrée du côté Pro. Elle doit être franchissable en deux minutes tout en produisant le badge « Pro vérifié » qui rassure les acquéreurs. Vérification automatique : on saisit un SIRET, on affiche ce qu'on a trouvé. Et c'est ICI que le cadeau de bienvenue se dit : **40 crédits offerts avec le compte**, qui débloquent des acheteurs potentiels pour les biens que l'agence va publier.",
   states:['Saisie','Vérifié','SIRET introuvable'],
   notes:[
     ['On restitue ce qu’on trouve','afficher la raison sociale et l’adresse issues du registre transforme un contrôle en gain de temps : l’agence n’a rien à retaper.'],
     ['Le badge est montré avant d’être gagné','voir la contrepartie pendant la saisie soutient l’effort.'],
-    ['Échec : proposer une issue manuelle','un SIRET récent peut être absent des bases. Un cul-de-sac ici, c’est une agence perdue.']
+    ['Échec : proposer une issue manuelle','un SIRET récent peut être absent des bases. Un cul-de-sac ici, c’est une agence perdue.'],
+    ['Les 40 crédits offerts sont annoncés à l’inscription, pas découverts après','l’agence sait en entrant que ses premiers acheteurs sont déjà payés — des acquéreurs inscrits dont la recherche correspond à ses biens. C’est ce qui transforme une vérification administrative en début de valeur, et la raison de finir le tunnel.']
   ],
   render:(st)=>{
     if (st==='Vérifié') return `
@@ -4829,7 +4832,11 @@ add({id:'pro-siret', g:'P1 — Côté agence', n:'11', title:'Inscription agence
           </div>
           <div class="sub mt14">Ces informations proviennent du registre officiel. <span class="linkish">Ce n'est pas mon établissement</span></div>
           <div class="grid2 mt20">${inp('Nom commercial affiché','Agence du Parc')}${inp('Nombre de collaborateurs','8')}</div>
-          <button class="btn full mt20 hot" onclick="go('pro-dashboard')">Continuer</button>
+          <div class="bandeau mt20" style="border-left-width:4px">${pin(4)} <b>40 crédits offerts avec
+          votre compte.</b> Ils débloquent vos premiers acheteurs : des acquéreurs déjà inscrits, en
+          recherche active, dont les critères correspondent aux biens que vous allez publier.
+          Sans carte, sans engagement — ils n'expirent jamais.</div>
+          <button class="btn full mt20 hot" onclick="go('pro-dashboard')">Continuer — vos 40 crédits vous attendent</button>
         </div></div>
       </div></div>`;
     if (st==='SIRET introuvable') return `
@@ -4862,11 +4869,11 @@ add({id:'pro-siret', g:'P1 — Côté agence', n:'11', title:'Inscription agence
 });
 
 add({id:'pro-dashboard', g:'P1 — Côté agence', n:'12', title:'Tableau de bord agence — les 5 âges du compte',
-  intro:"Le cœur opérationnel quotidien de l'agence, et l'écran qui doit lui faire comprendre le modèle **avant** qu'elle ait à payer quoi que ce soit. Il change de contenu selon l'avancement : compte vide, biens publiés mais aucun contact, premier contact reçu, régime de croisière, vente à déclarer. À chaque âge, une seule question à traiter — et la distinction se rejoue à chaque fois : **vos contacts sont gratuits, en entier ; ce qui s'achète, ce sont des acheteurs que vous ne connaissez pas.**",
+  intro:"Le cœur opérationnel quotidien de l'agence, et l'écran qui doit lui faire comprendre le modèle **avant** qu'elle ait à payer quoi que ce soit. Il change de contenu selon l'avancement : compte vide, biens publiés mais aucun contact, premier contact reçu, régime de croisière, vente à déclarer. À chaque âge, une seule question à traiter — et la distinction se rejoue à chaque fois : **vos contacts sont gratuits, en entier ; ce qui se débloque en crédits, ce sont des acheteurs que vous ne connaissez pas — et vos 40 premiers crédits sont offerts, pour des acheteurs qui correspondent à VOS biens.**",
   states:['Jour 1 — compte vérifié','Biens en ligne, aucun lead','Premier lead reçu','En régime','Vente à déclarer'],
   notes:[
     ['Cinq âges, un seul message à la fois','un compte vide n’a pas besoin de la grille tarifaire, et une agence en régime n’a pas besoin qu’on lui réexplique que publier est gratuit. Le même écran, cinq contenus — c’est le seul moyen de ne jamais parler dans le vide.'],
-    ['Le modèle éco est expliqué AVANT la première facture','au jour 1, avec deux colonnes : ce qui est gratuit pour toujours (dont les contacts, EN ENTIER), ce qui est payant à l’acte (des acheteurs du catalogue). Une agence échaudée par les portails cherche le piège dès la première minute — si elle ne le trouve pas ici, elle le cherchera au premier prélèvement, et là il sera trop tard.'],
+    ['Le modèle éco est expliqué AVANT la première facture','au jour 1, avec deux colonnes : ce qui est gratuit pour toujours (dont les contacts, EN ENTIER), et ce qui se paie en crédits à l’acte (débloquer des acheteurs du catalogue — dont les 40 premiers crédits sont offerts à l’inscription, pour des acheteurs qui correspondent aux biens de l’agence). Une agence échaudée par les portails cherche le piège dès la première minute — si elle ne le trouve pas ici, elle le cherchera au premier prélèvement, et là il sera trop tard.'],
     ['Le premier lead reçu est LE moment pédagogique','c’est l’instant où l’agence vérifie la promesse : le contact est là, complet, rien à débloquer. Et c’est le bon moment pour montrer l’autre moitié du modèle — les acheteurs qui correspondent à ses biens et qu’elle n’aurait jamais connus. Un contact ouvert d’un côté, de la demande invisible de l’autre : deux fiches côte à côte valent mieux qu’un tableau de prix.'],
     ['« Gratuit » se prouve par une ligne à 0 €, pas par un adjectif','la ligne « Publication de biens — 0 € » dans les factures et le compteur « 47 contacts reçus — 0 € » font le travail qu’un slogan ne fait pas.'],
     ['Ce qui s’achète est introuvable ailleurs','l’agence n’achète pas de l’information sur quelqu’un qu’elle connaît — un coup de fil la lui donnerait gratuitement. Elle achète des acheteurs qu’elle ignore : inscrits, en recherche active, consentants. « N acheteurs correspondent à ce bien » est l’écran qui vend le produit, et l’agence n’a rien à configurer — ses annonces sont déjà là.'],
@@ -4888,8 +4895,10 @@ add({id:'pro-dashboard', g:'P1 — Côté agence', n:'12', title:'Tableau de bor
       <div class="sec">
         <h4 class="wt">Bienvenue, Agence du Parc</h4>
         <div class="sub">Votre SIRET est vérifié. Il ne manque que vos biens.</div>
-        <div class="bandeau mt14"><b>40 crédits vous sont offerts</b> — de quoi débloquer un ou deux
-        acheteurs du catalogue quand vos biens seront en ligne. Ils n'expirent jamais.</div>
+        <div class="bandeau mt14" style="border-left-width:4px"><b>40 crédits vous sont offerts avec
+        votre compte.</b> Ils débloquent des acheteurs potentiels pour vos biens : des acquéreurs déjà
+        inscrits, en recherche active, dont les critères correspondent à ce que vous allez publier.
+        Sans carte, sans engagement — ils n'expirent jamais.</div>
         <div class="card mt20"><div class="empty">
           <div class="ico"></div>
           <h5 class="wt">Publiez votre premier bien${pin(8)}</h5>
@@ -4906,8 +4915,9 @@ add({id:'pro-dashboard', g:'P1 — Côté agence', n:'12', title:'Tableau de bor
           <span class="chip o">aucun abonnement, aucun engagement</span>
         </div>
         <div class="mt14">${gratuitPayant()}</div>
-        <div class="bandeau mt14">Tant que vous ne vendez pas et que vous n'achetez aucun acheteur
-        au catalogue, <b>vous ne payez rien</b>. Ce n'est pas une offre de lancement : c'est le modèle.</div>
+        <div class="bandeau mt14">Tant que vous ne vendez pas et ne rechargez pas de crédits,
+        <b>vous ne payez rien</b> — et vos 40 crédits offerts débloquent déjà vos premiers acheteurs.
+        Ce n'est pas une offre de lancement : c'est le modèle.</div>
       </div>`;
 
     /* ---------- âge 2 : des biens, pas encore de contact ---------- */
@@ -6676,7 +6686,7 @@ add({id:'site-home', g:'Site vitrine', n:'', scope:'site', title:'Landing publiq
     <div class="grid4">
       ${[['Publier un bien','0 €','sans limite de nombre ni de durée'],
          ['Recevoir un contact','0 €','en entier — identité, téléphone, projet — à vie'],
-         ['Un acheteur qualifié','20 à 40 crédits','un acquéreur qui ne vous a pas contactés — packs de crédits dès 150 €'],
+         ['Un acheteur qualifié','20 à 40 crédits','correspond à vos biens, ne vous a pas contactés · packs dès 150 € · 40 crédits offerts à l\'inscription'],
          ['Vente conclue','0,16 %','frais de service, du prix de vente · min. 100 €']]
         .map(([k,v,s])=>`<div class="card flat pad"><div class="lbl">${k}</div>
           <div class="big num" style="margin-top:3px">${nbsp(v)}</div><div class="sub">${nbsp(s)}</div></div>`).join('')}
