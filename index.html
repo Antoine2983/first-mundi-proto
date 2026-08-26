@@ -744,6 +744,14 @@ body.tablet .fmtiles{grid-template-columns:repeat(2,minmax(0,1fr))}
 body.mobile .stepper .st.on span{display:inline}
 /* cadre mobile bord à bord sur petit viewport réel */
 body.mobile .stage{padding:14px 8px calc(var(--pbarH,54px) + 96px)}
+/* ---- catalogue d'acheteurs : sélection en place (remplace le panier) ---- */
+.ckb{width:18px;height:18px;border:1.5px solid var(--line-2);border-radius:5px;flex:none;
+  display:inline-flex;align-items:center;justify-content:center;background:var(--paper);
+  font-size:11px;line-height:1;color:var(--paper);cursor:pointer;align-self:center}
+.ckb:hover{border-color:var(--ink)}
+.ckb.on{background:var(--ink);border-color:var(--ink)}
+.selbar{position:sticky;bottom:12px;z-index:20;box-shadow:0 10px 34px rgba(0,0,0,.16);
+  background:var(--paper)}
 </style>
 </head>
 <body>
@@ -1264,7 +1272,7 @@ const eqrow = ([t,on]) => `<div class="eq ${on?'':'off'}"><span class="eqico"></
       facture, marketing : « capacité vérifiée », « prêt à signer ». */
 const DECLA = '<span class="chip o">capacité déclarative — non vérifiée</span>';
 
-/* les 3 formules d'achat d'un acheteur — les prix de l'ancienne grille, le contenu change */
+/* les 3 prix d'un acheteur — fixés par ce qu'il a rempli, jamais un choix de l'agence */
 const FORMULES = [
   {k:'rech', n:'Sa recherche',             p:'20 €',
    c:'Ses critères complets — budget, secteurs, surface, délai — et son score de sérieux.'},
@@ -1293,9 +1301,10 @@ const grilleAcheteurs = (actif) => `
       </div>`).join('')}
   </div>
   <div class="disc mt8">Dans tous les cas, l'identité — nom, téléphone, email — n'est révélée
-  qu'après l'achat. Et le prix suit ce que l'acheteur a rempli : s'il n'a renseigné que ses
-  critères, il n'y a pas ${nbsp('30 €')} ni ${nbsp('40 €')} à payer pour une information qui
-  n'existe pas. Par lots : <b>10 acheteurs pour ${nbsp('150 €')}</b> au lieu de ${nbsp('20 €')} l'unité.</div>`;
+  qu'après l'achat. Il n'y a <b>rien à choisir</b> : le prix suit ce que l'acheteur a rempli,
+  et vous recevez tout ce qui existe. S'il n'a renseigné que ses critères, il n'y a pas
+  ${nbsp('30 €')} ni ${nbsp('40 €')} à payer pour une information qui n'existe pas.
+  À partir de <b>10 acheteurs d'un coup : ${nbsp('150 €')} le lot</b>, appliqué automatiquement.</div>`;
 
 /* ce qui rassure au moment de payer — répété sur le catalogue et l'écran d'achat */
 const rassurance = () => `
@@ -1334,19 +1343,36 @@ const ACHETEURS = [
    actif:'actif il y a 40 min', deja:0, nom:'Marion D.', bi:0},
   {id:'AC-176', det:[31, 17, 14, 12], zone:'Lyon 7ᵉ – 8ᵉ', projet:'Investissement locatif',
    crit:'T2 – T3 · jusqu\'à 340 000 €', score:74, fin:true,
-   actif:'actif hier', deja:1, nom:'Hugo L.', bi:0}
+   actif:'actif hier', deja:1, nom:'Hugo L.', bi:0},
+  {id:'AC-052', det:[28, 22, 17, 11], zone:'Villeurbanne', projet:'Résidence principale',
+   crit:'T2 · 38 m² et plus · jusqu\'à 200 000 €', score:78, fin:false,
+   actif:'actif il y a 6 h', deja:0, nom:'Lucie P.', bi:1},
+  {id:'AC-289', det:[34, 27, 16, 13], zone:'Lyon 8ᵉ', projet:'Investissement locatif',
+   crit:'Studio – T1 · jusqu\'à 150 000 €', score:90, fin:true,
+   actif:'actif il y a 1 h', deja:0, nom:'Bastien R.', bi:4},
+  {id:'AC-133', det:[29, 21, 15, 11], zone:'Lyon 9ᵉ', projet:'Investissement locatif',
+   crit:'Immeuble de rapport · jusqu\'à 500 000 €', score:76, fin:true,
+   actif:'actif il y a 2 jours', deja:1, nom:'Sonia G.', bi:2}
 ];
-const ACHPX  = a => a.fin ? '20 à 40 €' : '20 €';
+/* le prix est FIXÉ par ce que l'acheteur a rempli — jamais une formule à choisir.
+   Recherche seule = 20 €, recherche + financement = 40 € : l'agence reçoit tout ce qui
+   existe. Un « 20 à 40 € » sur une ligne était une question posée au mauvais moment. */
+const ACHPX  = a => a.fin ? '40 €' : '20 €';
+const ACHPXN = a => a.fin ? 40 : 20;
 /* la pastille de score — TOUJOURS cliquable : un chiffre qui ne s'explique pas
    ne se distingue pas d'un chiffre inventé. Même doctrine que le score du bien. */
 const serieuxChip = a => `<span class="chip k hot" title="Voir le détail du score"
   onclick="event.stopPropagation();POP.serieux('${a.id}')">sérieux ${a.score} / 100</span>`;
 /* la ligne anonymisée d'un acheteur — la même partout : dashboard, fiche bien, catalogue.
-   Règle d'or : assez pour donner envie, pas assez pour contourner l'achat. */
-const acheteurRow = (a, cta=true) => `
+   Règle d'or : assez pour donner envie, pas assez pour contourner l'achat.
+   `ck` = {on,to} : la case à cocher de la sélection en place — cliquer la case bascule
+   l'état `to` de la maquette, cliquer la ligne ouvre toujours l'aperçu. */
+const acheteurRow = (a, cta=true, ck=null) => `
   <div class="card flat pad ${cta?'hot':''}" ${cta?`onclick="go('pro-achat')"`:''}>
     <div class="row mid agrow" style="justify-content:space-between;gap:10px">
-      <div style="min-width:0">
+      ${ck?`<span class="ckb ${ck.on?'on':''}" title="${ck.on?'Retirer de la sélection':'Ajouter à la sélection'}"
+        onclick="event.stopPropagation();setState('${ck.to}')">${ck.on?'✓':''}</span>`:''}
+      <div style="min-width:0;flex:1">
         <div class="row mid gap6 wrap">
           <span class="txt" style="font-weight:600;color:var(--ink)">Acheteur ${a.id}</span>
           ${serieuxChip(a)}
@@ -4896,7 +4922,7 @@ add({id:'pro-dashboard', g:'P1 — Côté agence', n:'12', title:'Tableau de bor
               <div class="col gap6 mt14">
                 ${ACHETEURS.filter(a=>a.bi===0).slice(0,2).map(a=>acheteurRow(a,false)).join('')}
               </div>
-              <button class="btn full mt14 hot" onclick="go('pro-acheteurs')">Voir les ${PRO_BIENS[0].match} acheteurs — le premier est offert</button>
+              <button class="btn full mt14 hot" onclick="goState('pro-acheteurs','Filtrée sur un bien')">Voir les ${PRO_BIENS[0].match} acheteurs — le premier est offert</button>
               <div class="row mid gap6 mt8 wrap">${DECLA}
                 <span class="sub">Identité révélée après l'achat seulement.</span></div>
             </div>
@@ -5295,7 +5321,7 @@ add({id:'pro-bien', g:'P1 — Côté agence', n:'', title:'Fiche bien côté age
             <div class="col gap6">
               ${ACHETEURS.filter(a=>a.bi===1).map(a=>acheteurRow(a)).join('')}
             </div>
-            <button class="btn sec2 full mt14 hot" onclick="go('pro-acheteurs')">Voir les ${bb.match} acheteurs →</button>
+            <button class="btn sec2 full mt14 hot" onclick="goState('pro-acheteurs','Filtrée sur un bien')">Voir les ${bb.match} acheteurs →</button>
             <div class="bandeau mt14">Un argument pour vos rendez-vous vendeurs : « j'ai déjà
             ${bb.match} acheteurs qualifiés pour votre bien ». C'est ce que ces profils valent,
             au-delà du contact lui-même.</div>
@@ -5868,37 +5894,88 @@ add({id:'pro-lead', g:'P2 — Monétisation', n:'14', title:'Fiche lead — la m
 });
 
 add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'acheteurs — la demande que vous ne voyiez pas',
-  intro:"Le produit payant, et il ne ressemble à rien de ce que les portails vendent : des **acheteurs qui n'ont contacté personne**. Inscrits, en recherche active, d'accord pour être proposés aux agences. L'onglet s'ouvre sur le **portefeuille entier** : tous les acheteurs de toutes vos annonces, groupés par bien — rien à configurer. Trois autres portes : depuis une annonce (« 12 acheteurs correspondent à ce bien »), la recherche libre avec ses critères et son panier (la prospection au-delà de vos mandats), et les alertes. Partout, la même règle d'or : assez pour donner envie, pas assez pour contourner l'achat.",
-  states:['Pour vos biens','Recherche libre','Depuis une annonce','Panier — 3 acheteurs','Alerte créée','Aucun résultat'],
+  intro:"Le produit payant : des **acheteurs qui n'ont contacté personne** — inscrits, en recherche active, d'accord pour être proposés aux agences. Flow refondu (26/08) : **une seule liste, deux lectures** — « Par bien » (le portefeuille, rien à configurer) et « Tous » (la prospection, avec filtres). Venir d'une annonce n'ouvre plus un écran à part : c'est la même liste, **filtrée** sur ce bien. Et **plus de panier** : l'achat multiple est une **sélection en place** — on coche, une barre fait le total, on paie, elle disparaît. Partout, la même règle d'or : assez pour donner envie, pas assez pour contourner l'achat.",
+  states:['Par bien','Tous','Filtrée sur un bien','Sélection — 3','Sélection — lot de 10','Alerte créée','Aucun résultat'],
   notes:[
-    ['« N acheteurs correspondent à ce bien » est l’écran qui vend','l’agence n’a rien à configurer : ses annonces sont déjà sur la plateforme, le matching est fait. Elle clique, voit la liste anonymisée, achète. Les deux autres portes — catalogue et alertes — servent la prospection et le retour régulier.'],
+    ['Une seule liste, jamais trois','l’ancien flow montrait les mêmes acheteurs sous trois habillages — groupés par bien, « depuis une annonce », recherche libre — et AC-118 existait à trois endroits. Ici : une liste, un toggle Par bien / Tous, et l’entrée depuis une annonce n’est qu’un filtre posé sur la vue « Tous », retirable d’un clic. On sait toujours où on est.'],
+    ['Le panier est mort, vive la sélection','un panier persistant est un objet à gérer : il se remplit sur un écran, s’affiche en badge sur un autre, survit à la navigation — l’ancien proto montrait « Panier · 3 » sur une vue où rien ne permettait d’ajouter. La sélection vit dans la liste : on coche, la barre totalise, on paie, elle meurt. Aucun état à retrouver, un seul tunnel d’achat.'],
+    ['Le prix est fixé par le profil, jamais choisi','fini le « 20 à 40 € » ambigu et la « formule » qu’on ne choisissait nulle part : recherche seule = 20 €, recherche + financement = 40 € — l’agence reçoit tout ce que l’acheteur a rempli, il n’y a rien à configurer au moment de payer. Un prix par ligne, une somme dans la barre.'],
+    ['Le lot s’applique tout seul, à 10','10 acheteurs cochés = 150 € le lot, à la place du total à l’unité. Pas de « plus que 2 pour débloquer le lot », pas de compteur : la barre affiche le vrai total, et le remplace par le lot quand il est atteint — pas avant.'],
     ['La règle d’or : avant / après achat','visible avant : critères, commune (jamais l’adresse), projet, score de sérieux, financement oui/non (jamais le montant), activité récente, combien d’agences l’ont acheté. Révélé après : nom, téléphone, email, message. Un seul champ de trop côté « avant » et l’achat se contourne ; un de moins et l’envie ne vient pas.'],
-    ['Ce qu’on vend est introuvable autrement','l’ancien modèle vendait des infos qu’un coup de fil donnait gratuitement — aucune agence ne payait deux fois. Celui-ci vend des acheteurs que l’agence ne peut pas appeler : elle ignore leur existence.'],
-    ['L’argument mandat est affiché, pas sous-entendu','ces acheteurs servent à décrocher des mandats autant qu’à vendre : « j’ai déjà 8 acheteurs qualifiés pour votre bien » gagne le rendez-vous vendeur. C’est ce qui justifie le prix au-delà du lead — l’UI le dit en toutes lettres.'],
-    ['Le panier existe ici, et seulement ici','la prospection s’achète par lots — 10 acheteurs pour 150 € au lieu de 20 € l’unité. C’est l’inverse de l’ancienne doctrine « à l’unité seulement », et c’est voulu : on n’achète plus une information sur SON contact, on constitue un vivier.'],
+    ['« N acheteurs correspondent à ce bien » reste l’écran qui vend','l’agence n’a rien à configurer : ses annonces sont déjà là, le matching est fait. Depuis la fiche d’un bien ou le dashboard, elle arrive sur la liste filtrée, voit les profils anonymisés, coche, achète.'],
+    ['L’argument mandat est affiché, pas sous-entendu','ces acheteurs servent à décrocher des mandats autant qu’à vendre : « j’ai déjà 12 acheteurs qualifiés pour votre bien » gagne le rendez-vous vendeur. C’est ce qui justifie le prix au-delà du lead — l’UI le dit en toutes lettres.'],
     ['La fraîcheur est honnête ou n’est pas','« actif il y a 2 h », « 2 agences l’ont acheté » : des chiffres réels, affichés tels quels. Jamais de compteur qui descend, jamais de « plus que 3 » — la première fausse urgence détruit toutes les vraies.'],
-    ['Le score de sérieux s’explique d’un clic, partout','même doctrine que le score du bien : 4 composants pondérés, tous visibles, aucun modèle opaque. La pastille ouvre le détail — profil renseigné (35), recherche active (30), réactivité (20), constance (15) — avec ce que le score n’est PAS : une solvabilité. Un chiffre qui justifie un achat de 20 à 40 € et qui ne s’explique pas se lit comme un chiffre inventé.'],
-    ['Ce qui rassure est sur l’écran d’achat, pas dans les CGU','remboursé si injoignable · le premier est offert · jamais refacturé deux fois · déclaratif affiché. Le risque du premier achat est l’obstacle n°1 — chaque garantie est à un clic du bouton payer.'],
+    ['Le score de sérieux s’explique d’un clic, partout','même doctrine que le score du bien : 4 composants pondérés, tous visibles, aucun modèle opaque. La pastille ouvre le détail — profil renseigné (35), recherche active (30), réactivité (20), constance (15) — avec ce que le score n’est PAS : une solvabilité.'],
     ['Chaque acheteur a dit oui','case jamais pré-cochée, révocable à tout moment, côté acquéreur. C’est une obligation légale stricte et la condition du modèle — l’écran de consentement est maquetté côté B2C (mise en relation, profil, paramètres).'],
-    ['Le catalogue ne montre que le pas-encore-acheté','dès l’achat, le profil sort du catalogue de cette agence et rejoint « Mes leads » avec sa provenance. Ce qui reste ici est donc toujours à acheter — une liste où traînent des profils déjà payés ferait douter de toutes les lignes.'],
-    ['L’onglet s’ouvre sur vos biens, pas sur un formulaire de critères','la première visite doit prouver « vous n’avez rien à configurer » : tous les acheteurs de toutes les annonces, groupés par bien, les plus demandés en premier. La recherche libre existe pour prospecter au-delà du portefeuille — un mandat qu’on vise, un secteur qu’on ouvre — mais c’est le second geste, jamais le premier écran.']
+    ['Le catalogue ne montre que le pas-encore-acheté','dès le paiement, les profils sortent du catalogue de cette agence et rejoignent « Mes leads » avec leur provenance — c’est là que la barre de sélection emmène après l’achat. Ce qui reste ici est donc toujours à acheter.']
   ],
   render:(st)=>{
     const b0 = PRO_BIENS[0];
     const nav = appnav('Acheteurs','pro');
 
+    /* ---- la sélection en place — l'état maquetté remplace le panier d'avant ----
+       cocher depuis une vue calme → « Sélection — 3 » ; continuer à cocher → le lot.
+       Décocher redescend. La sélection ne survit pas à l'achat : après paiement,
+       les profils sont dans « Mes leads », la barre a disparu. */
+    const selIds = st==='Sélection — 3' ? ['AC-118','AC-145','AC-231']
+                 : st==='Sélection — lot de 10' ? ACHETEURS.map(a=>a.id) : [];
+    const ck = a => {
+      const on = selIds.includes(a.id);
+      return {on, to: on
+        ? (st==='Sélection — lot de 10' ? 'Sélection — 3' : 'Par bien')
+        : (st==='Sélection — 3' ? 'Sélection — lot de 10' : 'Sélection — 3')};
+    };
+    const unit = ACHETEURS.filter(a=>selIds.includes(a.id)).reduce((s,a)=>s+ACHPXN(a),0);
+    const lot = selIds.length>=10;
+    const selbar = !selIds.length ? '' : `
+      <div class="card selbar mt20"><div class="pad">
+        <div class="row mid agrow" style="justify-content:space-between;gap:12px">
+          <div style="min-width:0">
+            <div class="txt" style="font-weight:600;color:var(--ink)">${selIds.length} acheteurs sélectionnés —
+              ${lot ? `lot appliqué : <span class="num">${nbsp('150 €')}</span> <span class="sub" style="font-weight:400">au lieu de ${nbsp(unit+' €')} à l'unité</span>`
+                    : `<span class="num">${nbsp(unit+' €')}</span>`}</div>
+            <div class="sub">${pin(3)} Un prix par profil — ${nbsp('20 €')} sa recherche, ${nbsp('40 €')} avec financement, rien à choisir.
+              ${lot ? `${pin(4)} Le lot de 10 s'est appliqué tout seul.` : `${pin(4)} À 10 cochés, le lot passe à ${nbsp('150 €')} — automatiquement.`}</div>
+          </div>
+          <div class="row mid gap8 wrap" style="flex:none">
+            <div class="row mid gap8"><div class="ph solid" style="width:34px;height:22px;flex:none">••••</div>
+              <span class="sub num">Visa ···· 4218</span></div>
+            <span class="linkish sub hot" onclick="setState('${lot?'Tous':'Par bien'}')">Tout décocher</span>
+            <button class="btn hot" onclick="goState('pro-lead','Acheté au catalogue')">Payer ${nbsp((lot?150:unit)+' €')} — révéler les ${selIds.length} identités</button>
+          </div>
+        </div>
+        <div class="sub" style="margin-top:8px">Remboursé si injoignable, acheteur par acheteur · aucun abonnement ·
+        dès le paiement, ils rejoignent « Mes leads » et sortent du catalogue.</div>
+      </div></div>`;
+
+    /* le même en-tête partout : titre + toggle Par bien / Tous + alerte. Zéro badge panier. */
+    const vue = (st==='Tous'||st==='Filtrée sur un bien'||st==='Sélection — lot de 10') ? 'Tous' : 'Par bien';
+    const header = `
+      <div class="row mid" style="justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div><h4 class="wt">Catalogue d'acheteurs${pin(1)}</h4>
+          <div class="sub"><b class="num">${MATCHTOT}</b> acheteurs correspondent à vos biens en ligne ·
+          aucun ne vous a contacté · l'identité après achat</div></div>
+        <div class="row gap8 wrap mid">
+          <div class="row" style="border:1px solid var(--line-2);border-radius:9px;overflow:hidden">
+            <button class="btn sm hot ${vue==='Par bien'?'':'sec2'}" style="border:none;border-radius:0" onclick="setState('Par bien')">Par bien</button>
+            <button class="btn sm hot ${vue==='Tous'?'':'sec2'}" style="border:none;border-radius:0" onclick="setState('Tous')">Tous</button>
+          </div>
+          <button class="btn sec2 hot" onclick="setState('Alerte créée')">Créer une alerte</button>
+        </div>
+      </div>`;
+
     if (st==='Aucun résultat') return `${nav}
       <div class="sec">
         <h4 class="wt">Catalogue d'acheteurs</h4>
-        <div class="sub">Vos critères : Maison · Sainte-Foy-lès-Lyon · jusqu'à 300 000 €</div>
+        <div class="sub">Vos filtres : Maison · Sainte-Foy-lès-Lyon · jusqu'à 300 000 €</div>
         <div class="card mt20"><div class="empty">
           <div class="ico"></div>
-          <h5 class="wt">Aucun acheteur ne correspond à ces critères aujourd'hui</h5>
+          <h5 class="wt">Aucun acheteur ne correspond à ces filtres aujourd'hui</h5>
           <p>Le catalogue bouge tous les jours : des acquéreurs s'inscrivent, précisent leur recherche,
           donnent leur accord. Plutôt que de revenir vérifier, laissez une alerte faire le travail.</p>
           <div class="row gap8">
             <button class="btn hot" onclick="setState('Alerte créée')">Me prévenir dès qu'un acheteur correspond</button>
-            <button class="btn sec2 hot" onclick="setState('Recherche libre')">Élargir mes critères</button>
+            <button class="btn sec2 hot" onclick="setState('Tous')">Élargir mes filtres</button>
           </div>
           <div class="disc" style="margin-top:6px">Nous n'affichons que des acheteurs réels et
           consentants — jamais de profil de remplissage pour meubler une liste.</div>
@@ -5910,7 +5987,7 @@ add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'a
         <div class="row mid" style="justify-content:space-between;flex-wrap:wrap;gap:10px">
           <div><h4 class="wt">Mes alertes acheteurs${pin(1)}</h4>
             <div class="sub">Prévenu dès qu'un acheteur correspond — achat en 1 clic depuis la notification.</div></div>
-          <button class="btn sec2 hot" onclick="setState('Pour vos biens')">← Retour aux acheteurs</button>
+          <button class="btn sec2 hot" onclick="setState('Par bien')">← Retour au catalogue</button>
         </div>
         <div class="bandeau mt20"><b>Alerte créée.</b> Dès qu'un acheteur correspondant à
         « T3 – T4 · Lyon 7ᵉ + 5 km · jusqu'à 350 000 € » rejoint le catalogue, vous recevez un email —
@@ -5953,175 +6030,62 @@ add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'a
         </div>
       </div>`;
 
-    if (st==='Panier — 3 acheteurs'){
-      const panier = [[ACHETEURS[1],'Recherche + financement','40 €'],
-                      [ACHETEURS[2],'Sa recherche','20 €'],
-                      [ACHETEURS[4],'Recherche + financement','40 €']];
+    /* ---------- vue « Tous » — la liste à plat : prospection, filtres, sélection ----------
+       « Filtrée sur un bien » est LA MÊME VUE avec un chip-filtre posé (l'entrée depuis
+       une annonce ou le dashboard) — plus d'écran « Depuis une annonce » à part.
+       « Sélection — lot de 10 » est la même vue avec tout coché : la barre passe au lot. */
+    if (vue==='Tous'){
+      const filtre = st==='Filtrée sur un bien';
+      const liste = filtre ? ACHETEURS.filter(a=>a.bi===0) : ACHETEURS;
       return `${nav}
-      <div class="sec"><div style="max-width:720px;margin:0 auto">
-        <div class="row mid gap8 sub"><span class="linkish hot" onclick="setState('Pour vos biens')">← Acheteurs</span>
-          <span>·</span><span>Panier</span></div>
-        <div class="card mt14">
-          <div class="pad" style="border-bottom:1px solid var(--line-2)">
-            <div class="row mid" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
-              <h4 class="wt">3 acheteurs${pin(5)}</h4>
-              <span class="chip k">${nbsp('100 €')}</span>
-            </div>
-          </div>
-          <div class="pad" style="border-bottom:1px solid var(--line-2)">
-            <div class="col gap6">
-              ${panier.map(([a,f,px])=>`
-                <div class="card flat pad">
-                  <div class="row mid agrow" style="justify-content:space-between;gap:10px">
-                    <div style="min-width:0">
-                      <div class="row mid gap6 wrap">
-                        <span class="txt" style="font-weight:600;color:var(--ink)">Acheteur ${a.id}</span>
-                        ${serieuxChip(a)}
-                      </div>
-                      <div class="sub">${a.projet} · ${a.zone} · formule ${f.toLowerCase()}</div>
-                    </div>
-                    <div class="row mid gap8" style="flex:none">
-                      <span class="mid2 num">${nbsp(px)}</span>
-                      <span class="linkish sub">retirer</span>
-                    </div>
-                  </div>
-                </div>`).join('')}
-            </div>
-            <div class="disc mt8">La formule se choisit acheteur par acheteur — et suit ce que chacun
-            a rempli : pas de ${nbsp('40 €')} pour un profil sans financement renseigné.</div>
-          </div>
-          <div class="pad">
-            <div class="col gap6">
-              <div class="row mid" style="justify-content:space-between"><span class="txt">3 acheteurs à l'unité</span><span class="num">${nbsp('100 €')}</span></div>
-              <div class="row mid" style="justify-content:space-between"><span class="sub">Abonnement</span><span class="num sub">aucun</span></div>
-              <div class="hr" style="margin:8px 0"></div>
-              <div class="row mid" style="justify-content:space-between">
-                <span class="txt" style="font-weight:600;color:var(--ink)">À régler, une fois</span>
-                <span class="mid2 num">${nbsp('100 €')}</span></div>
-            </div>
-            <div class="bandeau mt14">À partir de 10 acheteurs, le lot passe à <b>${nbsp('150 €')}</b>
-            au lieu de ${nbsp('20 €')} l'unité. Votre panier n'y est pas : on vous le dira quand il y sera,
-            pas avant — pas de compte à rebours, pas de presque.</div>
-            <div class="row mid gap8 mt14">
-              <div class="ph solid" style="width:34px;height:22px;flex:none">••••</div>
-              <div class="grow"><div class="txt">Visa se terminant par 4218</div><div class="sub">expire 09/29</div></div>
-            </div>
-            <button class="btn full mt14 hot" onclick="go('pro-achat')">Payer ${nbsp('100 €')} et révéler les 3 identités</button>
-            <div class="sub" style="text-align:center;margin-top:10px">Remboursé si injoignable, acheteur
-            par acheteur · aucun abonnement</div>
-          </div>
+      <div class="sec">
+        ${filtre?`<div class="row mid gap8 sub" style="margin-bottom:14px">
+          <span class="linkish hot" onclick="goState('pro-bien','Disponible')">← Fiche du bien</span>
+          <span>·</span><span>Ses acheteurs</span></div>`:''}
+        ${header}
+        <div class="fbar mt20">
+          ${filtre
+            ? `<span class="chip k hot" title="Retirer le filtre" onclick="setState('Tous')">${b0.t} ✕</span>`
+            : `<span class="chip k hot">Lyon et alentours ✕</span>`}
+          <span class="fsep"></span>
+          ${['Budget maximum','Type de bien','Financement renseigné','Résidence principale','Investisseurs'].map(f=>`<span class="chip hot">${f}</span>`).join('')}
+          <span class="fsep"></span>
+          <button class="btn sec2 sm hot">Trier : activité récente ▾</button>
         </div>
-      </div></div>`;
+        <div class="disc mt8">${filtre
+          ? `${pin(6)} ${b0.match} acheteurs correspondent à ce bien — type, budget, secteur — et aucun
+            ne vous a contacté. Retirez le filtre pour retrouver la liste entière.`
+          : `${pin(1)} Toute la demande, la vôtre et au-delà — pour prospecter un secteur ou préparer un
+            rendez-vous vendeur. « Par bien » regroupe les mêmes acheteurs sous vos annonces.`}
+          ${pin(2)} Cochez pour constituer une sélection : le total s'affiche en bas, l'aperçu reste à un clic.</div>
+
+        <div class="col gap8 mt14">
+          ${liste.map(a=>acheteurRow(a,true,ck(a))).join('')}
+        </div>
+        ${filtre?`<div class="bandeau mt14">${pin(7)} En rendez-vous mandat, ce chiffre est votre argument :
+          « j'ai déjà ${b0.match} acheteurs qualifiés pour votre bien ». C'est ce que ces profils
+          valent au-delà du contact lui-même.</div>`:''}
+        ${selbar}
+        <div class="disc mt8">${pin(5)} Avant l'achat : critères, commune (jamais l'adresse), projet,
+        score, financement oui / non, activité, agences l'ayant acheté. Après l'achat : nom, téléphone,
+        email, message. ${pin(9)} Le score s'explique :
+        <span class="linkish" onclick="POP.serieux()">appuyez sur une pastille, ou voyez le barème</span>.</div>
+        <div class="disc mt8">${pin(10)} Chacun de ces acheteurs a coché lui-même la case « être contacté
+        par des agences » — jamais pré-cochée, révocable à tout moment. Quand l'un la décoche, il sort
+        du catalogue dans l'heure.</div>
+        <div class="mt14">${rassurance()}</div>
+      </div>`;
     }
 
-    if (st==='Depuis une annonce') return `${nav}
-      <div class="sec"><div style="max-width:820px;margin:0 auto">
-        <div class="row mid gap8 sub"><span class="linkish hot" onclick="goState('pro-bien','Disponible')">← Fiche du bien</span>
-          <span>·</span><span>Acheteurs correspondants</span></div>
-        <div class="card mt14">
-          <div class="pad" style="border-bottom:1px solid var(--line-2)">
-            <div class="row mid stackm" style="justify-content:space-between;gap:12px">
-              <div class="row mid gap8">
-                ${ph('photo',44).replace('height:44px','height:44px;width:62px;flex:none')}
-                <div><div class="mid2">${b0.t}</div>
-                  <div class="sub num">${nbsp(b0.p)} · votre mandat exclusif</div></div>
-              </div>
-              <span class="chip k" style="flex:none">${pin(1)} ${b0.match} acheteurs correspondent</span>
-            </div>
-          </div>
-          <div class="pad">
-            <div class="sub">${pin(2)} Aucun d'eux ne vous a contacté. Leurs critères recouvrent ce bien —
-            type, budget, secteur. Voici ce qu'on montre avant l'achat, et rien de plus.</div>
-            <div class="col gap6 mt14">
-              ${ACHETEURS.filter(a=>a.bi===0).map(a=>acheteurRow(a)).join('')}
-            </div>
-            <div class="row mid" style="justify-content:center;margin-top:14px">
-              <button class="btn sec2 sm hot" onclick="setState('Pour vos biens')">Voir les acheteurs de tous vos biens →</button>
-            </div>
-            <div class="bandeau mt14">${pin(4)} En rendez-vous mandat, ce chiffre est votre argument :
-            « j'ai déjà ${b0.match} acheteurs qualifiés pour votre bien ». C'est ce que ces profils
-            valent au-delà du contact lui-même.</div>
-            <div class="mt14">${rassurance()}</div>
-          </div>
-        </div>
-      </div></div>`;
-
-    /* ---------- Recherche libre — la prospection au-delà du portefeuille ---------- */
-    if (st==='Recherche libre') return `${nav}
-    <div class="sec">
-      <div class="row mid" style="justify-content:space-between;flex-wrap:wrap;gap:10px">
-        <div><h4 class="wt">Recherche libre</h4>
-          <div class="sub"><b class="num">${ACHETEURS.length}</b> acheteurs correspondent à vos critères ·
-          aucun ne vous a contacté · les plus actifs d'abord</div></div>
-        <div class="row gap8 wrap">
-          <button class="btn sec2 hot" onclick="setState('Pour vos biens')">← Pour vos biens</button>
-          <button class="btn sec2 hot" onclick="setState('Alerte créée')">${pin(1)} Créer une alerte</button>
-          <button class="btn hot" onclick="setState('Panier — 3 acheteurs')">Panier · 3</button>
-        </div>
-      </div>
-
-      <div class="fbar mt20">
-        ${['Lyon et alentours ✕'].map(f=>`<span class="chip k hot">${f}</span>`).join('')}
-        <span class="fsep"></span>
-        ${['Budget maximum','Type de bien','Financement renseigné','Résidence principale','Investisseurs'].map(f=>`<span class="chip hot">${f}</span>`).join('')}
-        <span class="fsep"></span>
-        <button class="btn sec2 sm hot">Trier : activité récente ▾</button>
-      </div>
-      <div class="disc mt8">Ici, vos critères font la liste — pour prospecter au-delà de vos mandats :
-      un secteur qu'on ouvre, un rendez-vous vendeur qu'on prépare. Les acheteurs de vos biens en ligne
-      sont déjà rassemblés dans <span class="linkish" onclick="setState('Pour vos biens')">« Pour vos biens »</span>.</div>
-
-      <div class="col gap8 mt14">
-        ${ACHETEURS.map(a=>`
-        <div class="card flat pad">
-          <div class="row mid agrow" style="justify-content:space-between;gap:10px">
-            <div style="min-width:0">
-              <div class="row mid gap6 wrap">
-                <span class="txt" style="font-weight:600;color:var(--ink)">Acheteur ${a.id}</span>
-                <span class="chip k hot" title="Voir le détail du score"
-                  onclick="event.stopPropagation();POP.serieux('${a.id}')">${pin(2)} sérieux ${a.score} / 100</span>
-                <span class="chip">${a.fin?'financement renseigné':'sans financement renseigné'}</span>
-              </div>
-              <div class="sub" style="margin-top:3px">${a.projet} · ${nbsp(a.crit)} · ${a.zone} — jamais l'adresse</div>
-              <div class="sub">${pin(6)} ${a.actif} · ${a.deja===0?'aucune agence ne l\'a encore acheté'
-                :a.deja===1?'1 agence l\'a déjà acheté':a.deja+' agences l\'ont déjà acheté'}</div>
-            </div>
-            <div class="row mid gap8" style="flex:none">
-              <div style="text-align:right"><div class="mid2 num">${nbsp(ACHPX(a))}</div>
-                <div class="sub">l'identité après achat</div></div>
-              <button class="btn sec2 sm hot" onclick="event.stopPropagation();setState('Panier — 3 acheteurs')">+ Panier</button>
-              <button class="btn sm hot" onclick="event.stopPropagation();go('pro-achat')">Aperçu</button>
-            </div>
-          </div>
-        </div>`).join('')}
-      </div>
-
-      <div class="disc mt8">${pin(2)} Avant l'achat : critères, commune, projet, score, financement
-      oui / non, activité, agences l'ayant acheté. Après l'achat : nom, téléphone, email, message.
-      Le score et l'activité sont réels — jamais de fausse urgence. ${pin(9)} Le score s'explique :
-      <span class="linkish" onclick="POP.serieux()">appuyez sur une pastille, ou voyez le barème</span>.</div>
-      <div class="disc mt8">${pin(8)} Chacun de ces acheteurs a coché lui-même la case « être contacté
-      par des agences » — jamais pré-cochée, révocable à tout moment. Quand l'un la décoche, il sort
-      du catalogue dans l'heure.</div>
-      <div class="mt14">${rassurance()}</div>
-    </div>`;
-
-    /* ---------- Pour vos biens — l'entrée : tout le portefeuille, groupé par annonce ---------- */
+    /* ---------- vue « Par bien » — l'entrée : le portefeuille, groupé par annonce ----------
+       « Sélection — 3 » est la même vue avec 3 cochés (sur deux biens) : la barre totalise. */
     const groupes = PRO_BIENS.map((b,i)=>({b,i})).filter(o=>o.b.st!=='Vendu'&&o.b.match>0)
       .sort((x,y)=>y.b.match-x.b.match);
     return `${nav}
     <div class="sec">
-      <div class="row mid" style="justify-content:space-between;flex-wrap:wrap;gap:10px">
-        <div><h4 class="wt">Acheteurs pour vos biens${pin(10)}</h4>
-          <div class="sub"><b class="num">${MATCHTOT}</b> acheteurs correspondent à vos
-          <b class="num">${groupes.length}</b> biens en ligne · aucun ne vous a contacté ·
-          rien à configurer — vos annonces font le tri</div></div>
-        <div class="row gap8 wrap">
-          <button class="btn sec2 hot" onclick="setState('Recherche libre')">${pin(1)} Recherche libre</button>
-          <button class="btn sec2 hot" onclick="setState('Alerte créée')">Créer une alerte</button>
-          <button class="btn hot" onclick="setState('Panier — 3 acheteurs')">Panier · 3</button>
-        </div>
-      </div>
+      ${header}
+      <div class="disc mt8">Rien à configurer — vos annonces font le tri, les plus demandées d'abord.
+      ${pin(2)} Cochez pour constituer une sélection : le total s'affiche en bas, l'aperçu reste à un clic.</div>
 
       <div class="col gap20 mt20">
         ${groupes.map(({b,i})=>{
@@ -6141,11 +6105,11 @@ add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'a
             </div>
             <div class="pad">
               <div class="col gap6">
-                ${rows.map(x=>acheteurRow(x)).join('')}
+                ${rows.map(x=>acheteurRow(x,true,ck(x))).join('')}
                 ${reste>0?`
-                <div class="rrow" style="justify-content:space-between;padding:11px 12px" onclick="setState('Depuis une annonce')">
+                <div class="rrow" style="justify-content:space-between;padding:11px 12px" onclick="setState('Filtrée sur un bien')">
                   <div class="rtx"><b>+ ${reste} autre${reste>1?'s':''} acheteur${reste>1?'s':''}</b>
-                    <span>la même liste, vue depuis l'annonce</span></div>
+                    <span>voir les ${b.match} — la vue « Tous », filtrée sur ce bien</span></div>
                   <span class="sub" style="flex:none">→</span>
                 </div>`:''}
               </div>
@@ -6153,12 +6117,13 @@ add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'a
           </div>`;}).join('')}
       </div>
 
+      ${selbar}
       <div class="disc mt8">« T4 · 89 m² · Lyon 3ᵉ » est vendu : il ne correspond plus à personne —
       un bien vendu sort du matching le jour même, et un bien retiré aussi.</div>
-      <div class="disc mt8">${pin(2)} Avant l'achat : critères, commune (jamais l'adresse), projet,
+      <div class="disc mt8">${pin(5)} Avant l'achat : critères, commune (jamais l'adresse), projet,
       score, financement oui / non, activité, agences l'ayant acheté. Après l'achat : nom, téléphone,
       email, message.</div>
-      <div class="bandeau mt14">${pin(4)} En rendez-vous mandat, ces chiffres sont votre argument :
+      <div class="bandeau mt14">${pin(7)} En rendez-vous mandat, ces chiffres sont votre argument :
       « j'ai déjà ${groupes[0].b.match} acheteurs qualifiés pour votre bien ». C'est ce que ces profils
       valent au-delà du contact lui-même.</div>
       <div class="mt14">${rassurance()}</div>
