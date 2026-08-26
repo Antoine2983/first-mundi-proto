@@ -1001,7 +1001,9 @@ const mobSearch = () => {
    la nav doit suivre l'état choisi plutôt que la bascule globale de la barre d'outils. */
 const appnav = (active, who='customer', auth=AUTH, solde=SOLDE) => {
   if (who==='pro') {
-    const links = ['Tableau de bord','Mes biens','Mes leads','Acheteurs','Facturation'];
+    /* la facturation n'est pas dans la nav : c'est un objet du compte, elle vit
+       dans le profil (avatar → Paiement & factures). La nav ne porte que le quotidien. */
+    const links = ['Tableau de bord','Mes biens','Mes leads','Acheteurs'];
     return `<div class="appnav">
       <div class="burger"><i></i><i></i><i></i></div>
       <div class="logo hot" onclick="go('pro-dashboard')" title="Retour au tableau de bord">LOGO</div>
@@ -1032,7 +1034,7 @@ const appnav = (active, who='customer', auth=AUTH, solde=SOLDE) => {
 };
 const GO = {'Recherche':'recherche','Favoris':'favoris','Mes recherches':'recherches',
             'Tableau de bord':'pro-dashboard','Mes biens':'pro-biens','Mes leads':'pro-leads',
-            'Acheteurs':'pro-acheteurs','Facturation':'pro-factures'};
+            'Acheteurs':'pro-acheteurs'};
 
 /* ---- données réelles (08-CONTENU-EXEMPLE) ----
    Modèle F-010 v2 : UNE annonce par bien, éditée par First Mundi.
@@ -6660,13 +6662,17 @@ add({id:'pro-profil', g:'P2 — Monétisation', n:'16', title:'Profil de l\'agen
 add({id:'pro-factures', g:'P2 — Monétisation', n:'16', title:'Paiements & factures',
   intro:"Écran de confiance. Une agence qui ne retrouve pas ses factures conteste ses prélèvements. Séparer clairement ce qui est gratuit de ce qui est facturé est ici un argument commercial.",
   notes:[
+    ['La facturation vit dans le profil, pas dans la nav','la nav ne porte que le quotidien — biens, leads, acheteurs. Les factures sont un objet du compte : on y va depuis le profil (Paiement & factures), depuis une vente déclarée, ou depuis le registre de crédits. Un onglet permanent « Facturation » laisserait entendre qu’il se passe quelque chose à payer tous les jours — c’est l’inverse du modèle.'],
     ['La ligne « publication » à 0 €','la montrer explicitement dans le récapitulatif prouve la promesse mieux qu’un slogan.'],
     ['Historique téléchargeable en un clic','PDF par ligne et export mensuel comptable.'],
     ['Frais de service séparés des packs de crédits','deux natures de revenus différentes — les mélanger crée de la confusion au moment du rapprochement comptable.'],
     ['Les euros ici, les crédits dans le profil','une facture ne contient que de l\'argent : packs de crédits et frais de service. Les déblocages d\'acheteurs sont des débits de crédits — leur registre vit dans le profil, pas dans un document comptable qui circule avec des références d\'acheteurs dedans.']
   ],
-  render:()=>`${appnav('Facturation','pro')}
+  render:()=>`${appnav('','pro')}
   <div class="sec">
+    <div class="row mid gap8 sub" style="margin-bottom:14px">
+      <span class="linkish hot" onclick="go('pro-profil')">← Profil de l'agence</span>
+      <span>·</span><span>Facturation</span></div>
     <h4 class="wt">Facturation</h4>
     <div class="grid3 mt20">
       ${[['Ce mois','150 €','1 pack de 150 crédits'],['Frais de service','1 340 €','2 ventes déclarées'],['Publication & contacts','0 €','23 biens · 47 contacts — gratuit, sans limite']]
