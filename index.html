@@ -5868,8 +5868,8 @@ add({id:'pro-lead', g:'P2 — Monétisation', n:'14', title:'Fiche lead — la m
 });
 
 add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'acheteurs — la demande que vous ne voyiez pas',
-  intro:"Le produit payant, et il ne ressemble à rien de ce que les portails vendent : des **acheteurs qui n'ont contacté personne**. Inscrits, en recherche active, d'accord pour être proposés aux agences. Trois portes d'entrée — depuis une annonce (« 12 acheteurs correspondent à ce bien »), le catalogue avec ses critères et son panier, et les alertes. Partout, la même règle d'or : assez pour donner envie, pas assez pour contourner l'achat.",
-  states:['Depuis une annonce','Catalogue','Panier — 3 acheteurs','Alerte créée','Aucun résultat'],
+  intro:"Le produit payant, et il ne ressemble à rien de ce que les portails vendent : des **acheteurs qui n'ont contacté personne**. Inscrits, en recherche active, d'accord pour être proposés aux agences. L'onglet s'ouvre sur le **portefeuille entier** : tous les acheteurs de toutes vos annonces, groupés par bien — rien à configurer. Trois autres portes : depuis une annonce (« 12 acheteurs correspondent à ce bien »), la recherche libre avec ses critères et son panier (la prospection au-delà de vos mandats), et les alertes. Partout, la même règle d'or : assez pour donner envie, pas assez pour contourner l'achat.",
+  states:['Pour vos biens','Recherche libre','Depuis une annonce','Panier — 3 acheteurs','Alerte créée','Aucun résultat'],
   notes:[
     ['« N acheteurs correspondent à ce bien » est l’écran qui vend','l’agence n’a rien à configurer : ses annonces sont déjà sur la plateforme, le matching est fait. Elle clique, voit la liste anonymisée, achète. Les deux autres portes — catalogue et alertes — servent la prospection et le retour régulier.'],
     ['La règle d’or : avant / après achat','visible avant : critères, commune (jamais l’adresse), projet, score de sérieux, financement oui/non (jamais le montant), activité récente, combien d’agences l’ont acheté. Révélé après : nom, téléphone, email, message. Un seul champ de trop côté « avant » et l’achat se contourne ; un de moins et l’envie ne vient pas.'],
@@ -5880,7 +5880,8 @@ add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'a
     ['Le score de sérieux s’explique d’un clic, partout','même doctrine que le score du bien : 4 composants pondérés, tous visibles, aucun modèle opaque. La pastille ouvre le détail — profil renseigné (35), recherche active (30), réactivité (20), constance (15) — avec ce que le score n’est PAS : une solvabilité. Un chiffre qui justifie un achat de 20 à 40 € et qui ne s’explique pas se lit comme un chiffre inventé.'],
     ['Ce qui rassure est sur l’écran d’achat, pas dans les CGU','remboursé si injoignable · le premier est offert · jamais refacturé deux fois · déclaratif affiché. Le risque du premier achat est l’obstacle n°1 — chaque garantie est à un clic du bouton payer.'],
     ['Chaque acheteur a dit oui','case jamais pré-cochée, révocable à tout moment, côté acquéreur. C’est une obligation légale stricte et la condition du modèle — l’écran de consentement est maquetté côté B2C (mise en relation, profil, paramètres).'],
-    ['Le catalogue ne montre que le pas-encore-acheté','dès l’achat, le profil sort du catalogue de cette agence et rejoint « Mes leads » avec sa provenance. Ce qui reste ici est donc toujours à acheter — une liste où traînent des profils déjà payés ferait douter de toutes les lignes.']
+    ['Le catalogue ne montre que le pas-encore-acheté','dès l’achat, le profil sort du catalogue de cette agence et rejoint « Mes leads » avec sa provenance. Ce qui reste ici est donc toujours à acheter — une liste où traînent des profils déjà payés ferait douter de toutes les lignes.'],
+    ['L’onglet s’ouvre sur vos biens, pas sur un formulaire de critères','la première visite doit prouver « vous n’avez rien à configurer » : tous les acheteurs de toutes les annonces, groupés par bien, les plus demandés en premier. La recherche libre existe pour prospecter au-delà du portefeuille — un mandat qu’on vise, un secteur qu’on ouvre — mais c’est le second geste, jamais le premier écran.']
   ],
   render:(st)=>{
     const b0 = PRO_BIENS[0];
@@ -5897,7 +5898,7 @@ add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'a
           donnent leur accord. Plutôt que de revenir vérifier, laissez une alerte faire le travail.</p>
           <div class="row gap8">
             <button class="btn hot" onclick="setState('Alerte créée')">Me prévenir dès qu'un acheteur correspond</button>
-            <button class="btn sec2 hot" onclick="setState('Catalogue')">Élargir mes critères</button>
+            <button class="btn sec2 hot" onclick="setState('Recherche libre')">Élargir mes critères</button>
           </div>
           <div class="disc" style="margin-top:6px">Nous n'affichons que des acheteurs réels et
           consentants — jamais de profil de remplissage pour meubler une liste.</div>
@@ -5909,7 +5910,7 @@ add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'a
         <div class="row mid" style="justify-content:space-between;flex-wrap:wrap;gap:10px">
           <div><h4 class="wt">Mes alertes acheteurs${pin(1)}</h4>
             <div class="sub">Prévenu dès qu'un acheteur correspond — achat en 1 clic depuis la notification.</div></div>
-          <button class="btn sec2 hot" onclick="setState('Catalogue')">← Retour au catalogue</button>
+          <button class="btn sec2 hot" onclick="setState('Pour vos biens')">← Retour aux acheteurs</button>
         </div>
         <div class="bandeau mt20"><b>Alerte créée.</b> Dès qu'un acheteur correspondant à
         « T3 – T4 · Lyon 7ᵉ + 5 km · jusqu'à 350 000 € » rejoint le catalogue, vous recevez un email —
@@ -5958,7 +5959,7 @@ add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'a
                       [ACHETEURS[4],'Recherche + financement','40 €']];
       return `${nav}
       <div class="sec"><div style="max-width:720px;margin:0 auto">
-        <div class="row mid gap8 sub"><span class="linkish hot" onclick="setState('Catalogue')">← Catalogue</span>
+        <div class="row mid gap8 sub"><span class="linkish hot" onclick="setState('Pour vos biens')">← Acheteurs</span>
           <span>·</span><span>Panier</span></div>
         <div class="card mt14">
           <div class="pad" style="border-bottom:1px solid var(--line-2)">
@@ -6035,7 +6036,7 @@ add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'a
               ${ACHETEURS.filter(a=>a.bi===0).map(a=>acheteurRow(a)).join('')}
             </div>
             <div class="row mid" style="justify-content:center;margin-top:14px">
-              <button class="btn sec2 sm hot" onclick="setState('Catalogue')">Voir les ${b0.match} dans le catalogue →</button>
+              <button class="btn sec2 sm hot" onclick="setState('Pour vos biens')">Voir les acheteurs de tous vos biens →</button>
             </div>
             <div class="bandeau mt14">${pin(4)} En rendez-vous mandat, ce chiffre est votre argument :
             « j'ai déjà ${b0.match} acheteurs qualifiés pour votre bien ». C'est ce que ces profils
@@ -6045,26 +6046,30 @@ add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'a
         </div>
       </div></div>`;
 
-    /* ---------- Catalogue — l'onglet de prospection ---------- */
-    return `${nav}
+    /* ---------- Recherche libre — la prospection au-delà du portefeuille ---------- */
+    if (st==='Recherche libre') return `${nav}
     <div class="sec">
       <div class="row mid" style="justify-content:space-between;flex-wrap:wrap;gap:10px">
-        <div><h4 class="wt">Catalogue d'acheteurs</h4>
-          <div class="sub"><b class="num">${MATCHTOT}</b> acheteurs correspondent à vos critères ·
+        <div><h4 class="wt">Recherche libre</h4>
+          <div class="sub"><b class="num">${ACHETEURS.length}</b> acheteurs correspondent à vos critères ·
           aucun ne vous a contacté · les plus actifs d'abord</div></div>
         <div class="row gap8 wrap">
+          <button class="btn sec2 hot" onclick="setState('Pour vos biens')">← Pour vos biens</button>
           <button class="btn sec2 hot" onclick="setState('Alerte créée')">${pin(1)} Créer une alerte</button>
           <button class="btn hot" onclick="setState('Panier — 3 acheteurs')">Panier · 3</button>
         </div>
       </div>
 
       <div class="fbar mt20">
-        ${['Lyon + 10 km ✕','Jusqu\'à 350 000 € ✕','T2 à T4 ✕'].map(f=>`<span class="chip k hot">${f}</span>`).join('')}
+        ${['Lyon et alentours ✕'].map(f=>`<span class="chip k hot">${f}</span>`).join('')}
         <span class="fsep"></span>
-        ${['Financement renseigné','Résidence principale','Investisseurs'].map(f=>`<span class="chip hot">${f}</span>`).join('')}
+        ${['Budget maximum','Type de bien','Financement renseigné','Résidence principale','Investisseurs'].map(f=>`<span class="chip hot">${f}</span>`).join('')}
         <span class="fsep"></span>
         <button class="btn sec2 sm hot">Trier : activité récente ▾</button>
       </div>
+      <div class="disc mt8">Ici, vos critères font la liste — pour prospecter au-delà de vos mandats :
+      un secteur qu'on ouvre, un rendez-vous vendeur qu'on prépare. Les acheteurs de vos biens en ligne
+      sont déjà rassemblés dans <span class="linkish" onclick="setState('Pour vos biens')">« Pour vos biens »</span>.</div>
 
       <div class="col gap8 mt14">
         ${ACHETEURS.map(a=>`
@@ -6098,6 +6103,64 @@ add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'a
       <div class="disc mt8">${pin(8)} Chacun de ces acheteurs a coché lui-même la case « être contacté
       par des agences » — jamais pré-cochée, révocable à tout moment. Quand l'un la décoche, il sort
       du catalogue dans l'heure.</div>
+      <div class="mt14">${rassurance()}</div>
+    </div>`;
+
+    /* ---------- Pour vos biens — l'entrée : tout le portefeuille, groupé par annonce ---------- */
+    const groupes = PRO_BIENS.map((b,i)=>({b,i})).filter(o=>o.b.st!=='Vendu'&&o.b.match>0)
+      .sort((x,y)=>y.b.match-x.b.match);
+    return `${nav}
+    <div class="sec">
+      <div class="row mid" style="justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div><h4 class="wt">Acheteurs pour vos biens${pin(10)}</h4>
+          <div class="sub"><b class="num">${MATCHTOT}</b> acheteurs correspondent à vos
+          <b class="num">${groupes.length}</b> biens en ligne · aucun ne vous a contacté ·
+          rien à configurer — vos annonces font le tri</div></div>
+        <div class="row gap8 wrap">
+          <button class="btn sec2 hot" onclick="setState('Recherche libre')">${pin(1)} Recherche libre</button>
+          <button class="btn sec2 hot" onclick="setState('Alerte créée')">Créer une alerte</button>
+          <button class="btn hot" onclick="setState('Panier — 3 acheteurs')">Panier · 3</button>
+        </div>
+      </div>
+
+      <div class="col gap20 mt20">
+        ${groupes.map(({b,i})=>{
+          const rows = ACHETEURS.filter(x=>x.bi===i);
+          const reste = b.match - rows.length;
+          return `
+          <div class="card">
+            <div class="pad" style="border-bottom:1px solid var(--line-2)">
+              <div class="row mid agrow" style="justify-content:space-between;gap:10px">
+                <div class="row mid gap8" style="min-width:0">
+                  ${ph('photo',40).replace('height:40px','height:40px;width:56px;flex:none')}
+                  <div style="min-width:0"><div class="txt" style="font-weight:600;color:var(--ink)">${b.t}</div>
+                    <div class="sub num">${nbsp(b.p)} · ${b.st}</div></div>
+                </div>
+                <span class="chip k" style="flex:none">${b.match} acheteur${b.match>1?'s':''} correspond${b.match>1?'ent':''}</span>
+              </div>
+            </div>
+            <div class="pad">
+              <div class="col gap6">
+                ${rows.map(x=>acheteurRow(x)).join('')}
+                ${reste>0?`
+                <div class="rrow" style="justify-content:space-between;padding:11px 12px" onclick="setState('Depuis une annonce')">
+                  <div class="rtx"><b>+ ${reste} autre${reste>1?'s':''} acheteur${reste>1?'s':''}</b>
+                    <span>la même liste, vue depuis l'annonce</span></div>
+                  <span class="sub" style="flex:none">→</span>
+                </div>`:''}
+              </div>
+            </div>
+          </div>`;}).join('')}
+      </div>
+
+      <div class="disc mt8">« T4 · 89 m² · Lyon 3ᵉ » est vendu : il ne correspond plus à personne —
+      un bien vendu sort du matching le jour même, et un bien retiré aussi.</div>
+      <div class="disc mt8">${pin(2)} Avant l'achat : critères, commune (jamais l'adresse), projet,
+      score, financement oui / non, activité, agences l'ayant acheté. Après l'achat : nom, téléphone,
+      email, message.</div>
+      <div class="bandeau mt14">${pin(4)} En rendez-vous mandat, ces chiffres sont votre argument :
+      « j'ai déjà ${groupes[0].b.match} acheteurs qualifiés pour votre bien ». C'est ce que ces profils
+      valent au-delà du contact lui-même.</div>
       <div class="mt14">${rassurance()}</div>
     </div>`;
   }
