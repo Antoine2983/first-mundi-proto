@@ -1424,6 +1424,11 @@ const ACHETEURS = [
    crit:'Immeuble de rapport · jusqu\'à 500 000 €', score:76, fin:true,
    actif:'actif il y a 2 jours', deja:1, nom:'Sonia G.', bi:2}
 ];
+/* le filtre « Bien » du catalogue — null = tous les biens, sinon l'index PRO_BIENS.
+   Un vrai filtre runtime (pas un état de maquette) : le menu liste chaque bien avec
+   son nombre d'acheteurs, la liste se re-rend filtrée. */
+let ACHBI = null;
+
 /* le prix est FIXÉ par ce que l'acheteur a rempli — jamais une formule à choisir.
    Recherche seule = 20 crédits, recherche + financement = 40 : l'agence reçoit tout
    ce qui existe. Le débit se fait sur le solde ; la carte ne sort qu'au paywall. */
@@ -1707,6 +1712,29 @@ const HIST = {
 };
 
 const POP = {
+  /* le filtre « Bien » du catalogue d'acheteurs — chaque bien avec sa demande, ou tout */
+  bienFiltre(){
+    const rows = PRO_BIENS.map((b,i)=>({b,i})).filter(o=>o.b.st!=='Vendu'&&o.b.match>0)
+      .sort((x,y)=>y.b.match-x.b.match);
+    pop('Filtrer par bien',
+      'La demande, bien par bien — ou tout votre portefeuille d\'un coup.', `
+      <div class="col gap6">
+        <div class="rrow hot" style="justify-content:space-between;padding:11px 12px"
+          onclick="ACHBI=null;closePop();setState('Liste')">
+          <div class="rtx"><b>Tous vos biens</b><span>la liste entière</span></div>
+          <span class="chip ${ACHBI==null?'k':''}" style="flex:none">${MATCHTOT} acheteurs</span>
+        </div>
+        ${rows.map(({b,i})=>`
+        <div class="rrow hot" style="justify-content:space-between;padding:11px 12px"
+          onclick="ACHBI=${i};closePop();setState('Liste')">
+          <div class="rtx" style="min-width:0"><b>${b.t}</b><span class="num">${nbsp(b.p)} · ${b.st}</span></div>
+          <span class="chip ${ACHBI===i?'k':''}" style="flex:none">${b.match} acheteur${b.match>1?'s':''}</span>
+        </div>`).join('')}
+      </div>
+      <div class="disc mt8">« T4 · 89 m² · Lyon 3ᵉ » est vendu : il ne correspond plus à personne —
+      un bien vendu sort du matching le jour même.</div>`,
+      `<button class="btn sec2 sm" onclick="closePop()">Fermer</button>`);
+  },
 
   /* qui propose ce bien — l'annonce est unique, les mandats ne le sont pas */
   agences(i){ const b = BIENS[i==null?0:i]; const multi = (b.ags||[]).length > 1;
@@ -4871,7 +4899,7 @@ add({id:'pro-dashboard', g:'P1 — Côté agence', n:'12', title:'Tableau de bor
   states:['Jour 1 — compte vérifié','Biens en ligne, aucun lead','Premier lead reçu','En régime','Vente à déclarer'],
   notes:[
     ['Cinq âges, un seul message à la fois','un compte vide n’a pas besoin de la grille tarifaire, et une agence en régime n’a pas besoin qu’on lui réexplique que publier est gratuit. Le même écran, cinq contenus — c’est le seul moyen de ne jamais parler dans le vide.'],
-    ['Le modèle éco est expliqué AVANT la première facture','au jour 1, avec deux colonnes : ce qui est gratuit pour toujours (dont les contacts, EN ENTIER), et ce qui se paie en crédits à l’acte (débloquer des acheteurs du catalogue — dont les 40 premiers crédits sont offerts à l’inscription, pour des acheteurs qui correspondent aux biens de l’agence). Une agence échaudée par les portails cherche le piège dès la première minute — si elle ne le trouve pas ici, elle le cherchera au premier prélèvement, et là il sera trop tard.'],
+    ['Le modèle éco est expliqué AVANT la première facture','au jour 1, deux blocs : « vos contacts seront gratuits — en entier » (la liste de ce qui arrive, complet, pour toujours) et « ce que vous pourrez acheter, et à quel prix » — la grille crédits reprise de l’âge 2, avec les 40 crédits offerts et le 0,16 % à la vente. Une agence échaudée par les portails cherche le piège dès la première minute — si elle ne le trouve pas ici, elle le cherchera au premier prélèvement, et là il sera trop tard.'],
     ['Le premier lead reçu est LE moment pédagogique','c’est l’instant où l’agence vérifie la promesse : le contact est là, complet, rien à débloquer. Et c’est le bon moment pour montrer l’autre moitié du modèle — les acheteurs qui correspondent à ses biens et qu’elle n’aurait jamais connus. Un contact ouvert d’un côté, de la demande invisible de l’autre : deux fiches côte à côte valent mieux qu’un tableau de prix.'],
     ['« Gratuit » se prouve par une ligne à 0 €, pas par un adjectif','la ligne « Publication de biens — 0 € » dans les factures et le compteur « 47 contacts reçus — 0 € » font le travail qu’un slogan ne fait pas.'],
     ['Ce qui s’achète est introuvable ailleurs','l’agence n’achète pas de l’information sur quelqu’un qu’elle connaît — un coup de fil la lui donnerait gratuitement. Elle achète des acheteurs qu’elle ignore : inscrits, en recherche active, consentants. « N acheteurs correspondent à ce bien » est l’écran qui vend le produit, et l’agence n’a rien à configurer — ses annonces sont déjà là.'],
@@ -4912,7 +4940,43 @@ add({id:'pro-dashboard', g:'P1 — Côté agence', n:'12', title:'Tableau de bor
             <div class="sub">La question que toute agence se pose au premier jour. Voici la réponse entière.</div></div>
           <span class="chip o">aucun abonnement, aucun engagement</span>
         </div>
-        <div class="mt14">${gratuitPayant()}</div>
+
+        <div class="card mt14">
+          <div class="pad" style="border-bottom:1px solid var(--line-2)">
+            <div class="row mid" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
+              <h5 class="wt">Vos contacts seront gratuits — en entier</h5>
+              <span class="chip k">0 € · pour toujours</span>
+            </div>
+          </div>
+          <div class="pad">
+            <div class="sub">Chaque acquéreur qui vous contacte via une annonce arrive complet.
+            Rien à débloquer, jamais — aujourd'hui comme dans un an.</div>
+            <div class="col gap6 mt8">
+              ${['Identité complète','Téléphone vérifié par SMS','Email et message',
+                 'Projet, budget et financement déclarés']
+                .map(t=>`<div class="row gap8" style="align-items:flex-start">
+                  <span class="num" style="flex:none;color:var(--ink-3)">✓</span><span class="txt">${t}</span></div>`).join('')}
+            </div>
+          </div>
+        </div>
+
+        <div class="card mt14">
+          <div class="pad" style="border-bottom:1px solid var(--line-2)">
+            <div class="row mid" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
+              <h5 class="wt">Ce que vous pourrez acheter, et à quel prix</h5>
+              <span class="chip">en crédits · à l'acte</span>
+            </div>
+          </div>
+          <div class="pad">
+            <div class="sub">Des <b>acheteurs qui ne vous ont pas contactés</b> — inscrits, en recherche
+            active, consentants, dont les critères correspondent à vos biens. Rien n'est obligatoire.
+            Rien n'est un forfait.</div>
+            <div class="mt14">${grilleAcheteurs(null)}</div>
+            <div class="disc mt8">Vos <b>40 crédits offerts</b> couvrent déjà vos premiers déblocages.
+            Et quand une vente se conclut grâce à nous : 0,16 % du prix de vente — c'est tout.</div>
+          </div>
+        </div>
+
         <div class="bandeau mt14">Tant que vous ne vendez pas et ne rechargez pas de crédits,
         <b>vous ne payez rien</b> — et vos 40 crédits offerts débloquent déjà vos premiers acheteurs.
         Ce n'est pas une offre de lancement : c'est le modèle.</div>
@@ -5982,7 +6046,7 @@ add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'a
   intro:"Le produit payant : des **acheteurs qui n'ont contacté personne** — inscrits, en recherche active, d'accord pour être proposés aux agences. Le flow est **une liste, point** : tous les acheteurs qui correspondent à vos biens en ligne, et des **filtres** pour la travailler — le bien, le budget, le financement, le projet. Venir d'une annonce pose le filtre « bien », rien d'autre ne change. L'achat multiple est une **sélection en place** — on coche, une barre fait le total **en crédits** et débite le solde ; s'il ne suffit pas, elle emmène au paywall (packs dès 150 crédits). Partout, la même règle d'or : assez pour donner envie, pas assez pour contourner le déblocage.",
   states:['Liste','Filtrée sur un bien','Sélection — 3','Sélection — 10 · solde insuffisant','Solde à 0','Alerte créée','Aucun résultat'],
   notes:[
-    ['Une liste et des filtres — pas des vues','l’ancien flow multipliait les habillages du même contenu : groupé par bien, « depuis une annonce », recherche libre, puis un toggle Par bien / Tous. Il n’y a qu’un objet : la liste. Tout le reste est un filtre dans la même barre — posé, retiré, combiné. On sait toujours où on est : au même endroit.'],
+    ['Une liste et des filtres — pas des vues','l’ancien flow multipliait les habillages du même contenu : groupé par bien, « depuis une annonce », recherche libre, puis un toggle Par bien / Tous. Il n’y a qu’un objet : la liste. Tout le reste est un filtre dans la même barre — posé, retiré, combiné. Le filtre « Bien » est un vrai menu : chacun de vos biens avec son nombre d’acheteurs, ou tous — un clic pour isoler la demande d’un mandat, un clic pour revenir à tout. On sait toujours où on est : au même endroit.'],
     ['Le panier est mort, vive la sélection','un panier persistant est un objet à gérer : il se remplit sur un écran, s’affiche en badge sur un autre, survit à la navigation — l’ancien proto montrait « Panier · 3 » sur une vue où rien ne permettait d’ajouter. La sélection vit dans la liste : on coche, la barre totalise, on paie, elle meurt. Aucun état à retrouver, un seul tunnel d’achat.'],
     ['Le prix est fixé par le profil — et ne s’affiche plus ligne par ligne','recherche seule = 20 crédits, financement seul = 30, les deux = 40, rien à configurer. Mais la liste n’affiche aucun prix : le tag de type et le score font juger le profil, la somme n’apparaît que là où elle compte — la barre de sélection, et le CTA de la fiche.'],
     ['Le solde décide, la barre le dit','si le solde couvre la sélection, on débloque en un clic — la carte ne sort pas. Sinon, la barre dit combien il manque et emmène au paywall : packs de crédits, 150 minimum. Jamais de surprise au moment de payer : le solde est affiché en permanence dans la nav.'],
@@ -6115,7 +6179,11 @@ add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'a
        une annonce ou le dashboard). Les états Sélection = la même liste avec des cases
        cochées : la barre totalise, et passe au lot à 10. */
     const filtre = st==='Filtrée sur un bien';
-    const liste = filtre ? ACHETEURS.filter(a=>a.bi===0) : ACHETEURS;
+    /* le bien filtré effectif : l'état « Filtrée sur un bien » (entrée depuis une annonce)
+       force le T3 ; sinon c'est le choix runtime du menu « Bien » (ACHBI). */
+    const fbi = filtre ? 0 : ACHBI;
+    const bsel = fbi!=null ? PRO_BIENS[fbi] : null;
+    const liste = fbi!=null ? ACHETEURS.filter(a=>a.bi===fbi) : ACHETEURS;
     const bienDe = a => (PRO_BIENS[a.bi] && PRO_BIENS[a.bi].st!=='Vendu') ? PRO_BIENS[a.bi].t : null;
     return `${nav}
     <div class="sec">
@@ -6124,16 +6192,21 @@ add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'a
         <span>·</span><span>Ses acheteurs</span></div>`:''}
       ${header}
       <div class="fbar mt20">
-        <span class="chip ${filtre?'k':''} hot" ${filtre?`title="Retirer le filtre" onclick="setState('Liste')"`:''}>
-          ${filtre?`Bien : ${b0.t} ✕`:'Bien : tous les vôtres ▾'}</span>
+        ${filtre
+          ? `<span class="chip k hot" title="Retirer le filtre" onclick="setState('Liste')">Bien : ${b0.t} ✕</span>`
+          : `<span class="chip ${fbi!=null?'k':''} hot" title="Filtrer par bien" onclick="POP.bienFiltre()">
+              Bien : ${fbi!=null?bsel.t:'tous les vôtres'} ▾</span>
+             ${fbi!=null?`<span class="chip hot" title="Retirer le filtre" onclick="ACHBI=null;setState('Liste')">✕</span>`:''}`}
         <span class="fsep"></span>
         ${['Budget maximum','Type de bien','Financement renseigné','Résidence principale','Investisseurs'].map(f=>`<span class="chip hot">${f}</span>`).join('')}
         <span class="fsep"></span>
         <button class="btn sec2 sm hot">Trier : activité récente ▾</button>
       </div>
-      <div class="disc mt8">${filtre
-        ? `${pin(6)} ${b0.match} acheteurs correspondent à ce bien — type, budget, secteur — et aucun
-          ne vous a contacté. Retirez le filtre pour retrouver la liste entière.`
+      <div class="disc mt8">${fbi!=null
+        ? `${pin(6)} ${bsel.match} acheteur${bsel.match>1?'s':''} correspond${bsel.match>1?'ent':''} à
+          « ${bsel.t} » — type, budget, secteur — et aucun ne vous a contacté.
+          <span class="linkish" onclick="${filtre?`setState('Liste')`:`ACHBI=null;setState('Liste')`}">Retirer le filtre</span>
+          rend la liste entière, <span class="linkish" onclick="POP.bienFiltre()">le menu Bien</span> passe à un autre mandat.`
         : `${pin(1)} Une seule liste, les plus actifs d'abord — les filtres font le reste : un bien
           précis, un budget, un financement renseigné.`}
         ${zero?'':`${pin(2)} Cochez pour constituer une sélection : le total s'affiche en bas, l'aperçu reste à un clic.`}</div>
@@ -6147,10 +6220,10 @@ add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'a
         </div></div>`:''}
 
       <div class="col gap8 mt14">
-        ${liste.map(a=>acheteurRow(a,true,zero?null:ck(a),filtre?null:bienDe(a))).join('')}
+        ${liste.map(a=>acheteurRow(a,true,zero?null:ck(a),fbi!=null?null:bienDe(a))).join('')}
       </div>
-      ${filtre?`<div class="bandeau mt14">${pin(7)} En rendez-vous mandat, ce chiffre est votre argument :
-        « j'ai déjà ${b0.match} acheteurs qualifiés pour votre bien ». C'est ce que ces profils
+      ${fbi!=null?`<div class="bandeau mt14">${pin(7)} En rendez-vous mandat, ce chiffre est votre argument :
+        « j'ai déjà ${bsel.match} acheteurs qualifiés pour votre bien ». C'est ce que ces profils
         valent au-delà du contact lui-même.</div>`:''}
       ${selbar}
       <div class="disc mt8">${pin(5)} Avant l'achat : critères, commune (jamais l'adresse), projet,
