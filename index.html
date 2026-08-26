@@ -1447,18 +1447,16 @@ const acheteurRow = (a, cta=true, ck=null, bienLbl=null) => `
       <div style="min-width:0;flex:1">
         <div class="row mid gap6 wrap">
           <span class="txt" style="font-weight:600;color:var(--ink)">Acheteur ${a.id}</span>
+          <span class="chip k" style="font-weight:600">${a.projet}</span>
           ${serieuxChip(a)}
           <span class="chip">${a.fin?'financement renseigné':'sans financement renseigné'}</span>
         </div>
-        <div class="sub" style="margin-top:3px">${a.projet} · ${nbsp(a.crit)} · ${a.zone}</div>
+        <div class="sub" style="margin-top:3px">${nbsp(a.crit)} · ${a.zone}</div>
         ${bienLbl?`<div class="sub">correspond à votre bien · <b style="color:var(--ink-2)">${bienLbl}</b></div>`:''}
         <div class="sub">${a.actif} · ${a.deja===0?'aucune agence ne l\'a encore acheté'
           :a.deja===1?'1 agence l\'a déjà acheté':a.deja+' agences l\'ont déjà acheté'}</div>
       </div>
-      <div class="row mid gap8" style="flex:none">
-        <div class="mid2 num">${nbsp(ACHPX(a))}</div>
-        ${cta?'<span class="sub">aperçu →</span>':''}
-      </div>
+      ${cta?'<span class="sub" style="flex:none">aperçu →</span>':''}
     </div>
   </div>`;
 
@@ -5986,7 +5984,7 @@ add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'a
   notes:[
     ['Une liste et des filtres — pas des vues','l’ancien flow multipliait les habillages du même contenu : groupé par bien, « depuis une annonce », recherche libre, puis un toggle Par bien / Tous. Il n’y a qu’un objet : la liste. Tout le reste est un filtre dans la même barre — posé, retiré, combiné. On sait toujours où on est : au même endroit.'],
     ['Le panier est mort, vive la sélection','un panier persistant est un objet à gérer : il se remplit sur un écran, s’affiche en badge sur un autre, survit à la navigation — l’ancien proto montrait « Panier · 3 » sur une vue où rien ne permettait d’ajouter. La sélection vit dans la liste : on coche, la barre totalise, on paie, elle meurt. Aucun état à retrouver, un seul tunnel d’achat.'],
-    ['Le prix est fixé par le profil, jamais choisi','recherche seule = 20 crédits, financement seul = 30, les deux = 40 — l’agence reçoit tout ce que l’acheteur a rempli, il n’y a rien à configurer au moment de débloquer. Un prix par ligne, une somme dans la barre, un débit sur le solde.'],
+    ['Le prix est fixé par le profil — et ne s’affiche plus ligne par ligne','recherche seule = 20 crédits, financement seul = 30, les deux = 40, rien à configurer. Mais la liste n’affiche aucun prix : le tag de type et le score font juger le profil, la somme n’apparaît que là où elle compte — la barre de sélection, et le CTA de la fiche.'],
     ['Le solde décide, la barre le dit','si le solde couvre la sélection, on débloque en un clic — la carte ne sort pas. Sinon, la barre dit combien il manque et emmène au paywall : packs de crédits, 150 minimum. Jamais de surprise au moment de payer : le solde est affiché en permanence dans la nav.'],
     ['La règle d’or : avant / après achat','visible avant : critères, commune (jamais l’adresse), projet, score de sérieux, financement oui/non (jamais le montant), activité récente, combien d’agences l’ont acheté. Révélé après : nom, téléphone, email, message. Un seul champ de trop côté « avant » et l’achat se contourne ; un de moins et l’envie ne vient pas.'],
     ['Chaque ligne dit à quel bien elle correspond','la liste est à plat, mais la relation bien ↔ acheteur reste visible : chaque ligne porte l’annonce qui a déclenché le match. Le groupement n’était pas la seule façon de dire « 12 acheteurs pour ce bien » — le filtre bien et le compteur le disent mieux, sans dupliquer les vues. Et l’agence n’a toujours rien à configurer : ses annonces font le matching.'],
@@ -6172,7 +6170,8 @@ add({id:'pro-achat', g:'P2 — Monétisation', n:'15', title:'Débloquer un ache
   intro:"Le déblocage se paie **en crédits, jamais en euros directs** : 20 crédits (recherche seule) · 30 (financement seul) · 40 (les deux). Si le solde couvre, un clic suffit — la carte ne sort pas. Sinon, **le paywall** : des packs de crédits, **150 minimum**, qui n'expirent jamais. Ce que l'agence débloque n'est pas une information sur un contact qu'elle a déjà — c'est un acquéreur qu'elle ne connaît pas, introuvable ailleurs. Les garanties — recrédité si injoignable, 40 crédits offerts à l'inscription, jamais débité deux fois — sont sur l'écran, pas dans les CGU.",
   states:['Aperçu anonymisé','Acheter des crédits','Identité révélée','Déjà acheté — jamais redébité'],
   notes:[
-    ['Le prix suit ce que l’acheteur a rempli, jamais un palier','20 crédits s’il n’y a que la recherche, 30 s’il n’y a que le financement, 40 s’il y a les deux. Cet acheteur n’a pas renseigné son financement : il n’y a donc pas 30 ni 40 crédits à débiter — l’écran le dit au lieu de le vendre quand même.'],
+    ['Le type d’acheteur est le premier mot de la fiche','investissement locatif ou résidence principale — le tag le plus visible, en tête, et une phrase qui dit comment lui parler au premier appel. C’est l’information qui décide de l’achat et du discours, pas le tarif.'],
+    ['Le nombre de crédits n’apparaît QUE dans le CTA','« Débloquer — 20 crédits · votre solde : 90 » : le prix et le solde au moment de l’action, nulle part ailleurs. L’ancien bloc « pourquoi 20 et pas 40 » centrait la fiche sur le tarif au lieu de l’acheteur — mauvais discours. La grille complète reste consultable au paywall et dans le profil.'],
     ['Aperçu anonymisé, jamais trompeur','visible : critères, commune, projet, score, financement oui/non, activité, agences l’ayant acheté. Masqué : nom, téléphone, email, message. Ce qui est montré est exact — un aperçu enjolivé se paie sur les trois premiers achats, et l’avatar agence juge sur l’échantillon.'],
     ['Le score porte son détail au moment de payer','c’est lui qui départage deux acheteurs au même prix — il doit donc s’ouvrir depuis l’aperçu : 4 composants pondérés, et la mention « pas une solvabilité » au même endroit. Le badge « Profil sérieux » d’un lead reçu suit le même barème (seuil 80) : une seule échelle, promise et tenue des deux côtés.'],
     ['« Sans abonnement » écrit noir sur blanc','c’est l’angoisse n°1 d’une agence échaudée. Elle vient de 1 040 €/mois payés d’avance à trois portails : le mot « abonnement » doit apparaître pour être nié.'],
@@ -6263,8 +6262,8 @@ add({id:'pro-achat', g:'P2 — Monétisation', n:'15', title:'Débloquer un ache
               <div><h4 class="wt">Acheteur ${a.id}</h4>
                 <div class="sub">correspond à votre bien « T3 · 62 m² · Lyon 7ᵉ » · ${a.actif}</div>
                 <div class="row mid gap6 mt8 wrap"><span class="chip o">${pin(4)} 2 agences l'ont déjà acheté</span>
-                  <span class="sub">chacune au même prix — jamais d'exclusivité vendue</span></div></div>
-              <span class="chip k">20 crédits</span>
+                  <span class="sub">jamais d'exclusivité vendue</span></div></div>
+              <span class="chip k" style="font-weight:600;flex:none">${a.projet}</span>
             </div>
           </div>
           <div class="pad" style="border-bottom:1px solid var(--line-2)">
@@ -6294,15 +6293,15 @@ add({id:'pro-achat', g:'P2 — Monétisation', n:'15', title:'Débloquer un ache
                   <div class="lbl">${k}</div>
                   <div class="num" style="font-weight:600;margin-top:3px;letter-spacing:2px;color:var(--ink-3)">${nbsp(v)}</div></div>`).join('')}
             </div>
-            <div class="disc mt8">${a.id} n'a pas rempli le volet financement : <b>il n'y a donc pas
-            30 ni 40 crédits à débiter ici</b>. Sa fiche s'arrête à sa recherche et son score.</div>
+            <div class="disc mt8">${a.id} n'a pas rempli le volet financement : sa fiche s'arrête à
+            sa recherche et son score. Ce qui n'existe pas n'est jamais affiché comme disponible.</div>
 
-            <div class="lbl mt20">${pin(1)} Pourquoi 20 crédits et pas 40</div>
-            <div class="mt8">${grilleAcheteurs('rech')}</div>
+            <div class="bandeau mt20">${pin(1)} <b>${a.projet}.</b> ${a.projet==='Investissement locatif'
+              ? 'Cet acquéreur cherche du rendement — surface, loyer potentiel, charges, fiscalité. Le premier appel parle chiffres, pas coup de cœur.'
+              : 'Cet acquéreur cherche à habiter — quartier, lumière, délai d\'emménagement. Le premier appel parle projet de vie, pas rendement.'}</div>
 
             <button class="btn full mt20 hot" onclick="setState('Identité révélée')">Débloquer — 20 crédits · votre solde : ${SOLDE}</button>
             <div class="sub" style="text-align:center;margin-top:10px">${pin(3)} Débité sur votre solde, aucun abonnement —
-              <span class="more" onclick="POP.tarif()">toute la grille</span> ·
               <span class="more" onclick="setState('Acheter des crédits')">acheter des crédits</span></div>
             <div class="mt14">${rassurance()}</div>
           </div>
