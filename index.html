@@ -1341,14 +1341,49 @@ const paywallCredits = (ctx=null, after="goState('pro-lead','Acheté au catalogu
       nous n'en voulons pas.</div>
     </div>
     <div class="pad">
-      <div class="row mid gap8">
-        <div class="ph solid" style="width:34px;height:22px;flex:none">••••</div>
-        <div class="grow"><div class="txt">Visa se terminant par 4218</div><div class="sub">expire 09/29</div></div>
-        <span class="linkish sub">Changer</span>
+      <button class="btn full hot" onclick="${after}">Continuer — 400 crédits · ${nbsp('360 €')}</button>
+      <div class="sub" style="text-align:center;margin-top:10px">Le paiement par carte est l'étape
+      suivante — débité une seule fois, facture immédiate dans « Facturation ».</div>
+    </div>
+  </div>`;
+
+/* l'étape carte du paywall — la SEULE saisie CB du produit. Carte enregistrée en un
+   clic pour les packs suivants, ou nouvelle carte ; jamais de prélèvement récurrent. */
+const carteCredits = (after) => `
+  <div class="card">
+    <div class="pad" style="border-bottom:1px solid var(--line-2)">
+      <div class="row mid" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <h4 class="wt">Paiement</h4>
+        <span class="chip k num">400 crédits — ${nbsp('360 €')}</span>
       </div>
-      <button class="btn full mt14 hot" onclick="${after}">Acheter 400 crédits — ${nbsp('360 €')}${ctx?' et débloquer ma sélection':''}</button>
-      <div class="sub" style="text-align:center;margin-top:10px">Débité une seule fois, maintenant.
-      Facture immédiate dans « Facturation ».</div>
+    </div>
+    <div class="pad" style="border-bottom:1px solid var(--line-2)">
+      <div class="card flat pad hot" style="border-color:var(--ink)">
+        <div class="row mid gap8">
+          <div class="ph solid" style="width:34px;height:22px;flex:none">••••</div>
+          <div class="grow"><div class="txt" style="font-weight:600;color:var(--ink)">Visa se terminant par 4218</div>
+            <div class="sub">expire 09/29 — payer en un clic</div></div>
+          <span class="chip k" style="flex:none">enregistrée</span>
+        </div>
+      </div>
+      <div class="row mid gap8" style="margin:14px 0 10px">
+        <div class="hr" style="flex:1;margin:0"></div>
+        <span class="sub" style="flex:none">ou une nouvelle carte</span>
+        <div class="hr" style="flex:1;margin:0"></div>
+      </div>
+      ${inp('Numéro de carte','',{placeholder:'1234 5678 9012 3456'})}
+      <div class="grid2 mt8">${inp('Expiration','',{placeholder:'MM / AA'})}${inp('CVC','',{placeholder:'3 chiffres'})}</div>
+      <div class="mt8">${inp('Titulaire de la carte','',{placeholder:'tel qu\'inscrit sur la carte'})}</div>
+      <div class="row gap8 mt8" style="align-items:flex-start">
+        <span class="ckb" style="margin-top:2px"></span>
+        <span class="sub">Enregistrer cette carte pour les prochains packs — jamais pour un
+        prélèvement récurrent : il n'y en a pas.</span>
+      </div>
+    </div>
+    <div class="pad">
+      <button class="btn full hot" onclick="${after}">Payer ${nbsp('360 €')}</button>
+      <div class="sub" style="text-align:center;margin-top:10px">Validation 3-D Secure de votre banque
+      ensuite · débité une seule fois · facture immédiate dans « Facturation »</div>
     </div>
   </div>`;
 const grilleAcheteurs = (actif) => `
@@ -4834,12 +4869,14 @@ add({id:'inscription', g:'P1 — Côté agence', n:'10', title:'Inscription — 
 
 add({id:'pro-siret', g:'P1 — Côté agence', n:'11', title:'Inscription agence — vérification SIRET',
   intro:"La barrière à l'entrée du côté Pro. Elle doit être franchissable en deux minutes tout en produisant le badge « Pro vérifié » qui rassure les acquéreurs. Vérification automatique : on saisit un SIRET, on affiche ce qu'on a trouvé. Et c'est ICI que le cadeau de bienvenue se dit : **40 crédits offerts avec le compte**, qui débloquent des acheteurs potentiels pour les biens que l'agence va publier.",
-  states:['Saisie','Vérifié','SIRET introuvable'],
+  states:['Saisie','Vérifié','SIRET introuvable','Responsable','Vérification SMS'],
   notes:[
     ['On restitue ce qu’on trouve','afficher la raison sociale et l’adresse issues du registre transforme un contrôle en gain de temps : l’agence n’a rien à retaper.'],
     ['Le badge est montré avant d’être gagné','voir la contrepartie pendant la saisie soutient l’effort.'],
     ['Échec : proposer une issue manuelle','un SIRET récent peut être absent des bases. Un cul-de-sac ici, c’est une agence perdue.'],
-    ['Les 40 crédits offerts sont annoncés à l’inscription, pas découverts après','l’agence sait en entrant que ses premiers acheteurs sont déjà payés — des acquéreurs inscrits dont la recherche correspond à ses biens. C’est ce qui transforme une vérification administrative en début de valeur, et la raison de finir le tunnel.']
+    ['Les 40 crédits offerts sont annoncés à l’inscription, pas découverts après','l’agence sait en entrant que ses premiers acheteurs sont déjà payés — des acquéreurs inscrits dont la recherche correspond à ses biens. C’est ce qui transforme une vérification administrative en début de valeur, et la raison de finir le tunnel.'],
+    ['Les trois étapes du stepper existent en entier','entreprise → responsable → vérification SMS. Le responsable devient l’administrateur du compte (l’équipe s’invite ensuite depuis le profil), et son téléphone est vérifié par SMS — la même rigueur que côté acquéreur : un marché vérifié des deux côtés.'],
+    ['Le SMS clôt l’inscription sur la valeur, pas sur un contrôle','l’écran de fin rappelle les 40 crédits crédités et envoie vers le premier geste utile : publier un bien.']
   ],
   render:(st)=>{
     if (st==='Vérifié') return `
@@ -4862,9 +4899,58 @@ add({id:'pro-siret', g:'P1 — Côté agence', n:'11', title:'Inscription agence
           votre compte.</b> Ils débloquent vos premiers acheteurs : des acquéreurs déjà inscrits, en
           recherche active, dont les critères correspondent aux biens que vous allez publier.
           Sans carte, sans engagement — ils n'expirent jamais.</div>
-          <button class="btn full mt20 hot" onclick="go('pro-dashboard')">Continuer — vos 40 crédits vous attendent</button>
+          <button class="btn full mt20 hot" onclick="setState('Responsable')">Continuer — vos 40 crédits vous attendent</button>
         </div></div>
       </div></div>`;
+    /* ---------- étape 2 : le responsable du compte ---------- */
+    if (st==='Responsable') return `
+      <div class="appnav"><div class="logo hot" onclick="go('accueil')" title="Retour à l'accueil">LOGO</div></div>
+      <div class="sec"><div style="max-width:640px;margin:0 auto">
+        ${stepper(['Entreprise','Responsable','Vérification SMS'],1)}
+        <div class="card mt20"><div class="pad">
+          <h4 class="wt">Qui pilote le compte ?${pin(5)}</h4>
+          <p class="txt mt8">Le responsable devient l'administrateur : il invite ensuite l'équipe
+          depuis le profil, et les crédits appartiennent à l'agence — tout le monde débloque
+          sur le même solde.</p>
+          <div class="grid2 mt20">${inp('Prénom','Jean-Marc')}${inp('Nom','Perrin')}</div>
+          <div class="mt8">${inp('Email professionnel','jm@agenceduparc.fr',{hint:'votre identifiant de connexion — et l\'adresse des factures'})}</div>
+          <div class="grid2 mt8">
+            ${inp('Téléphone mobile','06 24 81 07 42',{hint:'vérifié par SMS à l\'étape suivante'})}
+            ${inp('Mot de passe','••••••••••',{hint:'10 caractères minimum'})}
+          </div>
+          <div class="bandeau mt14">Votre numéro est vérifié comme celui des acquéreurs — par SMS,
+          une seule fois. C'est la même rigueur des deux côtés du marché, et ce que vaut le badge
+          « Pro vérifié ».</div>
+          <div class="row gap8 mt20">
+            <button class="btn sec2 hot" onclick="setState('Vérifié')">← Retour</button>
+            <button class="btn grow hot" onclick="setState('Vérification SMS')">Recevoir le code SMS</button>
+          </div>
+        </div></div>
+      </div></div>`;
+
+    /* ---------- étape 3 : vérification SMS, puis le compte est prêt ---------- */
+    if (st==='Vérification SMS') return `
+      <div class="appnav"><div class="logo hot" onclick="go('accueil')" title="Retour à l'accueil">LOGO</div></div>
+      <div class="sec"><div style="max-width:560px;margin:0 auto">
+        ${stepper(['Entreprise','Responsable','Vérification SMS'],2)}
+        <div class="card mt20"><div class="pad" style="text-align:center;padding:30px 26px">
+          <h4 class="wt">Confirmez votre numéro${pin(5)}</h4>
+          <p class="txt mt8">Un code à 6 chiffres vient d'être envoyé au <b class="num">06 •• •• •• 42</b>.
+          Une seule fois : ensuite votre compte est prêt, badge « Pro vérifié » compris.</p>
+          <div class="row gap8" style="justify-content:center;margin:22px 0">
+            ${[0,1,2,3,4,5].map(i=>`<div class="inp" style="width:44px;height:52px;justify-content:center;font-size:19px">
+              <span class="v num">${i<3?['7','2','5'][i]:''}</span></div>`).join('')}
+          </div>
+          <button class="btn full mt8 hot" onclick="go('pro-dashboard')">${pin(6)} Valider — votre compte est prêt, 40 crédits offerts</button>
+          <div class="row mid gap8" style="justify-content:center;margin-top:14px">
+            <span class="sub">Renvoyer le code dans <b class="num">0:42</b></span>
+            <span>·</span><span class="linkish sub" onclick="setState('Responsable')">Modifier le numéro</span>
+          </div>
+          <div class="disc" style="margin-top:14px;text-align:left">Validé, vous arrivez sur votre
+          tableau de bord : vos 40 crédits sont déjà sur le solde, il ne manque que vos biens.</div>
+        </div></div>
+      </div></div>`;
+
     if (st==='SIRET introuvable') return `
       <div class="appnav"><div class="logo hot" onclick="go('accueil')" title="Retour à l'accueil">LOGO</div></div>
       <div class="sec"><div style="max-width:640px;margin:0 auto">
@@ -6241,7 +6327,7 @@ add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'a
 
 add({id:'pro-achat', g:'P2 — Monétisation', n:'15', title:'Débloquer un acheteur — 20 / 30 / 40 crédits',
   intro:"Le déblocage se paie **en crédits, jamais en euros directs** : 20 crédits (recherche seule) · 30 (financement seul) · 40 (les deux). Si le solde couvre, un clic suffit — la carte ne sort pas. Sinon, **le paywall** : des packs de crédits, **150 minimum**, qui n'expirent jamais. Ce que l'agence débloque n'est pas une information sur un contact qu'elle a déjà — c'est un acquéreur qu'elle ne connaît pas, introuvable ailleurs. Les garanties — recrédité si injoignable, 40 crédits offerts à l'inscription, jamais débité deux fois — sont sur l'écran, pas dans les CGU.",
-  states:['Aperçu anonymisé','Acheter des crédits','Identité révélée','Déjà acheté — jamais redébité'],
+  states:['Aperçu anonymisé','Acheter des crédits','Paiement par carte','Identité révélée','Déjà acheté — jamais redébité'],
   notes:[
     ['Le type d’acheteur est le premier mot de la fiche','investissement locatif ou résidence principale — le tag le plus visible, en tête, et une phrase qui dit comment lui parler au premier appel. C’est l’information qui décide de l’achat et du discours, pas le tarif.'],
     ['Le nombre de crédits n’apparaît QUE dans le CTA','« Débloquer — 20 crédits · votre solde : 90 » : le prix et le solde au moment de l’action, nulle part ailleurs. L’ancien bloc « pourquoi 20 et pas 40 » centrait la fiche sur le tarif au lieu de l’acheteur — mauvais discours. La grille complète reste consultable au paywall et dans le profil.'],
@@ -6321,10 +6407,21 @@ add({id:'pro-achat', g:'P2 — Monétisation', n:'15', title:'Débloquer un ache
           <span class="linkish hot" onclick="goState('pro-acheteurs','Sélection — 10 · solde insuffisant')">← Ma sélection</span>
           <span>·</span><span>Acheter des crédits</span></div>
         ${paywallCredits({t:'Votre sélection : 10 acheteurs — 340 crédits',
-          s:'votre solde : '+SOLDE+' crédits', manque:340-SOLDE})}
+          s:'votre solde : '+SOLDE+' crédits', manque:340-SOLDE}, "setState('Paiement par carte')")}
         <div class="disc mt8">${pin(7)} La carte ne sort qu'ici. Les déblocages, eux, se paient
         toujours sur le solde — le second est un clic, zéro paiement.</div>
         <div class="mt14">${rassurance()}</div>
+      </div></div>`;
+
+    /* ---------- l'étape carte — choix du pack fait, on paie ---------- */
+    if (st==='Paiement par carte') return `${appnav('Acheteurs','pro')}
+      <div class="sec"><div style="max-width:600px;margin:0 auto">
+        <div class="row mid gap8 sub" style="margin-bottom:14px">
+          <span class="linkish hot" onclick="setState('Acheter des crédits')">← Packs de crédits</span>
+          <span>·</span><span>Paiement</span></div>
+        ${carteCredits("goState('pro-lead','Acheté au catalogue')")}
+        <div class="disc mt8">Payé : votre sélection se débloque immédiatement — les profils
+        rejoignent « Mes leads », et le reste du pack alimente votre solde.</div>
       </div></div>`;
 
     return `${appnav('Acheteurs','pro')}
@@ -6385,7 +6482,7 @@ add({id:'pro-achat', g:'P2 — Monétisation', n:'15', title:'Débloquer un ache
 
 add({id:'pro-profil', g:'P2 — Monétisation', n:'16', title:'Profil de l\'agence — compte, équipe & crédits',
   intro:"L'écran compte, qui n'existait pas — et qui devient stratégique avec les crédits : c'est **la deuxième porte d'achat** (la première est le paywall, quand un déblocage dépasse le solde). Le bloc Crédits dit trois choses : le solde, le registre des mouvements (chaque débit renvoie à sa fiche lead), et le bouton d'achat. Autour : l'identité de l'agence telle que les acquéreurs la voient, l'équipe, le moyen de paiement, les notifications, la sécurité. Rien d'exotique — un compte propre est un argument de confiance.",
-  states:['Profil','Acheter des crédits'],
+  states:['Profil','Acheter des crédits','Paiement par carte'],
   notes:[
     ['Le solde vit à deux endroits, le registre à un seul','dans la nav (toujours visible, cliquable) et ici. Le registre des débits n\'est QUE dans le profil : chaque ligne renvoie à la fiche du lead débloqué — jamais dans les factures, où des références d\'acheteurs n\'ont rien à faire.'],
     ['Acheter des crédits sans être au pied du mur','le paywall arrive quand le solde ne couvre pas un déblocage — un moment de friction. Le profil offre l\'achat calme : une agence qui recharge en début de mois n\'a plus jamais de friction au moment du déblocage, et c\'est exactement le comportement qu\'on veut installer.'],
@@ -6400,9 +6497,19 @@ add({id:'pro-profil', g:'P2 — Monétisation', n:'16', title:'Profil de l\'agen
         <div class="row mid gap8 sub" style="margin-bottom:14px">
           <span class="linkish hot" onclick="setState('Profil')">← Profil de l'agence</span>
           <span>·</span><span>Acheter des crédits</span></div>
-        ${paywallCredits(null, "setState('Profil')")}
+        ${paywallCredits(null, "setState('Paiement par carte')")}
         <div class="disc mt8">${pin(2)} Ici, on achète sans être au pied du mur — le solde couvre
         ensuite les déblocages en un clic, sans repasser par la carte.</div>
+      </div></div>`;
+
+    if (st==='Paiement par carte') return `${appnav('','pro')}
+      <div class="sec"><div style="max-width:600px;margin:0 auto">
+        <div class="row mid gap8 sub" style="margin-bottom:14px">
+          <span class="linkish hot" onclick="setState('Acheter des crédits')">← Packs de crédits</span>
+          <span>·</span><span>Paiement</span></div>
+        ${carteCredits("setState('Profil')")}
+        <div class="disc mt8">Payé : le solde est crédité immédiatement, la facture est dans
+        « Facturation », et chaque déblocage suivant est un clic — sans repasser par ici.</div>
       </div></div>`;
 
     /* ---------- le profil ---------- */
