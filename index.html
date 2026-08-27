@@ -1524,6 +1524,21 @@ const PRO_BIENS = [
 /* le total d'acheteurs correspondant au portefeuille — un bien vendu n'est plus proposé */
 const MATCHTOT = PRO_BIENS.filter(b=>b.st!=='Vendu').reduce((a,b)=>a+b.match,0);
 
+/* ---- rapatriement : les annonces déjà dans l'inventaire agrégé, publiées sous l'enseigne
+   de l'agence qui s'inscrit. Détectées au SIRET vérifié, rendues en un geste. `mine:false`
+   = matching douteux (enseigne proche) : signalé, décoché par défaut, jamais pris en silence.
+   14 trouvées au total ; 5 montrées, le reste compté. ---- */
+const PRO_RAPAT = [
+  {t:'T3 · 68 m² · Lyon 6ᵉ (Foch)',            p:'342 000 €', maj:'à jour il y a 2 j',  mine:true},
+  {t:'T2 · 41 m² · Lyon 6ᵉ (Brotteaux)',        p:'229 000 €', maj:'à jour hier',        mine:true},
+  {t:'T4 · 92 m² · Lyon 3ᵉ (Préfecture)',       p:'465 000 €', maj:'à jour il y a 4 j',  mine:true},
+  {t:'Studio · 24 m² · Villeurbanne (Charpennes)', p:'118 000 €', maj:'à jour il y a 1 j', mine:true},
+  {t:'Maison · 135 m² · Caluire-et-Cuire',      p:'620 000 €', maj:'à jour il y a 6 j',  mine:false,
+   doute:'enseigne proche : « Agence du Parc Immobilier » (Caluire) — vérifiez avant de rapatrier'}
+];
+const RAPAT_TOTAL = 14;                                  /* trouvées dans l'inventaire */
+const RAPAT_SEL   = RAPAT_TOTAL - PRO_RAPAT.filter(r=>!r.mine).length;   /* sélectionnées par défaut */
+
 /* ---- contacts reçus — TOUS gratuits, TOUS complets, tout de suite et à vie.
    `plein` = a rempli les champs facultatifs (budget, financement) de sa demande — l'agence
    reçoit tout ce qu'il a rempli, gratuitement. Il n'y a rien à débloquer, jamais. ---- */
@@ -4870,15 +4885,17 @@ add({id:'inscription', g:'P1 — Côté agence', n:'10', title:'Inscription — 
 });
 
 add({id:'pro-siret', g:'P1 — Côté agence', n:'11', title:'Inscription agence — vérification SIRET',
-  intro:"La barrière à l'entrée du côté Pro. Elle doit être franchissable en deux minutes tout en produisant le badge « Pro vérifié » qui rassure les acquéreurs. Vérification automatique : on saisit un SIRET, on affiche ce qu'on a trouvé. Et c'est ICI que le cadeau de bienvenue se dit : **40 crédits offerts avec le compte**, qui débloquent des acheteurs potentiels pour les biens que l'agence va publier.",
-  states:['Saisie','Vérifié','SIRET introuvable','Responsable','Vérification SMS'],
+  intro:"La barrière à l'entrée du côté Pro. Elle doit être franchissable en deux minutes tout en produisant le badge « Pro vérifié » qui rassure les acquéreurs. Vérification automatique : on saisit un SIRET, on affiche ce qu'on a trouvé. C'est ICI que le cadeau de bienvenue se dit : **40 crédits offerts avec le compte**. Et juste après la vérification, le **rapatriement** : le marché est déjà agrégé, donc les annonces publiées sous cette enseigne figurent déjà dans l'inventaire — on les rend à l'agence en un geste, avant même qu'elle ait déposé quoi que ce soit.",
+  states:['Saisie','Vérifié','Annonces retrouvées','SIRET introuvable','Responsable','Vérification SMS'],
   notes:[
     ['On restitue ce qu’on trouve','afficher la raison sociale et l’adresse issues du registre transforme un contrôle en gain de temps : l’agence n’a rien à retaper.'],
     ['Le badge est montré avant d’être gagné','voir la contrepartie pendant la saisie soutient l’effort.'],
     ['Échec : proposer une issue manuelle','un SIRET récent peut être absent des bases. Un cul-de-sac ici, c’est une agence perdue.'],
     ['Les 40 crédits offerts sont annoncés à l’inscription, pas découverts après','l’agence sait en entrant que ses premiers acheteurs sont déjà payés — des acquéreurs inscrits dont la recherche correspond à ses biens. C’est ce qui transforme une vérification administrative en début de valeur, et la raison de finir le tunnel.'],
     ['Les trois étapes du stepper existent en entier','entreprise → responsable → vérification SMS. Le responsable devient l’administrateur du compte (l’équipe s’invite ensuite depuis le profil), et son téléphone est vérifié par SMS — la même rigueur que côté acquéreur : un marché vérifié des deux côtés.'],
-    ['Le SMS clôt l’inscription sur la valeur, pas sur un contrôle','l’écran de fin rappelle les 40 crédits crédités et envoie vers le premier geste utile : publier un bien.']
+    ['Le SMS clôt l’inscription sur la valeur, pas sur un contrôle','l’écran de fin rappelle les 40 crédits crédités et envoie vers le premier geste utile : publier un bien.'],
+    ['Le rapatriement transforme l’agrégé en opt-in','le SIRET vérifié dit QUI s’inscrit — donc on sait déjà QUOI lui rendre : ses annonces présentes dans l’inventaire agrégé. Rapatriées, elles deviennent un dépôt direct : badge « Pro vérifié », la main sur le contenu, les contacts dans « Mes leads », meilleure position sur les biens partagés. C’est le levier d’acquisition de la fiche mutualisée (F-010) — et le socle juridique opt-in qui remplace la simple rediffusion.'],
+    ['Le matching s’assume faillible, et rien ne se rapatrie en silence','une enseigne proche peut se glisser dans la liste : la ligne douteuse est signalée et décochée par défaut. Et « Plus tard » existe sans pénalité — la liste attend dans « Mes biens », ce n’est pas un train qui passe.']
   ],
   render:(st)=>{
     if (st==='Vérifié') return `
@@ -4901,9 +4918,53 @@ add({id:'pro-siret', g:'P1 — Côté agence', n:'11', title:'Inscription agence
           votre compte.</b> Ils débloquent vos premiers acheteurs : des acquéreurs déjà inscrits, en
           recherche active, dont les critères correspondent aux biens que vous allez publier.
           Sans carte, sans engagement — ils n'expirent jamais.</div>
-          <button class="btn full mt20 hot" onclick="setState('Responsable')">Continuer — vos 40 crédits vous attendent</button>
+          <button class="btn full mt20 hot" onclick="setState('Annonces retrouvées')">Continuer — ${RAPAT_TOTAL} de vos annonces vous attendent</button>
         </div></div>
       </div></div>`;
+
+    /* ---------- rapatriement : l'inventaire rend à l'agence ce qui est à elle ---------- */
+    if (st==='Annonces retrouvées') return `
+      <div class="appnav"><div class="logo hot" onclick="go('accueil')" title="Retour à l'accueil">LOGO</div></div>
+      <div class="sec"><div style="max-width:640px;margin:0 auto">
+        ${stepper(['Entreprise','Responsable','Vérification SMS'],0)}
+        <div class="card mt20"><div class="pad">
+          <h4 class="wt">${RAPAT_TOTAL} de vos annonces sont déjà ici${pin(7)}</h4>
+          <p class="txt mt8">Le marché est agrégé dans un inventaire national — les annonces publiées
+          sous l'enseigne <b>Agence du Parc</b> y figurent déjà. Rapatriez-les : elles deviennent
+          <b>vos</b> annonces, sans rien avoir à ressaisir.</p>
+          <div class="col gap6 mt14">
+            ${['Badge « Pro vérifié » et la main sur le contenu — texte, photos, prix, retrait',
+               'Les contacts arrivent dans « Mes leads » — complets, gratuits, comme tous vos contacts',
+               'Sur un bien partagé, le dépôt direct passe devant la version agrégée : meilleure position de contact',
+               'Vos 40 crédits offerts ont déjà de quoi travailler : des acheteurs inscrits correspondent à ces biens']
+              .map(t=>`<div class="row gap8" style="align-items:flex-start">
+                <span class="num" style="flex:none;color:var(--ink-3)">✓</span><span class="txt">${t}</span></div>`).join('')}
+          </div>
+          <div class="card mt20" style="overflow:hidden">
+            ${PRO_RAPAT.map(r=>`
+              <div class="row mid gap10 pad hot" style="border-bottom:1px solid var(--line-2);padding:12px 14px;${r.mine?'':'background:var(--fill-2)'}">
+                <span class="chip ${r.mine?'k':''}" style="flex:none;padding:2px 6px">${r.mine?'✓':''}</span>
+                <div class="grow" style="min-width:0">
+                  <div class="txt" style="font-weight:600;color:var(--ink)">${r.t}</div>
+                  <div class="sub num">${nbsp(r.p)} · ${r.maj}</div>
+                  ${r.doute?`<div class="sub mt4">${pin(8)} ⚠ ${r.doute}</div>`:''}
+                </div>
+              </div>`).join('')}
+            <div class="pad" style="padding:12px 14px">
+              <span class="sub">… et <b class="num">${RAPAT_TOTAL-PRO_RAPAT.length}</b> autres annonces,
+              toutes sélectionnées. <span class="linkish">Voir les ${RAPAT_TOTAL}</span> ·
+              <span class="linkish">Tout désélectionner</span></span>
+            </div>
+          </div>
+          <div class="disc mt14">Une annonce n'est pas à vous ? Décochez-la — rien ne se rapatrie
+          en silence, et vous pourrez le refaire à tout moment depuis « Mes biens ».</div>
+          <button class="btn full mt14 hot" onclick="setState('Responsable')">Rapatrier ces ${RAPAT_SEL} annonces</button>
+          <div class="row mid" style="justify-content:center;margin-top:12px">
+            <span class="linkish sub" onclick="setState('Responsable')">Plus tard — vous les retrouverez dans « Mes biens »</span>
+          </div>
+        </div></div>
+      </div></div>`;
+
     /* ---------- étape 2 : le responsable du compte ---------- */
     if (st==='Responsable') return `
       <div class="appnav"><div class="logo hot" onclick="go('accueil')" title="Retour à l'accueil">LOGO</div></div>
@@ -4924,7 +4985,7 @@ add({id:'pro-siret', g:'P1 — Côté agence', n:'11', title:'Inscription agence
           une seule fois. C'est la même rigueur des deux côtés du marché, et ce que vaut le badge
           « Pro vérifié ».</div>
           <div class="row gap8 mt20">
-            <button class="btn sec2 hot" onclick="setState('Vérifié')">← Retour</button>
+            <button class="btn sec2 hot" onclick="setState('Annonces retrouvées')">← Retour</button>
             <button class="btn grow hot" onclick="setState('Vérification SMS')">Recevoir le code SMS</button>
           </div>
         </div></div>
@@ -5019,7 +5080,9 @@ add({id:'pro-dashboard', g:'P1 — Côté agence', n:'12', title:'Tableau de bor
           <p>Vous déposez les données, nous rédigeons l'annonce et vous la relisez.
           C'est gratuit, sans limite de nombre ni de durée — aujourd'hui comme dans un an.</p>
           <button class="btn hot" onclick="go('pro-depot')">Publier un bien</button>
-          <div class="sub">ou <span class="linkish">importer votre catalogue</span> (CSV, flux XML)</div>
+          <div class="sub">ou <span class="linkish">importer votre catalogue</span> (CSV, flux XML)
+          — ou <span class="linkish" onclick="event.stopPropagation();goState('pro-biens','Aucun bien')">rapatrier
+          vos ${RAPAT_TOTAL} annonces déjà sur le marché</span></div>
         </div></div>
       </div>
       <div class="sec">
@@ -5365,7 +5428,8 @@ add({id:'pro-biens', g:'P1 — Côté agence', n:'13', title:'Mes biens — la l
     ['La sélection multiple sert le statut, jamais la suppression','passer 4 biens en « Sous offre » après une salve de visites est le geste de masse réel. La suppression groupée n’existe pas : un bien retiré par erreur casse une URL, donc une preuve de diffusion.'],
     ['Le compteur porte deux chiffres : contacts reçus, acheteurs correspondants','« 9 leads » ne dit rien. « 9 contacts · 12 acheteurs correspondent » dit ce que le bien a rapporté gratuitement ET la demande invisible qui l’attend au catalogue — c’est la lecture ROI que l’agence fait de toute façon, autant la lui donner juste.'],
     ['« Vendus & archivés » est un état, pas un filtre caché','un bien vendu sort des résultats de recherche mais reste dans le portefeuille : c’est là que se déclarent les frais de service, et c’est l’historique que l’agence montre à un vendeur en rendez-vous mandat.'],
-    ['Zéro tri par performance par défaut','trier par vues décroissantes ferait remonter les biens qui marchent et enterrerait ceux qui ont besoin d’attention. Le tri par défaut est la date de mise à jour.']
+    ['Zéro tri par performance par défaut','trier par vues décroissantes ferait remonter les biens qui marchent et enterrerait ceux qui ont besoin d’attention. Le tri par défaut est la date de mise à jour.'],
+    ['Le rapatriement a une seconde chance ici','une agence qui a passé l’étape à l’inscription n’a pas perdu ses annonces : l’état vide les lui re-propose, avec le même geste. Un rapatriement raté à l’inscription qui ne se rattrape nulle part transformerait le tunnel en couperet.']
   ],
   render:(st)=>{
     const sel  = st==='Sélection multiple';
@@ -5385,6 +5449,27 @@ add({id:'pro-biens', g:'P1 — Côté agence', n:'13', title:'Mes biens — la l
           <div class="row gap8">
             <button class="btn hot" onclick="go('pro-depot')">Publier un bien</button>
             <button class="btn sec2 hot">Importer un catalogue (CSV, flux XML)</button>
+          </div>
+        </div></div>
+        <div class="card mt14"><div class="pad">
+          <div class="row mid" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
+            <h5 class="wt">${pin(7)} ${RAPAT_TOTAL} annonces sous votre enseigne sont déjà sur le marché</h5>
+            <span class="chip">détectées à votre SIRET</span>
+          </div>
+          <div class="sub mt8">Elles figurent dans l'inventaire agrégé. Rapatriez-les : elles deviennent
+          vos annonces — badge « Pro vérifié », contenu sous votre contrôle, contacts dans « Mes leads ».</div>
+          <div class="col gap6 mt14">
+            ${PRO_RAPAT.filter(r=>r.mine).slice(0,3).map(r=>`
+              <div class="row gap8" style="align-items:baseline">
+                <span class="num" style="flex:none;color:var(--ink-3)">✓</span>
+                <span class="txt" style="font-weight:600;color:var(--ink)">${r.t}</span>
+                <span class="sub num" style="flex:none">${nbsp(r.p)}</span>
+              </div>`).join('')}
+            <div class="sub">… et ${RAPAT_TOTAL-3} autres.</div>
+          </div>
+          <div class="row gap8 mt14 wrap">
+            <button class="btn hot" onclick="setState('Tous les biens')">Rapatrier ces annonces</button>
+            <button class="btn sec2 hot" onclick="goState('pro-siret','Annonces retrouvées')">Voir le détail et décocher</button>
           </div>
         </div></div>
       </div>`;
