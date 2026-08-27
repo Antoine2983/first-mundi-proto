@@ -1538,6 +1538,12 @@ const PRO_RAPAT = [
 ];
 const RAPAT_TOTAL = 14;                                  /* trouvées dans l'inventaire */
 const RAPAT_SEL   = RAPAT_TOTAL - PRO_RAPAT.filter(r=>!r.mine).length;   /* sélectionnées par défaut */
+/* le rapatriement n'est pas qu'un moment du jour 1 : l'agence continue de publier ailleurs,
+   l'inventaire continue de détecter. Ces deux-là sont apparues APRÈS l'inscription. */
+const RAPAT_NEW = [
+  {t:'T3 · 71 m² · Lyon 6ᵉ (Masséna)',      p:'358 000 €'},
+  {t:'T2 · 39 m² · Villeurbanne (Zola)',    p:'189 000 €'}
+];
 
 /* ---- contacts reçus — TOUS gratuits, TOUS complets, tout de suite et à vie.
    `plein` = a rempli les champs facultatifs (budget, financement) de sa demande — l'agence
@@ -5429,7 +5435,7 @@ add({id:'pro-biens', g:'P1 — Côté agence', n:'13', title:'Mes biens — la l
     ['Le compteur porte deux chiffres : contacts reçus, acheteurs correspondants','« 9 leads » ne dit rien. « 9 contacts · 12 acheteurs correspondent » dit ce que le bien a rapporté gratuitement ET la demande invisible qui l’attend au catalogue — c’est la lecture ROI que l’agence fait de toute façon, autant la lui donner juste.'],
     ['« Vendus & archivés » est un état, pas un filtre caché','un bien vendu sort des résultats de recherche mais reste dans le portefeuille : c’est là que se déclarent les frais de service, et c’est l’historique que l’agence montre à un vendeur en rendez-vous mandat.'],
     ['Zéro tri par performance par défaut','trier par vues décroissantes ferait remonter les biens qui marchent et enterrerait ceux qui ont besoin d’attention. Le tri par défaut est la date de mise à jour.'],
-    ['Le rapatriement a une seconde chance ici','une agence qui a passé l’étape à l’inscription n’a pas perdu ses annonces : l’état vide les lui re-propose, avec le même geste. Un rapatriement raté à l’inscription qui ne se rattrape nulle part transformerait le tunnel en couperet.']
+    ['Le rapatriement vit ici, en continu','l’agence continue de publier ailleurs, l’inventaire continue de détecter : les nouvelles annonces à son enseigne remontent dans la liste principale, avec « Pas à nous » pour couper court aux faux positifs. Et l’état vide re-propose le lot complet à celle qui a passé l’étape à l’inscription — un rapatriement raté qui ne se rattrape nulle part transformerait le tunnel en couperet.']
   ],
   render:(st)=>{
     const sel  = st==='Sélection multiple';
@@ -5503,6 +5509,16 @@ add({id:'pro-biens', g:'P1 — Côté agence', n:'13', title:'Mes biens — la l
       <div class="row gap8 mt8 wrap">
         <button class="btn sm hot" onclick="go('pro-depot')">Compléter maintenant</button>
         <button class="btn sec2 sm hot" onclick="goState('pro-bien','Disponible')">Voir le détail</button>
+      </div></div>` : ''}
+
+      ${!arch && !sel ? `
+      <div class="bandeau mt14">${pin(7)} <b>${RAPAT_NEW.length} annonces sous votre enseigne sont apparues
+      sur le marché</b> sans passer par ici :
+      ${RAPAT_NEW.map(r=>`« ${r.t} — ${nbsp(r.p)} »`).join(' et ')}.
+      Rapatriées, elles deviennent vos annonces — leads gratuits, contenu sous votre contrôle.
+      <div class="row gap8 mt8 wrap">
+        <button class="btn sm hot">Rapatrier les ${RAPAT_NEW.length}</button>
+        <button class="btn sec2 sm hot">Pas à nous — ne plus proposer</button>
       </div></div>` : ''}
 
       <div class="fbar mt20">
