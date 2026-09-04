@@ -5066,12 +5066,11 @@ add({id:'compte', g:'P0 — Parcours acquéreur', n:'09', title:'Mon profil — 
               <span class="chip">${neuf?'Compte créé aujourd\'hui':'Membre depuis juin 2026'}</span>
             </div></div>
         </div>
-        ${/* un seul appel à l'action à la fois : sur « Mon profil », c'est la carte de
-              complétude qui le porte — l'en-tête ne le double pas, il ouvre l'autre aperçu.
-              Ailleurs dans le rail, l'en-tête est le seul endroit qui le rappelle. */
-          (plein || CSEC==='profil')
-          ? `<button class="btn sec2 hot" onclick="setCsec('profil');setPvue('${PVUE==='catalogue'?'contact':'catalogue'}')">${
-              PVUE==='catalogue'?'Voir ce que voit l\u2019agence que je contacte':'Voir ce que voit une agence du catalogue'}</button>`
+        ${/* un seul appel à l'action à la fois. Sur « Mon profil », l'écran porte déjà les
+              siens : la carte de complétude, et la bascule des deux aperçus juste à côté —
+              l'en-tête ne redouble ni l'un ni l'autre. Ailleurs dans le rail, il est le seul
+              endroit qui rappelle ce qu'il reste à remplir. */
+          (plein || CSEC==='profil') ? ''
           : `<button class="btn hot" onclick="go('profil-completude')">Compléter mon profil — ${pct} / 100</button>`}
       </div>
 
