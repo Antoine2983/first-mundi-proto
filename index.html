@@ -781,11 +781,6 @@ body.mobile .stage{padding:14px 8px calc(var(--pbarH,54px) + 96px)}
     <button data-a="in" class="on">Connecté</button>
     <button data-a="out">Visiteur</button>
   </div>
-  <div class="seg" id="who" title="Côté agence : en tant que qui ?">
-    <button data-w="jm" class="on">Admin · Jean-Marc</button>
-    <button data-w="sr">Agent · Sophie</button>
-    <button data-w="nk">Agent · Nadim</button>
-  </div>
   <div class="seg" id="dev">
     <button data-dev="auto" class="on">Auto</button>
     <button data-dev="desktop">Desktop</button>
@@ -1014,17 +1009,11 @@ const appnav = (active, who='customer', auth=AUTH, solde=SOLDE) => {
       <div class="logo hot" onclick="go('pro-dashboard')" title="Retour au tableau de bord">LOGO</div>
       ${links.map(l=>`<div class="lk ${l===active?'on':''}" ${GO[l]?`onclick="go('${GO[l]}')"`:''}>${l}</div>`).join('')}
       <div style="margin-left:auto" class="row mid gap8">
-        ${ADMIN()
-          ? `<span class="chip ${solde===0?'o':'k'} hot num" title="Crédits de l'agence — cliquez pour en acheter"
-              onclick="goState('pro-profil','Acheter des crédits')">◈ ${solde} crédit${solde>1?'s':''}</span>`
-          : `<span class="chip ${solde===0||reste(MOI())===0?'o':'k'} hot num" title="Crédits de l'agence · votre plafond du mois"
-              onclick="go('pro-profil')">◈ ${solde} · vous : ${reste(MOI())} / ${MOI().plafond}</span>`}
-        <span class="chip authsec">Pro vérifié</span>
-        <div class="row mid gap6 hot" title="${ADMIN()?'Profil de l\'agence':'Mon compte'}" onclick="go('pro-profil')">
-          <div class="avatar" style="display:flex;align-items:center;justify-content:center;color:var(--ink-3)">${USER_SVG}</div>
-          <div class="authsec" style="line-height:1.15"><div class="txt" style="font-weight:600;color:var(--ink)">${MOI().n}</div>
-            <div class="sub">${MOI().role} · Agence du Parc</div></div>
-        </div>
+        <span class="chip ${solde===0?'o':'k'} hot num" title="Vos crédits — cliquez pour en acheter"
+          onclick="goState('pro-profil','Acheter des crédits')">◈ ${solde} crédit${solde>1?'s':''}</span>
+        <span class="chip">Pro vérifié</span>
+        <div class="avatar hot" title="Profil de l'agence" onclick="go('pro-profil')"
+          style="display:flex;align-items:center;justify-content:center;color:var(--ink-3)">${USER_SVG}</div>
       </div>
     </div>`;
   }
@@ -1322,20 +1311,7 @@ const MOUVEMENTS = [
   {q:'26/07',          h:'16:48', t:'Déblocage — Acquéreur AC-092 (Romain T.)', m:-40, par:'jm', dest:"goState('pro-lead','Acheté au catalogue')"},
   {q:'24/07',          h:'10:20', t:'40 crédits offerts — création du compte',   m:40,  par:null, dest:''}
 ];
-let TOUS_BIENS = false, TOUS_LEADS = false;
 let REGAG = null;   /* filtre du registre par agent (null = toute l'équipe) */
-/* ---- QUI EST CONNECTÉ (demande Antoine, 09/2026) ----
-   Le compte est celui de l'agence, mais on se connecte en tant que PERSONNE : un administrateur
-   (Jean-Marc) ou un agent (Sophie, Nadim). La bascule vit dans la barre d'outils du proto, comme
-   Connecté/Visiteur. Elle change ce que la nav affiche, ce que le tableau de bord résume, quels
-   biens et quels leads sont « les miens », quel plafond joue au catalogue, et ce que le profil
-   montre : l'agence entière pour l'administrateur, « mon compte » pour un agent. */
-let ME = 'jm';
-const MOI = () => AGENT(ME);
-const ADMIN = () => MOI().role==='administrateur';
-function setWho(id){ ME = id; REGAG = null; show(cur, true); }
-const mesBiens = () => PRO_BIENS.filter(b=>b.ref===ME);
-const mesLeads = () => PRO_LEADS.filter(l=>l.par===ME);
 
 const PACKS = [
   {n:150,  p:'150 €', d:'le minimum — 3 à 7 acquéreurs selon les profils'},
@@ -1556,19 +1532,19 @@ const acquéreurRow = (a, cta=true, ck=null, bienLbl=null) => `
    `ctc` = contacts reçus (tous gratuits, en entier) · `match` = acquéreurs du catalogue
    correspondant au bien · `achq` = acquéreurs achetés depuis ce bien. */
 const PRO_BIENS = [
-  {t:'T3 · 62 m² · Lyon 7ᵉ (Jean Macé)', ref:'sr', p:'289 000 €', st:'Disponible', vues:'1 284', ctc:9, match:12, achq:1,
+  {t:'T3 · 62 m² · Lyon 7ᵉ (Jean Macé)', p:'289 000 €', st:'Disponible', vues:'1 284', ctc:9, match:12, achq:1,
    compl:100, rang:'1ᵉʳ sur 3', motif:'Mandat exclusif', todo:null, maj:'aujourd\'hui', jours:41},
-  {t:'T2 · 44 m² · Villeurbanne (Gratte-Ciel)', ref:'sr', p:'198 000 €', st:'Disponible', vues:'642', ctc:4, match:5, achq:0,
+  {t:'T2 · 44 m² · Villeurbanne (Gratte-Ciel)', p:'198 000 €', st:'Disponible', vues:'642', ctc:4, match:5, achq:0,
    compl:72, rang:'2ᵉ sur 2', motif:'Dépôt direct — à égalité',
    todo:'Ajoutez le plan et 4 photos pour être affiché en contact', maj:'hier', jours:28},
-  {t:'Immeuble · 210 m² · Lyon 9ᵉ (Vaise)', ref:'nk', p:'392 000 €', st:'Sous offre', vues:'311', ctc:2, match:3, achq:1,
+  {t:'Immeuble · 210 m² · Lyon 9ᵉ (Vaise)', p:'392 000 €', st:'Sous offre', vues:'311', ctc:2, match:3, achq:1,
    compl:58, rang:'3ᵉ sur 3', motif:'Complétude insuffisante',
    todo:'DPE manquant — bloquant : sans lui le bien n\'est pas publiable', maj:'il y a 3 jours', jours:52},
-  {t:'T4 · 89 m² · Lyon 3ᵉ (Montchat)', ref:'jm', p:'415 000 €', st:'Vendu', vues:'88', ctc:7, match:0, achq:1,
+  {t:'T4 · 89 m² · Lyon 3ᵉ (Montchat)', p:'415 000 €', st:'Vendu', vues:'88', ctc:7, match:0, achq:1,
    compl:100, rang:'seul mandat', motif:'Mandat exclusif', todo:null, maj:'il y a 14 jours', jours:64},
-  {t:'Studio · 27 m² · Lyon 8ᵉ (Monplaisir)', ref:'nk', p:'132 000 €', st:'Disponible', vues:'214', ctc:1, match:7, achq:0,
+  {t:'Studio · 27 m² · Lyon 8ᵉ (Monplaisir)', p:'132 000 €', st:'Disponible', vues:'214', ctc:1, match:7, achq:0,
    compl:86, rang:'seul mandat', motif:'Dépôt direct', todo:null, maj:'il y a 2 jours', jours:12},
-  {t:'Maison · 118 m² · Sainte-Foy-lès-Lyon', ref:'sr', p:'549 000 €', st:'Disponible', vues:'96', ctc:0, match:2, achq:0,
+  {t:'Maison · 118 m² · Sainte-Foy-lès-Lyon', p:'549 000 €', st:'Disponible', vues:'96', ctc:0, match:2, achq:0,
    compl:94, rang:'seul mandat', motif:'Mandat exclusif', todo:null, maj:'il y a 5 jours', jours:9}
 ];
 /* le total d'acquéreurs correspondant au portefeuille — un bien vendu n'est plus proposé */
@@ -5099,162 +5075,6 @@ add({id:'pro-siret', g:'P1 — Côté agence', n:'11', title:'Inscription agence
   }
 });
 
-add({id:'pro-invitation', g:'P1 — Côté agence', n:'11b', title:'Inviter un collaborateur — l\'agent crée son propre accès',
-  intro:"L'agence est vérifiée une fois (SIRET, par le responsable). Chaque **agent** a ensuite **son propre accès** : invité par l'administrateur avec un rôle, un plafond de crédits et ses biens, il crée son mot de passe et **vérifie son téléphone par SMS** — c'est lui qu'on vérifie maintenant, pas l'agence. Dès lors, tout ce qu'il fait est à son nom : leads attribués, crédits débités, résultats.",
-  states:['Inviter un collaborateur','Invitation envoyée','Email reçu','Créer mon accès','Vérification SMS','Prêt'],
-  notes:[
-    ['Un accès par personne, jamais un identifiant partagé','le compte agence à mot de passe unique est la norme du métier — et la raison pour laquelle personne ne sait qui a fait quoi. Ici chaque agent a le sien : c\'est ce qui rend le registre des crédits et les résultats par agent possibles, et ce qui permet de suspendre un accès sans changer le mot de passe de tout le monde.'],
-    ['L\'invitation porte déjà le rôle, le plafond et les biens','l\'administrateur décide au moment d\'inviter, pas après coup : un négociateur arrive avec son plafond mensuel et les mandats dont il est référent. Le jour 1 de l\'agent n\'est pas vide.'],
-    ['L\'agence est vérifiée, la personne se vérifie','le SIRET a été contrôlé à l\'inscription. L\'agent ne le refait pas — il vérifie son numéro de mobile par SMS, comme le responsable, comme les acquéreurs. Même rigueur des deux côtés du marché.'],
-    ['L\'email est verrouillé, le reste lui appartient','l\'adresse invitée est l\'identifiant : l\'agent ne peut pas s\'inscrire sous une autre. Nom, téléphone et mot de passe sont à lui. L\'invitation expire à 7 jours — dit sur l\'email, pas découvert au clic.'],
-    ['Le premier écran de l\'agent dit ce qui est à lui','ses biens, son plafond, ses leads à venir — et où ils arriveront. Un agent qui découvre l\'outil sur un tableau de bord d\'agence vide n\'y revient pas.']
-  ],
-  render:(st)=>{
-    const admin = EQUIPE.find(x=>x.role==='administrateur');
-    const biensNadim = PRO_BIENS.filter(b=>b.ref==='nk');
-    if (st==='Inviter un collaborateur' || st==='Invitation envoyée') return `${appnav('','pro')}
-      <div class="sec"><div style="max-width:640px;margin:0 auto">
-        <div class="row mid gap8 sub" style="margin-bottom:14px">
-          <span class="linkish hot" onclick="go('pro-profil')">← Profil de l'agence</span>
-          <span>·</span><span>Inviter un collaborateur</span></div>
-        ${st==='Invitation envoyée' ? `
-        <div class="card" style="border-color:var(--ink)">
-          <div class="pad" style="border-bottom:1px solid var(--line-2);background:var(--fill-2)">
-            <div class="row mid gap8">
-              <span class="ckb on" style="width:28px;height:28px;font-size:15px;border-radius:50%">✓</span>
-              <div><h4 class="wt">Invitation envoyée à nadim@agenceduparc.fr</h4>
-                <div class="sub">Valable 7 jours · négociateur · plafond 60 crédits / mois · ${biensNadim.length} biens attribués</div></div>
-            </div>
-          </div>
-          <div class="pad">
-            <div class="sub">${pin(4)} Nadim K. crée son mot de passe et vérifie son téléphone par SMS. Dès qu'il est prêt,
-            il apparaît dans « Équipe & crédits » et les leads de ses biens lui sont attribués.</div>
-            <div class="row gap8 mt14 wrap">
-              <button class="btn hot" onclick="setState('Email reçu')">Voir ce qu'il reçoit →</button>
-              <button class="btn sec2 hot" onclick="go('pro-profil')">Retour au profil</button>
-              <span class="linkish sub hot" style="align-self:center">Renvoyer l'invitation</span>
-            </div>
-          </div>
-        </div>` : `
-        <div class="card"><div class="pad">
-          <h4 class="wt">Inviter un collaborateur${pin(1)}</h4>
-          <p class="txt mt8">Il aura son propre accès — pas le vôtre. Tout ce qu'il fera sera à son nom :
-          leads attribués, crédits débités, résultats.</p>
-          <div class="grid2 mt20">${inp('Prénom','Nadim')}${inp('Nom','Karim')}</div>
-          <div class="mt8">${inp('Email professionnel','nadim@agenceduparc.fr',{hint:'son identifiant de connexion — verrouillé sur l\'invitation'})}</div>
-          <div class="field mt14"><div class="lbl">Rôle${pin(2)}</div>
-            <div class="row gap6 wrap">
-              <span class="chip k">Négociateur ✓</span><span class="chip hot">Administrateur</span>
-            </div>
-            <div class="hint">Un négociateur publie, rappelle et débloque sur son plafond. Un administrateur tient aussi le compte : paiement, plafonds, équipe.</div></div>
-          <div class="grid2 mt14">
-            ${inp('Plafond mensuel de crédits','60 crédits',{hint:'remis à zéro le 1ᵉʳ · un droit de tirage sur le solde de l\'agence, jamais des crédits en plus'})}
-            <div class="field"><div class="lbl">Biens dont il sera référent</div>
-              <div class="row gap6 wrap">
-                ${biensNadim.map(b=>`<span class="chip k">${b.t.split(' (')[0]} ✕</span>`).join('')}
-                <span class="chip o hot">+ attribuer</span>
-              </div>
-              <div class="hint">il reçoit les leads de ces biens dès son arrivée</div></div>
-          </div>
-          <div class="bandeau mt14">${pin(3)} L'agence est déjà vérifiée. C'est <b>lui</b> qui se vérifie maintenant :
-          il vérifie son mobile par SMS en créant son accès — la même rigueur que pour vous et pour les acquéreurs.</div>
-          <div class="row gap8 mt20">
-            <button class="btn sec2 hot" onclick="go('pro-profil')">Annuler</button>
-            <button class="btn grow hot" onclick="setState('Invitation envoyée')">Envoyer l'invitation</button>
-          </div>
-          <div class="disc mt8">Invitation valable 7 jours. Pas de limite au nombre d'accès — un collaborateur n'est pas un siège payant.</div>
-        </div></div>`}
-      </div></div>`;
-
-    if (st==='Email reçu') return `
-      <div class="appnav"><div class="logo hot" onclick="go('accueil')" title="Retour à l'accueil">LOGO</div></div>
-      <div class="sec"><div style="max-width:560px;margin:0 auto">
-        <div class="sub" style="margin-bottom:10px">${pin(4)} Ce que reçoit Nadim K. — email, objet : « ${admin.n} vous invite à rejoindre Agence du Parc »</div>
-        <div class="card"><div class="pad" style="padding:26px">
-          <div class="logo" style="margin-bottom:18px">LOGO</div>
-          <h4 class="wt">Bonjour Nadim,</h4>
-          <p class="txt mt8">${admin.n} vous a ouvert un accès à <b>Agence du Parc</b> sur First Mundi, en tant que
-          <b>négociateur</b>. ${biensNadim.length} biens vous sont déjà attribués — vous en recevrez les leads dès votre arrivée.</p>
-          <p class="txt mt8">Votre accès est personnel : créez votre mot de passe et vérifiez votre téléphone, c'est tout.</p>
-          <button class="btn full mt20 hot" onclick="setState('Créer mon accès')">Créer mon accès</button>
-          <div class="disc mt14">Ce lien est valable 7 jours et ne fonctionne qu'avec l'adresse nadim@agenceduparc.fr.
-          Vous n'attendiez pas cette invitation ? Ignorez cet email — rien ne sera créé.</div>
-        </div></div>
-      </div></div>`;
-
-    if (st==='Créer mon accès') return `
-      <div class="appnav"><div class="logo hot" onclick="go('accueil')" title="Retour à l'accueil">LOGO</div></div>
-      <div class="sec"><div style="max-width:640px;margin:0 auto">
-        ${stepper(['Invitation','Mon accès','Vérification SMS'],1)}
-        <div class="card mt20"><div class="pad">
-          <h4 class="wt">Votre accès à Agence du Parc${pin(5)}</h4>
-          <p class="txt mt8">L'agence est vérifiée ; c'est vous qu'on vérifie maintenant. Votre email est celui de
-          l'invitation — le reste est à vous.</p>
-          <div class="grid2 mt20">${inp('Prénom','Nadim')}${inp('Nom','Karim')}</div>
-          <div class="mt8">${inp('Email professionnel','nadim@agenceduparc.fr',{hint:'verrouillé : c\'est l\'adresse invitée par '+admin.n})}</div>
-          <div class="grid2 mt8">
-            ${inp('Téléphone mobile','06 18 42 77 09',{hint:'vérifié par SMS à l\'étape suivante'})}
-            ${inp('Mot de passe','••••••••••',{hint:'10 caractères minimum — le vôtre, pas celui de l\'agence'})}
-          </div>
-          <div class="bandeau mt14">Rôle : <b>négociateur</b> · plafond : <b>60 crédits / mois</b> · <b>${biensNadim.length} biens</b> attribués.
-          Fixé par ${admin.n} — vous le verrez sur votre tableau de bord.</div>
-          <div class="row gap8 mt20">
-            <button class="btn sec2 hot" onclick="setState('Email reçu')">← Retour</button>
-            <button class="btn grow hot" onclick="setState('Vérification SMS')">Recevoir le code SMS</button>
-          </div>
-        </div></div>
-      </div></div>`;
-
-    if (st==='Vérification SMS') return `
-      <div class="appnav"><div class="logo hot" onclick="go('accueil')" title="Retour à l'accueil">LOGO</div></div>
-      <div class="sec"><div style="max-width:560px;margin:0 auto">
-        ${stepper(['Invitation','Mon accès','Vérification SMS'],2)}
-        <div class="card mt20"><div class="pad" style="text-align:center;padding:30px 26px">
-          <h4 class="wt">Un code vous a été envoyé au 06 18 42 77 09</h4>
-          <p class="txt mt8">Une seule fois : votre numéro vérifié suit votre accès, pas l'agence.</p>
-          <div class="row gap8 mt20" style="justify-content:center">
-            ${['4','8','2','','',''].map(d=>`<div class="inp" style="width:44px;justify-content:center;font-size:18px"><span class="${d?'v':''}">${d||'·'}</span></div>`).join('')}
-          </div>
-          <button class="btn full mt20 hot" onclick="setState('Prêt')">Vérifier</button>
-          <div class="disc mt14">Pas reçu ? <span class="linkish">Renvoyer le code</span> dans 28 s · <span class="linkish">Changer de numéro</span></div>
-        </div></div>
-      </div></div>`;
-
-    /* prêt : le premier écran de l'agent dit ce qui est à lui */
-    return `
-      <div class="appnav"><div class="logo hot" onclick="go('accueil')" title="Retour à l'accueil">LOGO</div></div>
-      <div class="sec"><div style="max-width:640px;margin:0 auto">
-        ${stepper(['Invitation','Mon accès','Vérification SMS'],3)}
-        <div class="card mt20" style="border-color:var(--ink)">
-          <div class="pad" style="border-bottom:1px solid var(--line-2);background:var(--fill-2)">
-            <div class="row mid gap8">
-              <span class="ckb on" style="width:28px;height:28px;font-size:15px;border-radius:50%">✓</span>
-              <div><h4 class="wt">Bienvenue, Nadim — votre accès est prêt.</h4>
-                <div class="sub">Négociateur · Agence du Parc · téléphone vérifié</div></div>
-            </div>
-          </div>
-          <div class="pad">
-            <div class="lbl">Ce qui est à vous dès maintenant${pin(6)}</div>
-            <div class="col gap6 mt8">
-              ${[[`${biensNadim.length} biens dont vous êtes référent`, biensNadim.map(b=>b.t.split(' (')[0]).join(' · ')],
-                 ['Leurs leads, attribués à vous', 'complets, gratuits, en entier — vous les rappelez, vous seul les voyez d\'abord'],
-                 ['60 crédits par mois', 'votre plafond pour débloquer des acquéreurs au catalogue — sur le solde de l\'agence, remis à zéro le 1ᵉʳ'],
-                 ['Le badge Pro vérifié de l\'agence', 'les acquéreurs le voient avant de vous contacter']]
-                .map(([t,d])=>`<div class="row gap8" style="align-items:flex-start">
-                  <span class="num" style="flex:none;color:var(--ink-3)">✓</span>
-                  <div><div class="txt" style="font-weight:600;color:var(--ink)">${t}</div><div class="sub">${d}</div></div></div>`).join('')}
-            </div>
-            <div class="row gap8 mt20 wrap">
-              <button class="btn hot" onclick="ME='nk';document.querySelectorAll('#who button').forEach(x=>x.classList.toggle('on',x.dataset.w==='nk'));go('pro-biens')">Voir mes biens</button>
-              <button class="btn sec2 hot" onclick="ME='nk';document.querySelectorAll('#who button').forEach(x=>x.classList.toggle('on',x.dataset.w==='nk'));go('pro-dashboard')">Mon tableau de bord</button>
-            </div>
-            <div class="disc mt8">Tout ce que vous ferez est à votre nom : leads traités, crédits débités, RDV pris. ${admin.n} le voit ligne par ligne — jamais vos accès.</div>
-          </div>
-        </div>
-      </div></div>`;
-  }
-});
-
 add({id:'pro-dashboard', g:'P1 — Côté agence', n:'12', title:'Tableau de bord agence — les 5 âges du compte',
   intro:"Le cœur opérationnel quotidien de l'agence, et l'écran qui doit lui faire comprendre le modèle **avant** qu'elle ait à payer quoi que ce soit. Il change de contenu selon l'avancement : compte vide, biens publiés mais aucun contact, premier contact reçu, régime de croisière, vente à déclarer. À chaque âge, une seule question à traiter — et la distinction se rejoue à chaque fois : **vos contacts sont gratuits, en entier ; ce qui se débloque en crédits, ce sont des acquéreurs que vous ne connaissez pas — et vos 40 premiers crédits sont offerts, pour des acquéreurs qui correspondent à VOS biens.**",
   states:['Jour 1 — compte vérifié','Biens en ligne, aucun lead','Premier lead reçu','En régime','Vente à déclarer'],
@@ -5452,25 +5272,13 @@ add({id:'pro-dashboard', g:'P1 — Côté agence', n:'12', title:'Tableau de bor
       : [['Biens en ligne','23','publication gratuite, sans limite'],['Leads ce mois','47','gratuits, en entier'],
          ['Acquéreurs débloqués','4','120 crédits ce mois'],['Ventes déclarées','2','frais de service 0,16 %']];
 
-    /* connecté en tant qu'agent : le même tableau de bord, mais MES chiffres — mes biens,
-       mes leads, mes crédits sur mon plafond. L'agence entière est à un clic (profil), pas ici. */
-    const moi = MOI(), agent = !ADMIN();
-    const statsAgent = [
-      ['Mes biens', String(mesBiens().length), `sur 23 dans l'agence · vous en êtes référent`],
-      ['Mes leads ce mois', String(moi.leads[1]), `${moi.leads[0]} traités · rappel médian ${moi.rappel}`],
-      ['Acquéreurs débloqués', String(moi.deb), moi.plafond==null ? `${moi.mois} crédits · sans plafond` : `${moi.mois} crédits · plafond ${moi.plafond}, reste ${reste(moi)}`],
-      ['RDV pris', String(moi.rdv), `${moi.mandats} mandat${moi.mandats>1?'s':''} gagné${moi.mandats>1?'s':''} · ${moi.joign} joint${moi.joign>1?'s':''} sur ${moi.deb}`]
-    ];
-    const RECENTS = (agent ? mesLeads() : PRO_LEADS).slice(0,4);
+    const RECENTS = PRO_LEADS.slice(0,4);
     const destLead = l => `goState('pro-lead','${l.plein?'Tout est renseigné':'Champs facultatifs vides'}')`;
 
     return `${nav}
     <div class="sec">
       <div class="row mid" style="justify-content:space-between;flex-wrap:wrap;gap:10px">
-        ${agent
-          ? `<div><h4 class="wt">Bonjour ${moi.n.split(' ')[0]}</h4><div class="sub">${moi.role} · Agence du Parc · Pro vérifié
-              ${moi.plafond!=null?` · votre plafond du mois : <b class="num">${reste(moi)}</b> crédits restants sur ${moi.plafond}`:''}</div></div>`
-          : `<div><h4 class="wt">Agence du Parc</h4><div class="sub">Lyon 6ᵉ · 8 collaborateurs · Pro vérifié · connecté comme ${moi.n}, ${moi.role}</div></div>`}
+        <div><h4 class="wt">Agence du Parc</h4><div class="sub">Lyon 6ᵉ · 8 collaborateurs · Pro vérifié</div></div>
         <button class="btn hot" onclick="go('pro-depot')">${pin(8)} + Publier un bien</button>
       </div>
       ${VENTE ? `
@@ -5497,18 +5305,16 @@ add({id:'pro-dashboard', g:'P1 — Côté agence', n:'12', title:'Tableau de bor
         </div>
       </div>` : ''}
       <div class="grid4 mt20">
-        ${(agent?statsAgent:stats).map(([k,v,s2])=>`<div class="card flat pad">
+        ${stats.map(([k,v,s2])=>`<div class="card flat pad">
           <div class="lbl">${k}</div><div class="big num" style="margin-top:3px">${nbsp(v)}</div>
           <div class="sub">${nbsp(s2)}</div></div>`).join('')}
       </div>
-      ${agent ? `<div class="disc mt8">${pin(9)} Vos chiffres, pas ceux de l'agence : les biens dont vous êtes référent,
-        les leads qui vous sont attribués, vos crédits sur votre plafond. L'agence entière est visible par l'administrateur.</div>` : ''}
     </div>
 
     <div class="sec">
       <div class="row mid" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
-        <div><h5 class="wt">${agent?'Mes leads récents':'Leads récents'}${pin(7)}</h5>
-          <div class="sub">Tous gratuits, tous complets — identité, téléphone, projet. Rien à débloquer.${agent?' Attribués à vous : ils arrivent sur vos biens.':''}</div></div>
+        <div><h5 class="wt">Leads récents${pin(7)}</h5>
+          <div class="sub">Tous gratuits, tous complets — identité, téléphone, projet. Rien à débloquer.</div></div>
         <div class="row gap8 wrap">
           <button class="btn sec2 sm hot" onclick="go('pro-leads')">Tous mes leads →</button>
         </div>
@@ -5700,12 +5506,8 @@ add({id:'pro-biens', g:'P1 — Côté agence', n:'13', title:'Mes biens — la l
         </div></div>
       </div>`;
 
-    /* un agent ouvre sur SES biens (ceux dont il est référent), l'agence entière est un filtre ;
-       l'administrateur ouvre sur toute l'agence. Le référent reçoit les leads du bien. */
-    const mien = !ADMIN() && !TOUS_BIENS;
-    const base = mien ? mesBiens() : PRO_BIENS;
-    const liste = arch ? base.filter(b=>b.st==='Vendu') : base.filter(b=>b.st!=='Vendu');
-    const incomplets = base.filter(b=>b.compl<80 && b.st!=='Vendu');
+    const liste = arch ? PRO_BIENS.filter(b=>b.st==='Vendu') : PRO_BIENS.filter(b=>b.st!=='Vendu');
+    const incomplets = PRO_BIENS.filter(b=>b.compl<80 && b.st!=='Vendu');
 
     const complBar = b => `
       <div class="row mid gap8" style="min-width:96px">
@@ -5717,10 +5519,9 @@ add({id:'pro-biens', g:'P1 — Côté agence', n:'13', title:'Mes biens — la l
     return `${nav}
     <div class="sec">
       <div class="row mid" style="justify-content:space-between;flex-wrap:wrap;gap:10px">
-        <div><h4 class="wt">${mien?'Mes biens':'Les biens de l\'agence'}</h4>
-          <div class="sub">${mien
-            ? `<b class="num">${mesBiens().length}</b> dont vous êtes référent · <b class="num">23</b> dans l'agence · publication gratuite, sans limite`
-            : `<b class="num">23</b> en ligne · <b class="num">4</b> sous offre · <b class="num">2</b> vendus · publication gratuite, sans limite`}</div></div>
+        <div><h4 class="wt">Mes biens</h4>
+          <div class="sub"><b class="num">23</b> en ligne · <b class="num">4</b> sous offre ·
+            <b class="num">2</b> vendus · publication gratuite, sans limite</div></div>
         <div class="row gap8 wrap">
           <button class="btn sec2 hot">Importer un catalogue</button>
           <button class="btn hot" onclick="go('pro-depot')">+ Publier un bien</button>
@@ -5728,8 +5529,8 @@ add({id:'pro-biens', g:'P1 — Côté agence', n:'13', title:'Mes biens — la l
       </div>
 
       ${incomplets.length && !arch ? `
-      <div class="bandeau mt20">${pin(2)} <b>${incomplets.length>1?incomplets.length+' biens sont incomplets.':'1 bien est incomplet.'}</b>
-      ${incomplets.length>1?"L'un d'eux":"Il"} n'est pas publiable en l'état : « ${incomplets[incomplets.length-1].t} » n'a pas de DPE,
+      <div class="bandeau mt20">${pin(2)} <b>${incomplets.length} biens sont incomplets.</b>
+      L'un d'eux n'est pas publiable en l'état : « ${incomplets[incomplets.length-1].t} » n'a pas de DPE,
       et la loi l'exige pour toute annonce immobilière. Les autres perdent des contacts, sans plus.
       <div class="row gap8 mt8 wrap">
         <button class="btn sm hot" onclick="go('pro-depot')">Compléter maintenant</button>
@@ -5747,9 +5548,6 @@ add({id:'pro-biens', g:'P1 — Côté agence', n:'13', title:'Mes biens — la l
       </div></div>` : ''}
 
       <div class="fbar mt20">
-        ${ADMIN() ? '' : `<span class="chip hot ${mien?'k':''}" onclick="TOUS_BIENS=false;setState('Tous les biens')">Mes biens (${mesBiens().length})</span>
-          <span class="chip hot ${mien?'':'k'}" onclick="TOUS_BIENS=true;setState('Tous les biens')">Toute l'agence (23)</span>
-          <span class="fsep"></span>`}
         ${['Tous','Disponible','Sous offre','Vendus & archivés','Incomplets']
           .map(f=>`<span class="chip hot ${(arch&&f==='Vendus & archivés')||(!arch&&f==='Tous')?'k':''}"
             ${f==='Vendus & archivés'?`onclick="setState('Vendus & archivés')"`:`onclick="setState('Tous les biens')"`}>${f}</span>`).join('')}
@@ -5777,14 +5575,13 @@ add({id:'pro-biens', g:'P1 — Côté agence', n:'13', title:'Mes biens — la l
         <table class="wt">
           <thead><tr>
             ${sel?'<th style="width:26px"></th>':''}
-            <th>Bien</th><th>Référent</th><th class="n">Prix</th><th>Statut</th><th class="n">Vues</th>
+            <th>Bien</th><th class="n">Prix</th><th>Statut</th><th class="n">Vues</th>
             <th class="n">Leads</th><th>Complétude</th><th>Position</th><th class="n"></th>
           </tr></thead>
           <tbody>
             ${liste.map((b,i)=>`<tr class="hot" onclick="goState('pro-bien','${b.st==='Vendu'?'Vendu — à déclarer':b.st}')">
               ${sel?`<td><span class="chip ${i<3?'k':''}" style="padding:2px 6px">${i<3?'✓':''}</span></td>`:''}
               <td><b style="color:var(--ink)">${b.t}</b><div class="sub">à jour ${b.maj} · en ligne depuis ${b.jours} j</div></td>
-              <td>${b.ref===ME?`<span class="chip k">vous</span>`:`<span class="sub">${agentNom(b.ref)}</span>`}</td>
               <td class="n">${nbsp(b.p)}</td>
               <td><span class="chip ${b.st==='Vendu'?'k':''}">${b.st} ▾</span></td>
               <td class="n">${nbsp(b.vues)}</td>
@@ -5860,8 +5657,7 @@ add({id:'pro-bien', g:'P1 — Côté agence', n:'', title:'Fiche bien côté age
             ${ph('photo',56).replace('height:56px','height:56px;width:80px;flex:none')}
             <div class="grow" style="min-width:0">
               <h4 class="wt">${bb.t}</h4>
-              <div class="sub num">${nbsp(bb.p)} · en ligne depuis ${bb.jours} jours · à jour ${bb.maj} ·
-                référent : <b>${bb.ref===ME?'vous':agentNom(bb.ref)}</b> <span class="linkish">changer</span></div>
+              <div class="sub num">${nbsp(bb.p)} · en ligne depuis ${bb.jours} jours · à jour ${bb.maj}</div>
             </div>
             <button class="btn sec2 sm hot" style="flex:none" onclick="go('fiche')">${pin(5)} Voir la fiche publique ↗</button>
           </div>
@@ -6045,7 +5841,6 @@ add({id:'pro-depot', g:'P1 — Côté agence', n:'13', title:'Dépôt d\'un bien
       <div class="grid3 mt20">${inp('Type de bien','Appartement')}${inp('Prix de vente','289 000 €')}${inp('Surface (loi Carrez)','62 m²')}</div>
       <div class="grid3 mt14">${inp('Pièces','3')}${inp('Chambres','2')}${inp('Étage','3 / 5')}</div>
       <div class="grid2 mt14">${inp('Adresse','12 rue …',{hint:'Seul le quartier sera affiché publiquement.'})}${inp('Ville / code postal','Lyon 7ᵉ · 69007')}</div>
-      <div class="grid2 mt14">${inp('Négociateur référent', MOI().n+' ▾', {hint:'reçoit les leads de ce bien et le voit dans « Mes biens » — modifiable à tout moment'})}${inp('Type de mandat','Exclusif ▾')}</div>
       <div class="grid3 mt14">${inp('Charges','140 €/mois')}${inp('Taxe foncière','1 180 €/an')}${inp('Loyer actuel ou estimé','1 050 €/mois',{hint:'facultatif — améliore l\'analyse affichée'})}</div>
       <div class="field mt14"><div class="lbl">Points à mettre en avant <span class="sub">— facultatif</span></div>
         <div class="row gap6 wrap">
@@ -6167,25 +5962,20 @@ add({id:'pro-leads', g:'P2 — Monétisation', n:'15', title:'Mes leads — tout
         </div></div>
       </div>`;
 
-    /* un agent ouvre sur les leads qui lui sont attribués (ceux de ses biens, ceux qu'il a
-       débloqués) ; l'agence entière est un filtre. L'administrateur voit tout. */
-    const mien = !ADMIN() && !TOUS_LEADS;
-    const base = mien ? mesLeads() : PRO_LEADS;
-    const filtre = st==='Nouveaux'      ? base.filter(l=>l.etat==='Nouveau')
-                 : st==='Sans réponse'  ? base.filter(l=>l.etat==='Sans réponse')
-                 : st==='Achetés'       ? base.filter(l=>l.acid)
-                 : base;
-    const tard = base.find(l=>l.tard);
+    const filtre = st==='Nouveaux'      ? PRO_LEADS.filter(l=>l.etat==='Nouveau')
+                 : st==='Sans réponse'  ? PRO_LEADS.filter(l=>l.etat==='Sans réponse')
+                 : st==='Achetés'       ? PRO_LEADS.filter(l=>l.acid)
+                 : PRO_LEADS;
+    const tard = PRO_LEADS.find(l=>l.tard);
     const dest = l => `goState('pro-lead','${l.acid?'Acheté au catalogue':(l.plein?'Tout est renseigné':'Champs facultatifs vides')}')`;
     const etatChip = l => `<span class="chip ${l.etat==='Traité'?'k':(l.etat==='Sans réponse'?'o':'')}">${l.etat}</span>`;
 
     return `${nav}
     <div class="sec">
       <div class="row mid" style="justify-content:space-between;flex-wrap:wrap;gap:10px">
-        <div><h4 class="wt">${mien?'Mes leads':'Les leads de l\'agence'}</h4>
-          <div class="sub">${mien
-            ? `<b class="num">${MOI().leads[1]}</b> attribués à vous ce mois — complets, gratuits, <b class="num">0 €</b> · <b class="num">${mesLeads().filter(l=>l.acid).length}</b> débloqué${mesLeads().filter(l=>l.acid).length>1?'s':''} au catalogue par vous`
-            : `<b class="num">47</b> reçus — complets, gratuits, <b class="num">0 €</b> · <b class="num">4</b> achetés au catalogue, dans la même liste`}</div></div>
+        <div><h4 class="wt">Mes leads</h4>
+          <div class="sub"><b class="num">47</b> reçus — complets, gratuits, <b class="num">0 €</b> ·
+            <b class="num">4</b> achetés au catalogue, dans la même liste</div></div>
         <button class="btn sec2 hot" onclick="POP.tarif()">Ce qui est payant, et pourquoi</button>
       </div>
 
@@ -6226,10 +6016,7 @@ add({id:'pro-leads', g:'P2 — Monétisation', n:'15', title:'Mes leads — tout
         <span class="fsep"></span>
         ${['Rappelés','Traités'].map(f=>`<span class="chip hot">${f}</span>`).join('')}
         <span class="fsep"></span>
-        ${ADMIN()
-          ? `<span class="chip hot" title="Filtrer par agent de l'équipe">Agent : toute l'équipe ▾</span>`
-          : `<span class="chip hot ${mien?'k':''}" onclick="TOUS_LEADS=false;setState('Tous les leads')">Attribués à moi</span>
-             <span class="chip hot ${mien?'':'k'}" onclick="TOUS_LEADS=true;setState('Tous les leads')">Toute l'agence</span>`}
+        <span class="chip hot" title="Filtrer par agent de l'équipe">Agent : toute l'équipe ▾</span>
         <span class="fsep"></span>
         <button class="btn sec2 sm hot">Trier : plus récents ▾</button>
       </div>
@@ -6245,7 +6032,7 @@ add({id:'pro-leads', g:'P2 — Monétisation', n:'15', title:'Mes leads — tout
               <td>${projetChip(l)}</td>
               <td>${l.acid?achatChip(l):partChip(l)}</td>
               <td class="sub">${l.d}</td>
-              <td>${etatChip(l)}<div class="sub" style="margin-top:3px">${l.par===ME?'vous':agentNom(l.par)}</div></td>
+              <td>${etatChip(l)}<div class="sub" style="margin-top:3px">${agentNom(l.par)}</div></td>
               <td class="n"><button class="btn sm sec2">Ouvrir</button></td>
             </tr>`).join('')}
           </tbody>
@@ -6516,7 +6303,7 @@ add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'a
     const okSolde = unit<=SOLDE;
     /* qui est connecté : l'administrateur (sans plafond) partout, sauf dans l'état qui montre
        le plafond — vu par Sophie R., négociatrice, 60 crédits consommés sur 100 ce mois */
-    const me = plaf ? AGENT('sr') : MOI();
+    const me = plaf ? AGENT('sr') : AGENT('jm');
     const okPlaf = me.plafond==null || unit<=reste(me);
     const selbar = !selIds.length ? '' : `
       <div class="card selbar mt20"><div class="pad">
@@ -6730,11 +6517,9 @@ add({id:'pro-achat', g:'P2 — Monétisation', n:'15', title:'Débloquer un acqu
             <div class="row mid gap8">
               <span class="ckb on" style="width:28px;height:28px;font-size:15px;border-radius:50%">✓</span>
               <div style="min-width:0"><h4 class="wt">Acquéreur débloqué</h4>
-                <div class="sub num">20 crédits débités par ${MOI().n} · aujourd'hui à 14:32 · solde de l'agence : ${SOLDE} → <b>${SOLDE-20}</b> ·
+                <div class="sub num">20 crédits débités par ${agentNom('sr')} · aujourd'hui à 14:32 · solde de l'agence : ${SOLDE} → <b>${SOLDE-20}</b> ·
                 l'identité est à vous, définitivement</div>
-                <div class="sub num" style="margin-top:2px">${pin(11)} ${MOI().plafond==null
-                  ? `Administrateur — sans plafond · inscrit au registre de l'agence à votre nom`
-                  : `Votre plafond du mois : ${reste(MOI())} → <b>${Math.max(0,reste(MOI())-20)}</b> restants sur ${MOI().plafond} · inscrit au registre de l'agence`}</div></div>
+                <div class="sub num" style="margin-top:2px">${pin(11)} Plafond du mois de ${agentNom('sr')} : ${reste(AGENT('sr'))} → <b>${reste(AGENT('sr'))-20}</b> restants sur ${AGENT('sr').plafond} · inscrit au registre de l'agence</div></div>
             </div>
           </div>
           <div class="pad" style="border-bottom:1px solid var(--line-2)">
@@ -6870,7 +6655,6 @@ add({id:'pro-profil', g:'P2 — Monétisation', n:'16', title:'Profil de l\'agen
     ['Chaque débit dit QUI et QUAND, à la minute','les crédits sont à l\'agence, mais ils sont dépensés par quelqu\'un : chaque ligne du registre porte l\'auteur et l\'heure, et le registre se filtre par agent d\'un clic. Sans ça, l\'administrateur découvre un solde à 0 sans savoir d\'où ça vient — et la première réaction est de couper le robinet pour tout le monde.'],
     ['Les résultats par agent, à côté de ce qu\'il a consommé','débloqués · joints · RDV · mandats · leads reçus traités · délai de rappel — sur la même ligne que les crédits dépensés. C\'est la seule façon de juger un débit : 60 crédits qui donnent 2 RDV ne se lisent pas comme 60 crédits qui n\'ont joint personne. Aucun classement, aucun score : des faits, agent par agent.'],
     ['Le plafond mensuel est un droit de tirage, pas un solde','fixé par l\'administrateur, agent par agent, remis à zéro le 1ᵉʳ. Il ne crée aucun crédit et ne réserve rien : si la somme des plafonds dépasse le solde, c\'est le solde qui décide. Un agent au plafond voit la liste entière et demande une rallonge d\'un clic — il n\'est jamais bloqué en silence.'],
-    ['Un agent voit « Mon compte », pas le compte de l\'agence','connecté en tant qu\'agent, l\'écran change de sujet : mes crédits sur mon plafond, mon registre, mes résultats, mon identité, mes notifications, ma sécurité. Le solde de l\'agence est affiché, jamais rechargeable d\'ici : la carte, les factures, les plafonds des autres et la fermeture du compte sont à l\'administrateur. Une rallonge se demande d\'un clic — c\'est la seule chose qu\'un agent puisse demander sur les crédits.'],
     ['Le solde vit à deux endroits, le registre à un seul','dans la nav (toujours visible, cliquable) et ici. Le registre des débits n\'est QUE dans le profil : chaque ligne renvoie à la fiche du lead débloqué — jamais dans les factures, où des références d\'acquéreurs n\'ont rien à faire.'],
     ['Acheter des crédits sans être au pied du mur','le paywall arrive quand le solde ne couvre pas un déblocage — un moment de friction. Le profil offre l\'achat calme : une agence qui recharge en début de mois n\'a plus jamais de friction au moment du déblocage, et c\'est exactement le comportement qu\'on veut installer.'],
     ['Les crédits n\'expirent jamais, écrit là où on les achète','un solde qui expire est une pénalité déguisée — la promesse est répétée sur le bloc, sur le paywall, et dans les garanties.'],
@@ -6879,118 +6663,6 @@ add({id:'pro-profil', g:'P2 — Monétisation', n:'16', title:'Profil de l\'agen
     ['La fermeture du compte est à un clic visible','avec le sort des crédits écrit noir sur blanc : le solde restant est remboursé au prix d\'achat. Une sortie propre est un argument d\'entrée.']
   ],
   render:(st)=>{
-    /* ---------- connecté en tant qu'agent : « Mon compte » ---------- */
-    if (!ADMIN()){
-      const a = MOI(), mvts = MOUVEMENTS.filter(m=>m.par===a.id);
-      const admin = EQUIPE.find(x=>x.role==='administrateur');
-      return `${appnav('','pro')}
-      <div class="sec">
-        <div class="row mid" style="justify-content:space-between;flex-wrap:wrap;gap:10px">
-          <div class="row mid gap8">
-            <div class="avatar" style="width:44px;height:44px"></div>
-            <div><h4 class="wt">${a.n}</h4>
-              <div class="row mid gap6 wrap" style="margin-top:3px">
-                <span class="chip">${a.role} · Agence du Parc</span>
-                <span class="chip k">Pro vérifié</span>
-                <span class="chip">${pin(5)} téléphone vérifié par SMS</span>
-              </div></div>
-          </div>
-          <span class="chip num">solde de l'agence : ${SOLDE} crédits</span>
-        </div>
-        <div class="disc mt8">Vous êtes connecté${a.role.endsWith('trice')?'e':''} en tant qu'agent : cet écran est le vôtre. Le compte de l'agence
-        (paiement, factures, plafonds de l'équipe, fermeture) est tenu par ${admin.n}, administrateur.
-        ${st!=='Profil'?` — l'état « ${st} » de la barre d'outils est réservé à l'administrateur.`:''}</div>
-
-        <div class="grid2 mt20" style="align-items:start">
-          <div class="col gap14">
-            <div class="card">
-              <div class="pad" style="border-bottom:1px solid var(--line-2)">
-                <div class="row mid" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
-                  <h5 class="wt">Mes crédits ce mois${pin(1)}</h5>
-                  ${a.plafond==null?'<span class="chip">sans plafond</span>':`<span class="chip ${reste(a)===0?'o':'k'} num">${reste(a)} restants sur ${a.plafond}</span>`}
-                </div>
-              </div>
-              <div class="pad">
-                ${a.plafond!=null?`
-                <div class="row mid gap8">
-                  <div class="bar" style="flex:1;position:relative;overflow:hidden">
-                    <div style="position:absolute;inset:0;width:${Math.min(100,Math.round(a.mois/a.plafond*100))}%;background:${a.mois>=a.plafond?'#a1341f':'var(--ink)'}"></div></div>
-                  <span class="sub num" style="flex:none">${a.mois} / ${a.plafond}</span>
-                </div>
-                <div class="sub mt8">${pin(2)} Votre plafond est fixé par ${admin.n} et se remet à zéro le 1ᵉʳ.
-                Il se tire sur le solde de l'agence (${SOLDE} crédits) — si le solde est plus bas, c'est lui qui décide.</div>`
-                : `<div class="sub">${pin(2)} Aucun plafond sur votre compte : vous tirez sur le solde de l'agence (${SOLDE} crédits).</div>`}
-                <div class="lbl mt14">Mes mouvements</div>
-                <div class="col gap6 mt8">
-                  ${mvts.length ? mvts.map(({q,h,t,m,dest})=>`
-                  <div class="rrow ${dest?'hot':''}" style="justify-content:space-between;padding:9px 10px" ${dest?`onclick="${dest}"`:''}>
-                    <div class="rtx" style="min-width:0"><b>${t}</b><span>${q} à ${h}</span></div>
-                    <span class="num" style="flex:none;font-weight:600">${m>0?'+':'−'}${Math.abs(m)}</span>
-                  </div>`).join('') : `<div class="sub" style="padding:9px 10px">Aucun débit à votre nom ce mois.</div>`}
-                </div>
-                <div class="row gap8 mt14 wrap">
-                  <button class="btn sec2 hot" onclick="go('pro-acheteurs')">Ouvrir le catalogue</button>
-                  ${a.plafond!=null?`<button class="btn sec2 hot">Demander une rallonge à ${admin.n.split(' ')[0]}</button>`:''}
-                </div>
-                <div class="disc mt8">Chaque débit à votre nom est inscrit au registre de l'agence, que ${admin.n} consulte.</div>
-              </div>
-            </div>
-
-            <div class="card">
-              <div class="pad" style="border-bottom:1px solid var(--line-2)"><h5 class="wt">Mes résultats depuis le 1ᵉʳ${pin(7)}</h5></div>
-              <div class="pad">
-                <div class="grid2" style="gap:10px">
-                  ${[['Biens dont je suis référent', String(mesBiens().length)],['Leads reçus traités', `${a.leads[0]} / ${a.leads[1]}`],
-                     ['Acquéreurs débloqués', String(a.deb)],['Joints au téléphone', a.deb?`${a.joign} / ${a.deb}`:'—'],
-                     ['RDV pris', String(a.rdv)],['Mandats gagnés', String(a.mandats)],['Délai de rappel médian', a.rappel],['Crédits consommés', String(a.mois)]]
-                    .map(([k,v])=>`<div class="card flat pad"><div class="lbl">${k}</div><div class="mid2 num" style="margin-top:3px">${nbsp(v)}</div></div>`).join('')}
-                </div>
-                <div class="disc mt8">Des faits, pas un score : les mêmes chiffres que voit l'administrateur sur la ligne à votre nom.</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="col gap14">
-            <div class="card">
-              <div class="pad" style="border-bottom:1px solid var(--line-2)"><h5 class="wt">Mon identité</h5></div>
-              <div class="pad">
-                <div class="col gap6">
-                  ${[['Nom',a.n],['Rôle',a.role],['Email',a.mail],['Téléphone mobile','06 •• •• •• 18 — vérifié par SMS'],['Agence','Agence du Parc · Lyon 6ᵉ']]
-                    .map(([k,v])=>`<div class="row mid" style="justify-content:space-between;gap:10px">
-                      <span class="lbl">${k}</span><span class="num" style="font-weight:600;text-align:right">${nbsp(v)}</span></div>`).join('')}
-                </div>
-                <div class="disc mt8">Les acquéreurs voient l'agence et son badge — pas votre nom avant que vous ne les rappeliez.</div>
-                <button class="btn sec2 sm mt8">Modifier</button>
-              </div>
-            </div>
-
-            <div class="card">
-              <div class="pad" style="border-bottom:1px solid var(--line-2)"><h5 class="wt">Mes notifications</h5></div>
-              <div class="pad"><div class="col gap6">
-                ${[['Nouveau lead sur un de mes biens','email + SMS','k'],['Acquéreur correspondant à mes biens','email','k'],
-                   ['Mon plafond à 80 %','email','k'],['Récapitulatif hebdomadaire','email','']]
-                  .map(([t,v,on])=>`<div class="row mid" style="justify-content:space-between;gap:10px">
-                    <span class="txt">${t}</span><span class="chip ${on}">${on?v:'désactivé'}</span></div>`).join('')}
-              </div></div>
-            </div>
-
-            <div class="card">
-              <div class="pad" style="border-bottom:1px solid var(--line-2)"><h5 class="wt">Ma sécurité</h5></div>
-              <div class="pad"><div class="col gap6">
-                <div class="row mid" style="justify-content:space-between;gap:10px">
-                  <span class="txt">Mot de passe</span><span class="linkish sub">modifier</span></div>
-                <div class="row mid" style="justify-content:space-between;gap:10px">
-                  <span class="txt">Connexion en deux étapes</span><span class="chip k">activée</span></div>
-                <div class="row mid" style="justify-content:space-between;gap:10px">
-                  <span class="txt">Mes sessions actives</span><span class="sub num">1 appareil</span></div>
-              </div>
-              <div class="disc mt8">Votre accès est personnel : ${admin.n} peut le suspendre depuis le profil de l'agence, jamais le lire.</div></div>
-            </div>
-          </div>
-        </div>
-      </div>`;
-    }
-
     if (st==='Acheter des crédits') return `${appnav('','pro')}
       <div class="sec"><div style="max-width:600px;margin:0 auto">
         <div class="row mid gap8 sub" style="margin-bottom:14px">
@@ -7079,17 +6751,16 @@ add({id:'pro-profil', g:'P2 — Monétisation', n:'16', title:'Profil de l\'agen
               <b class="num">${EQUIPE.filter(a=>a.mois).length}</b> agent sur ${EQUIPE.length} · ce que ça a donné, agent par agent</div></div>
             <div class="row gap8 wrap">
               <button class="btn sec2 sm hot" onclick="setState('Plafonds mensuels')">Modifier les plafonds</button>
-              <button class="btn sec2 sm hot" onclick="goState('pro-invitation','Inviter un collaborateur')">+ Inviter un collaborateur</button>
+              <button class="btn sec2 sm hot">+ Inviter un collaborateur</button>
             </div>
           </div>
         </div>
         <table class="wt">
-          <thead><tr><th>Agent</th><th>Biens</th><th>Plafond / mois</th><th>Consommé</th><th class="n">Débloqués</th>
+          <thead><tr><th>Agent</th><th>Plafond / mois</th><th>Consommé</th><th class="n">Débloqués</th>
             <th class="n">Joints</th><th class="n">RDV pris</th><th class="n">Mandats</th><th class="n">Leads reçus traités</th><th class="n">Rappel médian</th></tr></thead>
           <tbody>
             ${EQUIPE.map(a=>`<tr class="hot" onclick="REGAG='${a.id}';setState('Profil')" title="Voir ses mouvements dans le registre">
-              <td><b style="color:var(--ink)">${a.n}${a.id===ME?' <span class="chip k" style="margin-left:4px">vous</span>':''}</b><div class="sub">${a.role}</div></td>
-              <td class="num">${PRO_BIENS.filter(b=>b.ref===a.id).length}</td>
+              <td><b style="color:var(--ink)">${a.n}</b><div class="sub">${a.role}</div></td>
               <td>${a.plafond==null?'<span class="chip">sans plafond</span>':`<span class="num">${a.plafond} crédits</span>`}</td>
               <td><div class="row mid gap8"><span class="num" style="font-weight:600;color:var(--ink)">${a.mois}</span>${barre(a)}
                 ${a.plafond!=null?`<span class="sub num">reste ${reste(a)}</span>`:''}</div></td>
@@ -8188,13 +7859,6 @@ document.getElementById('menu').onclick = ()=> overlay.classList.toggle('open');
 overlay.onclick = e => { if(e.target===overlay) closeMenu(); };
 const popov = document.getElementById('popov');
 popov.onclick = e => { if(e.target===popov) closePop(); };
-
-/* en tant que qui — administrateur ou agent de l'agence */
-document.querySelectorAll('#who button').forEach(b=>b.onclick=()=>{
-  document.querySelectorAll('#who button').forEach(x=>x.classList.remove('on'));
-  b.classList.add('on');
-  setWho(b.dataset.w);
-});
 
 /* connecté / visiteur */
 document.querySelectorAll('#auth button').forEach(b=>b.onclick=()=>{
