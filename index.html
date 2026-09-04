@@ -1287,6 +1287,32 @@ const DECLA = '<span class="chip o">capacité déclarative — non vérifiée</s
    acquéreurs avant de payer quoi que ce soit (remplace l'ancien « premier offert »).
    Solde maquette : +40 bienvenue −40 AC-092 +150 pack −20 AC-118 −40 AC-207 = 90. */
 const SOLDE = 90;                        /* le solde maquette de l'Agence du Parc */
+/* ---- L'ÉQUIPE ET SES CRÉDITS (demande Antoine, 09/2026) ----
+   Les crédits appartiennent à l'agence — mais l'administrateur veut savoir QUI les consomme,
+   QUAND, et ce que ça rapporte. Chaque débit du registre porte donc son auteur et son heure.
+   Et chaque agent peut recevoir un PLAFOND MENSUEL : un droit de tirage sur le solde commun,
+   remis à zéro le 1ᵉʳ — jamais un solde à part, jamais des crédits en plus. Si la somme des
+   plafonds dépasse le solde, c'est le solde qui décide. `plafond:null` = sans plafond (admin).
+   Période des résultats : depuis le 1ᵉʳ du mois. `mois` = crédits consommés · `deb` = acquéreurs
+   débloqués · `joign` = joints au téléphone · `rdv` · `mandats` · `leads` = reçus traités / reçus. */
+const EQUIPE = [
+  {id:'jm', n:'Jean-Marc P.', role:'administrateur', mail:'jm@agenceduparc.fr',     plafond:null, mois:0,  deb:0, joign:0, rdv:1, mandats:1, leads:[9,11],  rappel:'2 h'},
+  {id:'sr', n:'Sophie R.',    role:'négociatrice',   mail:'sophie@agenceduparc.fr', plafond:100,  mois:60, deb:2, joign:2, rdv:1, mandats:0, leads:[17,19], rappel:'45 min'},
+  {id:'nk', n:'Nadim K.',     role:'négociateur',    mail:'nadim@agenceduparc.fr',  plafond:60,   mois:0,  deb:0, joign:0, rdv:0, mandats:0, leads:[8,14],  rappel:'1 j'}
+];
+const AGENT = id => EQUIPE.find(a=>a.id===id);
+const agentNom = id => id ? AGENT(id).n : 'l\'agence';
+const reste = a => a.plafond==null ? null : Math.max(0, a.plafond - a.mois);
+/* le registre : chaque ligne dit quoi, combien, QUI et QUAND — à la minute */
+const MOUVEMENTS = [
+  {q:'il y a 4 jours', h:'14:32', t:'Déblocage — Acquéreur AC-207 (Inès B.)', m:-40, par:'sr', dest:"goState('pro-lead','Acheté au catalogue')"},
+  {q:'il y a 6 jours', h:'09:15', t:'Déblocage — Acquéreur AC-118 (Claire F.)', m:-20, par:'sr', dest:"goState('pro-lead','Acheté au catalogue')"},
+  {q:'04/08',          h:'11:02', t:'Pack de 150 crédits',                       m:150, par:'jm', dest:"go('pro-factures')"},
+  {q:'26/07',          h:'16:48', t:'Déblocage — Acquéreur AC-092 (Romain T.)', m:-40, par:'jm', dest:"goState('pro-lead','Acheté au catalogue')"},
+  {q:'24/07',          h:'10:20', t:'40 crédits offerts — création du compte',   m:40,  par:null, dest:''}
+];
+let REGAG = null;   /* filtre du registre par agent (null = toute l'équipe) */
+
 const PACKS = [
   {n:150,  p:'150 €', d:'le minimum — 3 à 7 acquéreurs selon les profils'},
   {n:400,  p:'360 €', d:'10 % de moins par crédit', k:true},
@@ -1552,23 +1578,23 @@ const RAPAT_NEW = [
    qui détiennent un mandat et décoche celles qu'il écarte ; chacune reçoit le même contact,
    gratuitement — le partage reste dit, parce qu'il change la façon de rappeler. */
 const PRO_LEADS = [
-  {n:'Marc D.',   b:'T3 · 62 m² · Lyon 7ᵉ',        plein:true,  etat:'Rappelé',      d:'il y a 12 min',    part:3},
-  {n:'Sophie L.', b:'T2 · 44 m² · Villeurbanne',   plein:false, etat:'Nouveau',      d:'il y a 3 h',       part:1},
-  {n:'Karim B.',  b:'Immeuble · 210 m² · Lyon 9ᵉ', plein:true,  etat:'Nouveau',      d:'hier',             part:2},
-  {n:'Élodie R.', b:'T4 · 89 m² · Lyon 3ᵉ',        plein:false, etat:'Traité',       d:'hier',             part:1},
-  {n:'Thomas P.', b:'T3 · 62 m² · Lyon 7ᵉ',        plein:true,  etat:'Nouveau',      d:'il y a 2 jours',   part:3},
-  {n:'Nadia K.',  b:'Studio · 27 m² · Lyon 8ᵉ',    plein:false, etat:'Sans réponse', d:'il y a 2 jours',   part:1, tard:true},
-  {n:'Julien M.', b:'T2 · 44 m² · Villeurbanne',   plein:true,  etat:'Nouveau',      d:'il y a 3 jours',   part:2},
+  {n:'Marc D.', par:'jm',   b:'T3 · 62 m² · Lyon 7ᵉ',        plein:true,  etat:'Rappelé',      d:'il y a 12 min',    part:3},
+  {n:'Sophie L.', par:'sr', b:'T2 · 44 m² · Villeurbanne',   plein:false, etat:'Nouveau',      d:'il y a 3 h',       part:1},
+  {n:'Karim B.', par:'nk',  b:'Immeuble · 210 m² · Lyon 9ᵉ', plein:true,  etat:'Nouveau',      d:'hier',             part:2},
+  {n:'Élodie R.', par:'sr', b:'T4 · 89 m² · Lyon 3ᵉ',        plein:false, etat:'Traité',       d:'hier',             part:1},
+  {n:'Thomas P.', par:'jm', b:'T3 · 62 m² · Lyon 7ᵉ',        plein:true,  etat:'Nouveau',      d:'il y a 2 jours',   part:3},
+  {n:'Nadia K.', par:'nk',  b:'Studio · 27 m² · Lyon 8ᵉ',    plein:false, etat:'Sans réponse', d:'il y a 2 jours',   part:1, tard:true},
+  {n:'Julien M.', par:'sr', b:'T2 · 44 m² · Villeurbanne',   plein:true,  etat:'Nouveau',      d:'il y a 3 jours',   part:2},
   /* ---- et les acquéreurs achetés : dès le paiement, ils rejoignent CETTE liste.
      Une seule liste de travail — rappeler, statuts, relance — quel que soit le sens
      du premier contact. `acid` renvoie au catalogue, `src` dit la porte d'achat,
      `px` est le prix payé (un fait passé, pas un prix à payer), `deja` les autres
      agences ayant acheté le même profil. `plein` = son financement était renseigné. ---- */
-  {n:'Inès B.',   b:'Maison · 118 m² · Sainte-Foy-lès-Lyon', plein:true,  etat:'Rappelé', d:'il y a 4 jours',
+  {n:'Inès B.', par:'sr',   b:'Maison · 118 m² · Sainte-Foy-lès-Lyon', plein:true,  etat:'Rappelé', d:'il y a 4 jours',
    acid:'AC-207', src:'catalogue', px:'40 crédits', deja:1},
-  {n:'Claire F.', b:'T3 · 62 m² · Lyon 7ᵉ',                  plein:false, etat:'Rappelé', d:'il y a 6 jours',
+  {n:'Claire F.', par:'sr', b:'T3 · 62 m² · Lyon 7ᵉ',                  plein:false, etat:'Rappelé', d:'il y a 6 jours',
    acid:'AC-118', src:'catalogue', px:'20 crédits', deja:2},
-  {n:'Romain T.', b:'Studio · 27 m² · Lyon 8ᵉ',              plein:true,  etat:'Traité',  d:'il y a 2 semaines',
+  {n:'Romain T.', par:'jm', b:'Studio · 27 m² · Lyon 8ᵉ',              plein:true,  etat:'Traité',  d:'il y a 2 semaines',
    acid:'AC-092', src:'alerte',    px:'40 crédits — les crédits de bienvenue', deja:1}
 ];
 /* la mention de partage — toujours dite, jamais en petits caractères */
@@ -5990,6 +6016,8 @@ add({id:'pro-leads', g:'P2 — Monétisation', n:'15', title:'Mes leads — tout
         <span class="fsep"></span>
         ${['Rappelés','Traités'].map(f=>`<span class="chip hot">${f}</span>`).join('')}
         <span class="fsep"></span>
+        <span class="chip hot" title="Filtrer par agent de l'équipe">Agent : toute l'équipe ▾</span>
+        <span class="fsep"></span>
         <button class="btn sec2 sm hot">Trier : plus récents ▾</button>
       </div>
 
@@ -6004,7 +6032,7 @@ add({id:'pro-leads', g:'P2 — Monétisation', n:'15', title:'Mes leads — tout
               <td>${projetChip(l)}</td>
               <td>${l.acid?achatChip(l):partChip(l)}</td>
               <td class="sub">${l.d}</td>
-              <td>${etatChip(l)}</td>
+              <td>${etatChip(l)}<div class="sub" style="margin-top:3px">${agentNom(l.par)}</div></td>
               <td class="n"><button class="btn sm sec2">Ouvrir</button></td>
             </tr>`).join('')}
           </tbody>
@@ -6015,7 +6043,7 @@ add({id:'pro-leads', g:'P2 — Monétisation', n:'15', title:'Mes leads — tout
               <div class="row mid" style="justify-content:space-between;gap:10px">
                 <div style="min-width:0">
                   <div class="txt" style="font-weight:600;color:var(--ink)">${l.n}</div>
-                  <div class="sub">${l.acid?nbsp(provLbl(l))+' · ':''}${l.b} · ${l.d}</div>
+                  <div class="sub">${l.acid?nbsp(provLbl(l))+' · ':''}${l.b} · ${l.d} · ${agentNom(l.par)}</div>
                 </div>
                 ${etatChip(l)}
               </div>
@@ -6062,7 +6090,7 @@ add({id:'pro-lead', g:'P2 — Monétisation', n:'14', title:'Fiche lead — la m
       return `${appnav('Mes leads','pro')}
       <div class="sec"><div style="max-width:820px;margin:0 auto">
         <div class="row mid gap8 sub"><span class="linkish hot" onclick="goState('pro-leads','Achetés')">← Mes leads</span>
-          <span>·</span><span>Achetée il y a 6 jours</span></div>
+          <span>·</span><span>Débloquée il y a 6 jours à 09:15 par ${agentNom('sr')}</span></div>
         <div class="card mt14">
           <div class="pad" style="border-bottom:1px solid var(--line-2)">
             <div class="row mid stackm" style="justify-content:space-between;gap:12px">
@@ -6074,7 +6102,10 @@ add({id:'pro-lead', g:'P2 — Monétisation', n:'14', title:'Fiche lead — la m
                     ${serieuxChip(a)}
                   </div></div>
               </div>
-              <span class="chip" style="flex:none">${pin(2)} Débloquée au catalogue — 20 crédits</span>
+              <div class="col" style="flex:none;align-items:flex-end;gap:3px">
+                <span class="chip">${pin(2)} Débloquée au catalogue — 20 crédits</span>
+                <span class="sub">par ${agentNom('sr')} · il y a 6 jours à 09:15 · suivie par ${agentNom('sr')}</span>
+              </div>
             </div>
           </div>
 
@@ -6233,11 +6264,12 @@ add({id:'pro-lead', g:'P2 — Monétisation', n:'14', title:'Fiche lead — la m
 
 add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'acquéreurs — la demande que vous ne voyiez pas',
   intro:"Le produit payant : des **acquéreurs qui n'ont contacté personne** — inscrits, en recherche active, d'accord pour être proposés aux agences. Le flow est **une liste, point** : tous les acquéreurs qui correspondent à vos biens en ligne, et des **filtres** pour la travailler — le bien, le budget, le financement, le projet. Venir d'une annonce pose le filtre « bien », rien d'autre ne change. L'achat multiple est une **sélection en place** — on coche, une barre fait le total **en crédits** et débite le solde ; s'il ne suffit pas, elle emmène au paywall (packs dès 150 crédits). Partout, la même règle d'or : assez pour donner envie, pas assez pour contourner le déblocage.",
-  states:['Liste','Filtrée sur un bien','Sélection — 3 · solde ok','Sélection — 10 · solde insuffisant','Solde à 0','Alerte créée','Aucun résultat'],
+  states:['Liste','Filtrée sur un bien','Sélection — 3 · solde ok','Sélection — 10 · solde insuffisant','Sélection — 2 · plafond de l\'agent dépassé','Solde à 0','Alerte créée','Aucun résultat'],
   notes:[
     ['Une liste et des filtres — pas des vues','l’ancien flow multipliait les habillages du même contenu : groupé par bien, « depuis une annonce », recherche libre, puis un toggle Par bien / Tous. Il n’y a qu’un objet : la liste. Tout le reste est un filtre dans la même barre — posé, retiré, combiné. Le filtre « Bien » est un vrai menu : chacun de vos biens avec son nombre d’acquéreurs, ou tous — un clic pour isoler la demande d’un mandat, un clic pour revenir à tout. On sait toujours où on est : au même endroit.'],
     ['Le panier est mort, vive la sélection','un panier persistant est un objet à gérer : il se remplit sur un écran, s’affiche en badge sur un autre, survit à la navigation — l’ancien proto montrait « Panier · 3 » sur une vue où rien ne permettait d’ajouter. La sélection vit dans la liste : on coche, la barre totalise, on paie, elle meurt. Aucun état à retrouver, un seul tunnel d’achat.'],
     ['Le prix est fixé par le profil — et ne s’affiche plus ligne par ligne','recherche seule = 20 crédits, financement seul = 30, les deux = 40, rien à configurer. Mais la liste n’affiche aucun prix : le tag de type et le score font juger le profil, la somme n’apparaît que là où elle compte — la barre de sélection, et le CTA de la fiche.'],
+    ['Le plafond de l’agent se lit au même endroit que le solde','chaque négociateur peut avoir un plafond mensuel fixé par l’administrateur (profil de l’agence). La barre de sélection le dit à côté du solde : « votre plafond du mois : 40 restants sur 100 ». Si la sélection dépasse le plafond alors que le solde couvre, la barre dit lequel des deux bloque, et propose une rallonge d’un clic à l’administrateur — jamais un refus muet, jamais une liste masquée.'],
     ['Le solde décide, la barre le dit','si le solde couvre la sélection, on débloque en un clic — la carte ne sort pas. Sinon, la barre dit combien il manque et emmène au paywall : packs de crédits, 150 minimum. Jamais de surprise au moment de payer : le solde est affiché en permanence dans la nav.'],
     ['La règle d’or : avant / après achat','visible avant : critères, commune (jamais l’adresse), projet, score de sérieux, financement oui/non (jamais le montant), activité récente, combien d’agences l’ont acheté. Révélé après : nom, téléphone, email, message. Un seul champ de trop côté « avant » et l’achat se contourne ; un de moins et l’envie ne vient pas.'],
     ['Chaque ligne dit à quel bien elle correspond','la liste est à plat, mais la relation bien ↔ acquéreur reste visible : chaque ligne porte l’annonce qui a déclenché le match. Le groupement n’était pas la seule façon de dire « 12 acquéreurs pour ce bien » — le filtre bien et le compteur le disent mieux, sans dupliquer les vues. Et l’agence n’a toujours rien à configurer : ses annonces font le matching.'],
@@ -6257,8 +6289,10 @@ add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'a
        cocher depuis une vue calme → « Sélection — 3 » ; continuer à cocher → le lot.
        Décocher redescend. La sélection ne survit pas à l'achat : après paiement,
        les profils sont dans « Mes leads », la barre a disparu. */
+    const plaf = st==='Sélection — 2 · plafond de l\'agent dépassé';
     const selIds = st==='Sélection — 3 · solde ok' ? ['AC-118','AC-176','AC-052']
-                 : st==='Sélection — 10 · solde insuffisant' ? ACQUÉREURS.map(a=>a.id) : [];
+                 : st==='Sélection — 10 · solde insuffisant' ? ACQUÉREURS.map(a=>a.id)
+                 : plaf ? ['AC-176','AC-052'] : [];
     const ck = a => {
       const on = selIds.includes(a.id);
       return {on, to: on
@@ -6267,6 +6301,10 @@ add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'a
     };
     const unit = ACQUÉREURS.filter(a=>selIds.includes(a.id)).reduce((s,a)=>s+ACHPXN(a),0);
     const okSolde = unit<=SOLDE;
+    /* qui est connecté : l'administrateur (sans plafond) partout, sauf dans l'état qui montre
+       le plafond — vu par Sophie R., négociatrice, 60 crédits consommés sur 100 ce mois */
+    const me = plaf ? AGENT('sr') : AGENT('jm');
+    const okPlaf = me.plafond==null || unit<=reste(me);
     const selbar = !selIds.length ? '' : `
       <div class="card selbar mt20"><div class="pad">
         <div class="row mid agrow" style="justify-content:space-between;gap:12px">
@@ -6274,18 +6312,24 @@ add({id:'pro-acheteurs', g:'P2 — Monétisation', n:'15', title:'Catalogue d\'a
             <div class="txt" style="font-weight:600;color:var(--ink)">${selIds.length} acquéreurs sélectionnés —
               <span class="num">${unit} crédits</span></div>
             <div class="sub">${pin(3)} Un prix par profil — 20 crédits sa recherche, 40 avec financement, rien à choisir.
-              ${okSolde ? `${pin(4)} Votre solde : ${SOLDE} crédits — il vous en restera ${SOLDE-unit}.`
-                        : `${pin(4)} Votre solde : ${SOLDE} crédits — il vous en manque ${unit-SOLDE}.`}</div>
+              ${okSolde ? `${pin(4)} Solde de l'agence : ${SOLDE} crédits — il en restera ${SOLDE-unit}.`
+                        : `${pin(4)} Solde de l'agence : ${SOLDE} crédits — il en manque ${unit-SOLDE}.`}
+              ${me.plafond==null ? ` Vous êtes administrateur : sans plafond.`
+                : okPlaf ? ` Votre plafond du mois (${me.n}) : ${reste(me)} restants sur ${me.plafond} — il vous en restera ${reste(me)-unit}.`
+                : ` <b style="color:#a1341f">Votre plafond du mois (${me.n}) : ${reste(me)} restants sur ${me.plafond} — cette sélection le dépasse de ${unit-reste(me)}.</b> Le solde de l'agence, lui, couvre.`}</div>
           </div>
           <div class="row mid gap8 wrap" style="flex:none">
             <span class="linkish sub hot" onclick="setState('Liste')">Tout décocher</span>
-            ${okSolde
-              ? `<button class="btn hot" onclick="goState('pro-lead','Acheté au catalogue')">Débloquer les ${selIds.length} — ${unit} crédits</button>`
-              : `<button class="btn hot" onclick="goState('pro-achat','Acheter des crédits')">Acheter des crédits — packs dès 150</button>`}
+            ${!okSolde
+              ? `<button class="btn hot" onclick="goState('pro-achat','Acheter des crédits')">Acheter des crédits — packs dès 150</button>`
+              : !okPlaf
+              ? `<button class="btn hot" onclick="setState('Liste')">Demander une rallonge à ${agentNom('jm')}</button>`
+              : `<button class="btn hot" onclick="goState('pro-lead','Acheté au catalogue')">Débloquer les ${selIds.length} — ${unit} crédits</button>`}
           </div>
         </div>
-        <div class="sub" style="margin-top:8px">Recrédité si injoignable, acquéreur par acquéreur · les crédits
-        n'expirent jamais · dès le déblocage, ils rejoignent « Mes leads » et sortent du catalogue.</div>
+        <div class="sub" style="margin-top:8px">${!okPlaf
+          ? `${pin(5)} La rallonge part à l'administrateur avec votre sélection — validée, elle débloque en un clic. Vous pouvez aussi décocher pour rentrer dans votre plafond, ou attendre le 1ᵉʳ : il se remet à zéro.`
+          : `Recrédité si injoignable, acquéreur par acquéreur · les crédits n'expirent jamais · dès le déblocage, ils rejoignent « Mes leads » et sortent du catalogue · chaque débit est inscrit au registre de l'agence, à votre nom.`}</div>
       </div></div>`;
 
     /* le même en-tête partout : titre + compteur + alerte. Pas de vues, pas de badge panier. */
@@ -6473,8 +6517,9 @@ add({id:'pro-achat', g:'P2 — Monétisation', n:'15', title:'Débloquer un acqu
             <div class="row mid gap8">
               <span class="ckb on" style="width:28px;height:28px;font-size:15px;border-radius:50%">✓</span>
               <div style="min-width:0"><h4 class="wt">Acquéreur débloqué</h4>
-                <div class="sub num">20 crédits débités · solde : ${SOLDE} → <b>${SOLDE-20}</b> ·
-                l'identité est à vous, définitivement</div></div>
+                <div class="sub num">20 crédits débités par ${agentNom('sr')} · aujourd'hui à 14:32 · solde de l'agence : ${SOLDE} → <b>${SOLDE-20}</b> ·
+                l'identité est à vous, définitivement</div>
+                <div class="sub num" style="margin-top:2px">${pin(11)} Plafond du mois de ${agentNom('sr')} : ${reste(AGENT('sr'))} → <b>${reste(AGENT('sr'))-20}</b> restants sur ${AGENT('sr').plafond} · inscrit au registre de l'agence</div></div>
             </div>
           </div>
           <div class="pad" style="border-bottom:1px solid var(--line-2)">
@@ -6605,8 +6650,11 @@ add({id:'pro-achat', g:'P2 — Monétisation', n:'15', title:'Débloquer un acqu
 
 add({id:'pro-profil', g:'P2 — Monétisation', n:'16', title:'Profil de l\'agence — compte, équipe & crédits',
   intro:"L'écran compte, qui n'existait pas — et qui devient stratégique avec les crédits : c'est **la deuxième porte d'achat** (la première est le paywall, quand un déblocage dépasse le solde). Le bloc Crédits dit trois choses : le solde, le registre des mouvements (chaque débit renvoie à sa fiche lead), et le bouton d'achat. Autour : l'identité de l'agence telle que les acquéreurs la voient, l'équipe, le moyen de paiement, les notifications, la sécurité. Rien d'exotique — un compte propre est un argument de confiance.",
-  states:['Profil','Acheter des crédits','Paiement par carte'],
+  states:['Profil','Registre — Sophie R.','Plafonds mensuels','Acheter des crédits','Paiement par carte'],
   notes:[
+    ['Chaque débit dit QUI et QUAND, à la minute','les crédits sont à l\'agence, mais ils sont dépensés par quelqu\'un : chaque ligne du registre porte l\'auteur et l\'heure, et le registre se filtre par agent d\'un clic. Sans ça, l\'administrateur découvre un solde à 0 sans savoir d\'où ça vient — et la première réaction est de couper le robinet pour tout le monde.'],
+    ['Les résultats par agent, à côté de ce qu\'il a consommé','débloqués · joints · RDV · mandats · leads reçus traités · délai de rappel — sur la même ligne que les crédits dépensés. C\'est la seule façon de juger un débit : 60 crédits qui donnent 2 RDV ne se lisent pas comme 60 crédits qui n\'ont joint personne. Aucun classement, aucun score : des faits, agent par agent.'],
+    ['Le plafond mensuel est un droit de tirage, pas un solde','fixé par l\'administrateur, agent par agent, remis à zéro le 1ᵉʳ. Il ne crée aucun crédit et ne réserve rien : si la somme des plafonds dépasse le solde, c\'est le solde qui décide. Un agent au plafond voit la liste entière et demande une rallonge d\'un clic — il n\'est jamais bloqué en silence.'],
     ['Le solde vit à deux endroits, le registre à un seul','dans la nav (toujours visible, cliquable) et ici. Le registre des débits n\'est QUE dans le profil : chaque ligne renvoie à la fiche du lead débloqué — jamais dans les factures, où des références d\'acquéreurs n\'ont rien à faire.'],
     ['Acheter des crédits sans être au pied du mur','le paywall arrive quand le solde ne couvre pas un déblocage — un moment de friction. Le profil offre l\'achat calme : une agence qui recharge en début de mois n\'a plus jamais de friction au moment du déblocage, et c\'est exactement le comportement qu\'on veut installer.'],
     ['Les crédits n\'expirent jamais, écrit là où on les achète','un solde qui expire est une pénalité déguisée — la promesse est répétée sur le bloc, sur le paywall, et dans les garanties.'],
@@ -6635,14 +6683,107 @@ add({id:'pro-profil', g:'P2 — Monétisation', n:'16', title:'Profil de l\'agen
         « Facturation », et chaque déblocage suivant est un clic — sans repasser par ici.</div>
       </div></div>`;
 
+    /* ---------- plafonds mensuels : l'écran de réglage, agent par agent ---------- */
+    if (st==='Plafonds mensuels') return `${appnav('','pro')}
+      <div class="sec"><div style="max-width:680px;margin:0 auto">
+        <div class="row mid gap8 sub" style="margin-bottom:14px">
+          <span class="linkish hot" onclick="setState('Profil')">← Profil de l'agence</span>
+          <span>·</span><span>Plafonds mensuels</span></div>
+        <div class="card">
+          <div class="pad" style="border-bottom:1px solid var(--line-2)">
+            <div class="row mid" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
+              <h5 class="wt">Plafond de crédits par agent, chaque mois${pin(1)}</h5>
+              <span class="chip k num">solde de l'agence : ${SOLDE} crédits</span>
+            </div>
+          </div>
+          <div class="pad">
+            <div class="sub">${pin(2)} Un plafond est un droit de tirage sur le solde commun, remis à zéro
+            le 1ᵉʳ de chaque mois. Il ne crée aucun crédit et n'en réserve aucun : si la somme des
+            plafonds dépasse le solde, c'est le solde qui décide.</div>
+            <div class="col gap14 mt14">
+              ${EQUIPE.map(a=>`
+              <div class="row mid stackm" style="gap:14px;justify-content:space-between;padding:12px 0;border-top:1px solid var(--line-2)">
+                <div class="row mid gap8" style="min-width:0;flex:1">
+                  <div class="avatar" style="width:32px;height:32px;flex:none"></div>
+                  <div style="min-width:0"><div class="txt" style="font-weight:600;color:var(--ink)">${a.n}</div>
+                    <div class="sub">${a.role} · ${a.mois} crédits consommés depuis le 1ᵉʳ</div></div>
+                </div>
+                <div style="width:220px;flex:none">
+                  ${a.plafond==null
+                    ? `<div class="field"><div class="lbl">Plafond mensuel</div>
+                        <div class="row mid gap8"><span class="chip">sans plafond</span>
+                        <span class="linkish sub hot">en fixer un</span></div>
+                        <div class="hint">l'administrateur tire sur le solde sans limite</div></div>`
+                    : inp('Plafond mensuel', a.plafond+' crédits', {hint:`il lui en reste ${reste(a)} ce mois`})}
+                </div>
+              </div>`).join('')}
+            </div>
+            <div class="col gap6 mt14">
+              ${[['Prévenir l\'agent à 80 % de son plafond','email',true],
+                 ['Me prévenir quand un agent atteint son plafond','email + notification',true],
+                 ['Autoriser la demande de rallonge depuis le catalogue','1 clic, validée par moi',true]]
+                .map(([t,v,on])=>`<div class="row mid" style="justify-content:space-between;gap:10px">
+                  <span class="txt">${t}</span><span class="chip ${on?'k':''}">${v}</span></div>`).join('')}
+            </div>
+            <div class="row gap8 mt14">
+              <button class="btn hot" onclick="setState('Profil')">Enregistrer les plafonds</button>
+              <button class="btn sec2 hot" onclick="setState('Profil')">Annuler</button>
+            </div>
+            <div class="disc mt8">${pin(3)} Un agent au plafond voit toujours la liste entière du catalogue —
+            seul le déblocage attend. Il demande une rallonge d'un clic ; vous la validez ici.</div>
+          </div>
+        </div>
+      </div></div>`;
+
     /* ---------- le profil ---------- */
-    const mouvements = [
-      ['il y a 4 jours','Déblocage — Acquéreur AC-207 (Inès B.)','−40', `goState('pro-lead','Acheté au catalogue')`],
-      ['il y a 6 jours','Déblocage — Acquéreur AC-118 (Claire F.)','−20', `goState('pro-lead','Acheté au catalogue')`],
-      ['04/08','Pack de 150 crédits','+150', `go('pro-factures')`],
-      ['26/07','Déblocage — Acquéreur AC-092 (Romain T.)','−40', `goState('pro-lead','Acheté au catalogue')`],
-      ['24/07','40 crédits offerts — création du compte','+40', '']
-    ];
+    const filtre = st==='Registre — Sophie R.' ? 'sr' : REGAG;
+    const mouvements = MOUVEMENTS.filter(m=>!filtre || m.par===filtre);
+    const consoTot = EQUIPE.reduce((t,a)=>t+a.mois,0);
+    const barre = a => a.plafond==null ? '' : `
+      <div class="bar" style="width:84px;position:relative;overflow:hidden;flex:none">
+        <div style="position:absolute;inset:0;width:${Math.min(100,Math.round(a.mois/a.plafond*100))}%;background:${a.mois>=a.plafond?'#a1341f':'var(--ink)'}"></div></div>`;
+    const equipeCard = `
+      <div class="card mt20">
+        <div class="pad" style="border-bottom:1px solid var(--line-2)">
+          <div class="row mid" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
+            <div><h5 class="wt">Équipe & crédits${pin(7)}</h5>
+              <div class="sub">Depuis le 1ᵉʳ du mois — <b class="num">${consoTot}</b> crédits consommés par
+              <b class="num">${EQUIPE.filter(a=>a.mois).length}</b> agent sur ${EQUIPE.length} · ce que ça a donné, agent par agent</div></div>
+            <div class="row gap8 wrap">
+              <button class="btn sec2 sm hot" onclick="setState('Plafonds mensuels')">Modifier les plafonds</button>
+              <button class="btn sec2 sm hot">+ Inviter un collaborateur</button>
+            </div>
+          </div>
+        </div>
+        <table class="wt">
+          <thead><tr><th>Agent</th><th>Plafond / mois</th><th>Consommé</th><th class="n">Débloqués</th>
+            <th class="n">Joints</th><th class="n">RDV pris</th><th class="n">Mandats</th><th class="n">Leads reçus traités</th><th class="n">Rappel médian</th></tr></thead>
+          <tbody>
+            ${EQUIPE.map(a=>`<tr class="hot" onclick="REGAG='${a.id}';setState('Profil')" title="Voir ses mouvements dans le registre">
+              <td><b style="color:var(--ink)">${a.n}</b><div class="sub">${a.role}</div></td>
+              <td>${a.plafond==null?'<span class="chip">sans plafond</span>':`<span class="num">${a.plafond} crédits</span>`}</td>
+              <td><div class="row mid gap8"><span class="num" style="font-weight:600;color:var(--ink)">${a.mois}</span>${barre(a)}
+                ${a.plafond!=null?`<span class="sub num">reste ${reste(a)}</span>`:''}</div></td>
+              <td class="n">${a.deb}</td><td class="n">${a.joign}${a.deb?` / ${a.deb}`:''}</td>
+              <td class="n">${a.rdv}</td><td class="n">${a.mandats}</td>
+              <td class="n">${a.leads[0]} / ${a.leads[1]}</td><td class="n">${a.rappel}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+        <div class="mobonly col gap8 pad">
+          ${EQUIPE.map(a=>`<div class="card flat pad hot" onclick="REGAG='${a.id}';setState('Profil')">
+            <div class="row mid" style="justify-content:space-between;gap:10px">
+              <div><div class="txt" style="font-weight:600;color:var(--ink)">${a.n}</div><div class="sub">${a.role}</div></div>
+              ${a.plafond==null?'<span class="chip">sans plafond</span>':`<span class="chip num">${a.mois} / ${a.plafond} crédits</span>`}
+            </div>
+            <div class="sub mt8">${a.deb} débloqué${a.deb>1?'s':''} · ${a.joign} joint${a.joign>1?'s':''} · ${a.rdv} RDV · ${a.mandats} mandat${a.mandats>1?'s':''} ·
+              leads traités ${a.leads[0]} / ${a.leads[1]} · rappel ${a.rappel}</div>
+          </div>`).join('')}
+        </div>
+        <div class="disc" style="padding:0 14px 12px">${pin(8)} Aucun classement, aucun score : des faits par agent, sur la même
+        ligne que ce qu'il a consommé — 60 crédits qui donnent 2 RDV ne se lisent pas comme 60 crédits qui n'ont
+        joint personne. Cliquer une ligne filtre le registre ci-dessous.</div>
+      </div>`;
     return `${appnav('','pro')}
     <div class="sec">
       <div class="row mid" style="justify-content:space-between;flex-wrap:wrap;gap:10px">
@@ -6656,6 +6797,8 @@ add({id:'pro-profil', g:'P2 — Monétisation', n:'16', title:'Profil de l\'agen
         </div>
         <button class="btn hot" onclick="setState('Acheter des crédits')">Acheter des crédits</button>
       </div>
+
+      ${equipeCard}
 
       <div class="grid2 mt20" style="align-items:start">
         <div class="col gap14">
@@ -6671,13 +6814,21 @@ add({id:'pro-profil', g:'P2 — Monétisation', n:'16', title:'Profil de l\'agen
               <div class="sub">${pin(3)} Ils n'expirent jamais, ne se reconduisent pas, ne s'abonnent
               pas. Un déblocage coûte 20 à 40 crédits selon ce que l'acquéreur a rempli —
               40 crédits sont offerts à la création du compte.</div>
-              <div class="col gap6 mt14">
-                ${mouvements.map(([d,t,m,dest])=>`
-                <div class="rrow ${dest?'hot':''}" style="justify-content:space-between;padding:9px 10px" ${dest?`onclick="${dest}"`:''}>
-                  <div class="rtx" style="min-width:0"><b>${t}</b><span>${d}</span></div>
-                  <span class="num" style="flex:none;font-weight:600">${m}</span>
-                </div>`).join('')}
+              <div class="row mid gap6 wrap mt14">
+                <span class="lbl" style="flex:none">Registre</span>
+                <span class="chip hot ${!filtre?'k':''}" onclick="REGAG=null;setState('Profil')">Toute l'équipe</span>
+                ${EQUIPE.map(a=>`<span class="chip hot ${filtre===a.id?'k':''}"
+                  onclick="${a.id==='sr'?`setState('Registre — Sophie R.')`:`REGAG='${a.id}';setState('Profil')`}">${a.n}</span>`).join('')}
               </div>
+              <div class="col gap6 mt8">
+                ${mouvements.length ? mouvements.map(({q,h,t,m,par,dest})=>`
+                <div class="rrow ${dest?'hot':''}" style="justify-content:space-between;padding:9px 10px" ${dest?`onclick="${dest}"`:''}>
+                  <div class="rtx" style="min-width:0"><b>${t}</b><span>${q} à ${h} · ${par?'par '+agentNom(par):'à la création du compte'}</span></div>
+                  <span class="num" style="flex:none;font-weight:600">${m>0?'+':'−'}${Math.abs(m)}</span>
+                </div>`).join('') : `<div class="sub" style="padding:9px 10px">Aucun mouvement de ${agentNom(filtre)} ce mois — ni débit, ni achat.</div>`}
+              </div>
+              ${filtre ? `<div class="sub mt8">${pin(9)} ${agentNom(filtre)} : <b class="num">${AGENT(filtre).mois}</b> crédits consommés depuis le 1ᵉʳ${
+                AGENT(filtre).plafond!=null?` sur un plafond de <b class="num">${AGENT(filtre).plafond}</b>`:' — sans plafond'}.</div>` : ''}
               <div class="row gap8 mt14">
                 <button class="btn hot" onclick="setState('Acheter des crédits')">Acheter des crédits</button>
                 <button class="btn sec2 hot" onclick="go('pro-acheteurs')">Ouvrir le catalogue</button>
@@ -6704,26 +6855,6 @@ add({id:'pro-profil', g:'P2 — Monétisation', n:'16', title:'Profil de l\'agen
             </div>
           </div>
 
-          <div class="card">
-            <div class="pad" style="border-bottom:1px solid var(--line-2)">
-              <div class="row mid" style="justify-content:space-between;gap:10px">
-                <h5 class="wt">Équipe</h5><span class="chip">2 comptes</span>
-              </div>
-            </div>
-            <div class="pad">
-              <div class="col gap6">
-                ${[['Jean-Marc P.','administrateur — jm@agenceduparc.fr'],
-                   ['Sophie R.','négociatrice — sophie@agenceduparc.fr']]
-                  .map(([n,r])=>`<div class="row mid gap8">
-                    <div class="avatar" style="width:30px;height:30px;flex:none"></div>
-                    <div style="min-width:0"><div class="txt" style="font-weight:600;color:var(--ink)">${n}</div>
-                    <div class="sub">${r}</div></div></div>`).join('')}
-              </div>
-              <button class="btn sec2 sm mt14">+ Inviter un collaborateur</button>
-              <div class="disc mt8">Les crédits appartiennent à l'agence, pas au compte : toute
-              l'équipe débloque sur le même solde.</div>
-            </div>
-          </div>
         </div>
 
         <div class="col gap14">

@@ -2,7 +2,9 @@
 
 Prototype cliquable d'une plateforme immobilière. **Un seul fichier, aucune dépendance, fonctionne hors ligne** : ouvre `index.html` dans un navigateur (double-clic).
 
-**25 écrans · 77 états**, vérifiés sur 308 rendus (écran × état × connecté/visiteur × desktop/mobile). On valide ici les **parcours, la hiérarchie de l'information et les états**.
+**26 écrans · 88 états**, vérifiés sur 352 rendus (écran × état × connecté/visiteur × desktop/mobile). On valide ici les **parcours, la hiérarchie de l'information et les états**.
+
+> **💳 Crédits & équipe (09/2026).** Le déblocage d'un acquéreur se paie en **crédits** (20 / 30 / 40), achetés par packs (150 / 400 / 1000), sans expiration ; 40 crédits offerts à l'inscription. Les crédits appartiennent à l'agence, mais **chaque débit du registre dit qui et quand** (auteur + heure, filtrable par agent), le profil montre **les résultats de chaque agent** à côté de ce qu'il a consommé (débloqués · joints · RDV · mandats · leads reçus traités · délai de rappel), et l'administrateur fixe **un plafond mensuel de crédits par agent** — un droit de tirage sur le solde commun, remis à zéro le 1ᵉʳ, jamais un solde à part. Un agent au plafond voit la liste entière et demande une rallonge d'un clic.
 
 > **⚠️ Modèle de leads v2 (brief 08/2026).** L'ancien modèle « contact gratuit mais infos bloquées, qualification à débloquer » est retiré partout. Le nouveau : **tout contact reçu est gratuit, en entier, à vie** — et ce qui se vend est un **acheteur qui n'a pas contacté** (catalogue d'acheteurs anonymisés, 20/30/40 €, identité révélée après achat).
 
