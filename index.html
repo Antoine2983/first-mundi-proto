@@ -752,6 +752,27 @@ body.mobile .stage{padding:14px 8px calc(var(--pbarH,54px) + 96px)}
 .ckb.on{background:var(--ink);border-color:var(--ink)}
 .selbar{position:sticky;bottom:12px;z-index:20;box-shadow:0 10px 34px rgba(0,0,0,.16);
   background:var(--paper)}
+
+/* ---- profil acquéreur : le rail de sections navigue vraiment ----
+   Il était décoratif (cinq libellés inertes). En mobile il devient une barre de sections
+   défilante — même ordre, mêmes libellés, cible tactile à 44 px. */
+.acrail{display:flex;flex-direction:column;gap:2px;width:214px;flex:none;
+  align-self:flex-start;position:sticky;top:14px}
+.acrail button{font:inherit;font-size:12.5px;text-align:left;display:flex;align-items:center;gap:8px;
+  justify-content:space-between;width:100%;padding:9px 11px;border:0;border-radius:8px;
+  background:transparent;color:var(--ink-2);cursor:pointer}
+.acrail button:hover{background:var(--fill)}
+.acrail button.on{background:var(--fill);color:var(--ink);font-weight:600}
+.acrail button i{font-style:normal;font-size:10px;color:var(--ink-3);flex:none;letter-spacing:.2px}
+.acrail button.on i{color:var(--ink-2)}
+body.tablet .acrail{width:186px}
+body.mobile .acrail{flex-direction:row;width:100%;align-self:stretch;position:static;gap:6px;overflow-x:auto;
+  padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+body.mobile .acrail::-webkit-scrollbar{display:none}
+body.mobile .acrail button{width:auto;flex:none;white-space:nowrap;min-height:44px;
+  border:1px solid var(--line);border-radius:999px;padding:0 14px;font-size:12.5px}
+body.mobile .acrail button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+body.mobile .acrail button i{display:none}
 </style>
 </head>
 <body>
@@ -1028,7 +1049,7 @@ const appnav = (active, who='customer', auth=AUTH, solde=SOLDE) => {
       <button class="btn ghost sm authsec" style="color:var(--ink-2)">Se connecter</button>
       <button class="btn sm hot" onclick="go('inscription')">S'inscrire</button>` : `
       <div class="navico" title="Favoris & mes recherches" onclick="event.stopPropagation();togglePanel()">♡<span class="bdg">3</span></div>
-      <div class="navico photo hot" title="Mon compte — Marc D., connecté" onclick="go('compte')">MD</div>`}
+      <div class="navico photo hot" title="Mon profil — Marc D., connecté" onclick="go('compte')">MD</div>`}
     </div>
   </div>`;
 };
@@ -2961,6 +2982,64 @@ ${LQ ? '' : `<div id="locres">${locResultats()}</div>`}
       `<button class="btn sec2 sm" onclick="closePop()">Fermer</button>`);
   },
 
+  /* Le même score, vu par celui qui est noté. La promesse écrite côté agence —
+     « l'acquéreur voit son propre score, le même chiffre, au même moment » — n'était
+     tenue nulle part côté acquéreur. Elle l'est ici, barème et pondérations compris,
+     avec la seule chose qui manque à la version agence : ce qu'il peut y changer. */
+  monScore(score, det){
+    const BAREME = [['Profil renseigné','critères, budget, financement — ce que vous déclarez',35,
+                     'La seule part que vous contrôlez entièrement. Complétez le bloc manquant et elle est pleine.'],
+                    ['Recherche active','fiches ouvertes, alertes, dernière visite',30,
+                     'Se gagne en cherchant. Une recherche enregistrée avec alerte la maintient sans rien faire.'],
+                    ['Réactivité','vous rappelez quand une agence vous appelle',20,
+                     'Une agence qui vous signale injoignable vous coûte des points. C\u2019est le seul jugement porté sur vous, et il vient d\u2019un fait.'],
+                    ['Constance du projet','des critères stables dans la durée',15,
+                     'Change de budget et de ville chaque semaine et elle baisse. Affiner une recherche ne la touche pas.']];
+    pop(`Votre score de sérieux — ${score} / 100`,
+      'Le chiffre que lit l’agence, et le vôtre. Quatre composants pondérés, tous visibles, aucun modèle opaque.', `
+      <div>
+        ${BAREME.map(([k,d,max,quoi],i)=>`<div class="crit">
+          <div class="grow" style="min-width:0"><span class="txt">${k}</span>
+            <div class="sub">${d}</div></div>
+          <div class="track2" style="width:120px;flex:none"><i style="width:${Math.round(det[i]/max*100)}%"></i></div>
+          <span class="n2" style="white-space:nowrap">${det[i]}<span class="sub">/${max}</span></span></div>`).join('')}
+      </div>
+      <div class="col gap6 mt14">
+        ${BAREME.map(([k,,,quoi])=>`<div class="row gap6"><span class="sub" style="flex:none">·</span>
+          <span class="sub"><b>${k}</b> — ${quoi}</span></div>`).join('')}
+      </div>
+      <div class="bandeau mt14"><b>Ce que ce score n'est pas : une solvabilité.</b> Votre apport et
+      votre capacité d'emprunt sont déclarés, jamais vérifiés — ni par nous, ni par une banque.
+      La seule chose vérifiée est votre téléphone, par SMS, et ce n'est pas un composant du score :
+      c'est la condition d'entrée.</div>
+      <div class="disc mt8">Recalculé chaque nuit. Le badge « Profil sérieux » se prend à 80 —
+      c'est celui qui accompagne vos demandes chez les agences. Sous 50, votre profil sort du
+      catalogue : personne ne peut plus vous proposer de bien.</div>`,
+      `<button class="btn sec2 sm" onclick="closePop()">Fermer</button>
+       <button class="btn sm" onclick="closePop();go('profil-completude')">Compléter mon profil</button>`);
+  },
+
+  /* Droit à l'effacement, exercé depuis l'endroit où l'on voit la transmission.
+     On n'invente pas un bouton magique : c'est l'agence qui détient la donnée, on lui
+     écrit — et on dit le délai réel plutôt qu'un « c'est fait ». */
+  effacement(agence){
+    pop(`Demander l'effacement — ${agence}`,
+      'Vous lui avez transmis vos coordonnées le 12 août. Elle les détient : nous ne pouvons pas les supprimer à sa place.', `
+      <div class="txt">Le message part de votre compte, signé de votre nom, et cite la demande
+      concernée. L'agence dispose d'un mois pour y répondre — c'est le délai légal, pas une
+      promesse produit.</div>
+      <div class="card flat pad mt14"><div class="sub" style="font-style:italic">
+        « Bonjour, j'ai contacté votre agence le 12 août au sujet du T3 · 62 m² · Lyon 7ᵉ.
+        Je vous demande de supprimer les données personnelles transmises à cette occasion :
+        nom, téléphone, email, message, projet et budget. Merci de me confirmer la suppression. »
+      </div></div>
+      <div class="bandeau mt14">Ce que ça ne fait pas : cela n'annule pas la transmission, et
+      cela ne supprime rien chez les deux autres agences que vous aviez cochées — chacune se
+      demande séparément, depuis sa ligne.</div>`,
+      `<button class="btn sec2 sm" onclick="closePop()">Annuler</button>
+       <button class="btn sm" onclick="closePop()">Envoyer la demande</button>`);
+  },
+
   /* tarification côté agence — la grille entière, gratuit compris */
   tarif(){ pop('Ce que vous payez, et ce que vous ne payez jamais',
     'À l’acte, sans abonnement ni engagement. Vos contacts sont gratuits — ce qui s’achète, ce sont des acquéreurs que vous ne connaissez pas.', `
@@ -3886,7 +3965,7 @@ add({id:'fiche', g:'P0 — Parcours acquéreur', n:'03', title:'Fiche bien — l
         <span class="sub num">prix affiché${b.dv?' · ↓ '+b.dv:''}</span>
       </div>
       ${off
-        ? `<button class="btn sec2" style="flex:1" onclick="go('recherche')">Voir des biens similaires</button>`
+        ? `<button class="btn sec2" style="flex:1;min-width:0" onclick="go('recherche')">Biens similaires</button>`
         : `<button class="btn hot" style="flex:1" onclick="go('lead1')">Prendre contact</button>`}
     </div></div>`;
   }
@@ -4441,75 +4520,567 @@ add({id:'recherches', g:'P0 — Parcours acquéreur', n:'08', title:'Mes recherc
   }
 });
 
-add({id:'compte', g:'P0 — Parcours acquéreur', n:'09', title:'Paramètres du compte',
-  intro:"Écran standard, avec une spécificité produit : les charges par défaut saisies ici pré-remplissent tous les calculs de rendement. C'est un réglage produit déguisé en préférence.",
+add({id:'compte', g:'P0 — Parcours acquéreur', n:'09', title:'Mon profil — ce que les agences voient de moi',
+  intro:"L'écran compte côté acquéreur, refait de bout en bout. Il n'ouvre plus sur des réglages : il ouvre sur **ce que les agences voient de vous** — parce que c'est la seule chose qui donne envie de remplir quoi que ce soit. Autour de cet aperçu : le projet, la complétude, le consentement catalogue (qui se retire là où il se donne), les notifications, la sécurité, et un historique des transmissions qui nomme chaque destinataire. La contrepartie est écrite partout : ce que je donne, ce que ça me rapporte, ce que je peux reprendre.",
+  states:['Profil — 85 / 100','Profil complet — 100 / 100','Compte neuf — 40 / 100','Historique des transmissions'],
   notes:[
-    ['Hypothèses de calcul par défaut','déplacées du bloc analyse vers le compte : on ne demande pas ces réglages à chaque fiche.'],
-    ['Complétude du profil','85/100 débloque le badge « Profil sérieux », qui augmente la valeur perçue du lead côté agence. Le lien effort → bénéfice doit être explicite.'],
-    ['RGPD actionnable','export et suppression accessibles en deux clics, pas enterrés dans les CGU.'],
-    ['La révocation du consentement catalogue vit ici','le oui s’est donné dans le tunnel ou le profil ; le non doit être aussi simple — un bouton dans les paramètres, effet dans l’heure, jamais un email au support. C’est la condition légale du modèle, et elle se prouve par l’UI.']
+    ['Un profil, pas des paramètres','l’ancien écran ouvrait sur « Hypothèses de calcul » et « RGPD ». Personne ne remplit un formulaire pour un formulaire. La page ouvre donc sur l’aperçu de ce que l’agence lit, et la plomberie (notifications, sécurité, données) est rangée derrière, dans le rail.'],
+    ['Deux publics, deux vues — l’aperçu bascule','une agence que vous contactez voit tout, gratuitement, à vie. Une agence du catalogue ne voit ni nom, ni téléphone, ni email, jamais l’adresse. Montrer les deux fiches au même endroit est la seule façon de rendre le consentement compréhensible AVANT de le donner — une case à cocher ne l’expliquera jamais.'],
+    ['Un seul score, celui que lit l’agence','la complétude est ce que vous remplissez — elle vaut 35 points sur 100 dans le score, et c’est la seule composante que vous contrôlez entièrement. Le score de sérieux est ce que l’agence lit. Deux jauges concurrentes feraient douter des deux. La promesse faite côté agence — « l’acquéreur voit son propre score, le même chiffre, au même moment » — n’était tenue nulle part : elle l’est ici, barème compris.'],
+    ['La colonne de gauche navigue vraiment','elle était décorative : cinq libellés qui ne faisaient rien. Six sections, un état actif, un rappel d’état dans le rail (catalogue activé ou non), et en mobile une barre de sections défilante. Un rail qui ne répond pas apprend à ne plus cliquer.'],
+    ['« J’investis / J’habite » est une préférence de compte','le mode ne vivait que dans la barre de démonstration. C’est pourtant lui qui décide du vocabulaire et des chiffres sur tous les écrans — rendement ou mensualité. Sa place est dans le profil, avec la phrase qui dit ce qu’il change.'],
+    ['Le consentement catalogue se retire là où il se donne','même bloc, même geste, effet dans l’heure, sans email ni justification — et l’état est lisible depuis le rail. On écrit aussi ce qu’on perd en le coupant : les propositions off-market, avant publication. Un consentement qu’on ne peut pas retirer d’un clic n’est pas un consentement.'],
+    ['L’historique des transmissions est un écran, pas une ligne de CGU','qui a reçu quoi, quand, et à cause de quel geste. Et la vérité qui coûte : une transmission ne s’annule pas. Plutôt que de faire semblant, on ouvre la demande de suppression auprès de l’agence — c’est le droit réel, exercé depuis le bon endroit.'],
+    ['La suppression du compte dit ce qu’elle ne peut pas effacer','les demandes déjà envoyées vivent chez les agences qui les ont reçues. Le promettre serait faux ; l’écrire est la seule version tenable — et c’est ce qui rend crédible tout le reste de la page.'],
+    ['Rien n’est obligatoire, et le compte neuf le prouve','40 / 100, aucune porte fermée : on peut chercher, comparer, contacter. Le profil est un accélérateur, pas un péage. L’état « compte neuf » existe pour vérifier qu’aucun écran ne se vide en reproche.']
   ],
-  render:()=>`${appnav('')}
-  <div class="sec"><div class="row stackm gap20">
-    <div class="col gap8" style="width:200px;flex:none">
-      ${['Profil','Hypothèses de calcul','Notifications','Sécurité','Données & RGPD']
-        .map((t,i)=>`<div class="card flat pad ${i===0?'':''}" style="${i===0?'background:var(--fill)':''};cursor:pointer">
-          <span class="txt" style="${i===0?'font-weight:600;color:var(--ink)':''}">${t}</span></div>`).join('')}
-    </div>
-    <div class="grow col gap20">
-      <div class="card"><div class="pad">
-        <div class="row mid" style="justify-content:space-between;gap:12px;flex-wrap:wrap">
-          <div><h5 class="wt">Complétude du profil${pin(2)}</h5>
-            <div class="sub">Un profil complet rend vos demandes prioritaires côté agences.</div></div>
-          <div class="big num">85 / 100</div>
-        </div>
-        <div style="height:6px;background:var(--fill);border-radius:3px;margin-top:12px;overflow:hidden">
-          <div style="width:85%;height:100%;background:var(--ink-2)"></div></div>
-        <div class="row gap8 mt14 wrap">
-          <span class="chip">Identité ✓</span><span class="chip">Téléphone vérifié ✓</span>
-          <span class="chip">Projet ✓</span><span class="chip o">Capacité de financement — à compléter</span>
-        </div>
-      </div></div>
+  render:(st)=>{
+    const neuf  = st==='Compte neuf — 40 / 100';
+    const plein = st==='Profil complet — 100 / 100';
+    const pct   = neuf?40:(plein?100:85);
+    /* Score de sérieux — le même barème que côté agence (POP.serieux), les mêmes 4 composants.
+       Un compte neuf n'a pas de score : il n'a pas encore d'activité à mesurer. On l'écrit
+       plutôt que d'afficher un 20/100 qui le sortirait du catalogue le jour de son inscription. */
+    const det   = neuf ? null : (plein ? [35,27,17,10] : [30,27,17,10]);
+    const score = det ? det.reduce((a,b)=>a+b,0) : null;
+    const serieux = score !== null && score >= 80;
+    const inv = MODE==='invest';
 
-      <div class="card"><div class="pad">
-        <h5 class="wt">Mes hypothèses${pin(1)}</h5>
-        <div class="sub">Appliquées automatiquement à chaque analyse de bien — et modifiables directement sur chaque fiche.</div>
-        <div class="grid3 mt14">
-          ${inp('Charges annuelles','8 %',{hint:'du loyer'})}
-          ${inp('Vacance locative','1 mois / an')}
-          ${inp('Taux d\'emprunt','3,6 %')}
-        </div>
-        <div class="grid3 mt14">
-          ${inp('Durée','20 ans')}${inp('Apport habituel','15 %')}${inp('Régime fiscal','LMNP')}
-        </div>
-      </div></div>
+    /* ---------- historique des transmissions ---------- */
+    if (st==='Historique des transmissions'){
+      const demande = [['Agence du Parc','289 000 €'],['Rhône Immobilier','297 000 €'],['Lyon 7 Habitat','292 000 €']];
+      return `${appnav('')}
+      <div class="sec"><div style="max-width:760px;margin:0 auto">
+        <div class="row mid gap8 sub" style="margin-bottom:14px">
+          <span class="linkish hot" onclick="setState('Profil — 85 / 100')">← Mon profil</span>
+          <span>·</span><span>Historique des transmissions</span></div>
 
-      <div class="card"><div class="pad">
-        <div class="row mid" style="justify-content:space-between;gap:12px;flex-wrap:wrap">
-          <div style="min-width:0"><h5 class="wt">Propositions d'agences${pin(4)}</h5>
-            <div class="sub" style="margin-top:3px">Être proposé aux agences dont les biens correspondent
-            à votre recherche — profil anonymisé, coordonnées transmises seulement si une agence
-            s'engage auprès de vous.</div></div>
-          <span class="chip ${OPTIN?'k':'o'}" style="flex:none">${OPTIN?'Activé':'Désactivé'}</span>
-        </div>
-        <div class="row gap8 mt14 wrap">
-          <button class="btn sec2 sm hot" onclick="toggleOptin()">${OPTIN?'Désactiver':'Activer'}</button>
-          <span class="sub">Effet dans l'heure — sans email à envoyer, sans justification.</span>
-        </div>
-      </div></div>
+        <h4 class="wt">Qui a reçu vos coordonnées${pin(7)}</h4>
+        <div class="sub" style="margin-top:4px">Chaque ligne nomme une agence, la date, et le geste
+        qui l'a déclenchée. Aucune autre transmission n'existe.</div>
 
-      <div class="card"><div class="pad">
-        <h5 class="wt">Données & RGPD${pin(3)}</h5>
-        <div class="txt mt8">Vos coordonnées ne sont transmises qu'aux agences que vous contactez, bien
-        par bien — et, si vous l'avez activé ci-dessus, aux agences qui s'engagent sur votre recherche.</div>
-        <div class="row gap8 mt14 wrap">
-          <button class="btn sec2 sm">Exporter mes données</button>
-          <button class="btn sec2 sm">Historique des transmissions</button>
-          <button class="btn ghost sm">Supprimer mon compte</button>
+        <div class="card mt20">
+          <div class="pad" style="border-bottom:1px solid var(--line-2)">
+            <div class="row mid" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
+              <h5 class="wt">Demande de mise en relation</h5>
+              <span class="chip">12 août · 14 h 03</span>
+            </div>
+            <div class="sub" style="margin-top:4px">T3 · 62 m² · Lyon 7ᵉ — vous avez coché ces
+            trois agences : le bien porte trois mandats, la demande est partie aux trois.</div>
+          </div>
+          <div class="pad">
+            <div class="col gap6">
+              ${demande.map(([ag,px])=>`
+                <div class="rrow" style="justify-content:space-between;cursor:default">
+                  <div class="rtx" style="min-width:0"><b>${ag}</b>
+                    <span>Nom, téléphone, email, message, projet et budget — au prix de ${nbsp(px)}</span></div>
+                  <span class="linkish sub hot" style="flex:none"
+                    onclick="POP.effacement('${ag}')">Demander la suppression</span>
+                </div>`).join('')}
+            </div>
+            <div class="disc mt8">Une transmission ne s'annule pas : l'agence a reçu vos coordonnées.
+            Le bouton lui adresse une demande d'effacement en votre nom — nous ne pouvons pas
+            supprimer à sa place, et prétendre le contraire serait faux.</div>
+          </div>
         </div>
-      </div></div>
-    </div>
-  </div></div>`
+
+        <div class="card mt14">
+          <div class="pad" style="border-bottom:1px solid var(--line-2)">
+            <div class="row mid" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
+              <h5 class="wt">Propositions d'agences (catalogue)</h5>
+              <span class="chip ${OPTIN?'k':'o'}">${OPTIN?'Activé':'Désactivé'}</span>
+            </div>
+          </div>
+          <div class="pad">
+            ${OPTIN ? `
+            <div class="col gap6">
+              <div class="rrow" style="justify-content:space-between;cursor:default">
+                <div class="rtx" style="min-width:0"><b>Nord Patrimoine</b>
+                  <span>2 août — a débloqué votre profil : nom, téléphone, email</span></div>
+                <span class="linkish sub hot" style="flex:none"
+                  onclick="POP.effacement('Nord Patrimoine')">Demander la suppression</span>
+              </div>
+            </div>
+            <div class="disc mt8">Avant ce déblocage, l'agence ne voyait de vous ni nom, ni téléphone,
+            ni email — seulement vos critères, votre commune, votre score et « financement : oui ».</div>`
+            : `<div class="txt">Aucune transmission. Vous n'avez pas activé les propositions
+            d'agences : votre profil n'est proposé à personne, sous aucune forme.</div>
+            <button class="btn sec2 sm hot mt14" onclick="toggleOptin()">Activer les propositions</button>`}
+          </div>
+        </div>
+
+        <div class="bandeau mt14"><b>Ce qui n'est jamais transmis, à personne :</b> votre adresse,
+        vos favoris, vos recherches enregistrées, les fiches que vous ouvrez, votre historique de
+        navigation. Aucune donnée n'est vendue à un tiers — le modèle vit des agences,
+        pas de la revente d'audience.</div>
+
+        <div class="row gap8 mt14 wrap">
+          <button class="btn sec2 sm">Exporter cet historique</button>
+          <button class="btn sec2 sm hot" onclick="setState('Profil — 85 / 100')">Retour au profil</button>
+        </div>
+      </div></div>`;
+    }
+
+    /* ---------- rail de sections ---------- */
+    const SECS = [
+      ['profil','Mon profil', neuf?'40 / 100':`${pct} / 100`],
+      ['projet','Mon projet', neuf?'à remplir':''],
+      ['calcul', inv?'Mes hypothèses':'Mon financement',''],
+      ['propositions','Propositions d\'agences', OPTIN?'activé':'désactivé'],
+      ['notifications','Notifications',''],
+      ['securite','Connexion & sécurité',''],
+      ['donnees','Données & confidentialité','']
+    ];
+    const rail = `<div class="acrail">
+      ${SECS.map(([k,l,meta])=>`<button class="${CSEC===k?'on':''}" onclick="setCsec('${k}')">
+        <span>${l}</span>${meta?`<i>${meta}</i>`:''}</button>`).join('')}
+    </div>`;
+
+    /* ---------- l'aperçu : ce que l'agence voit ---------- */
+    const apercu = () => {
+      const cat = PVUE==='catalogue';
+      const ligne = (k,v,off) => `<div class="row mid" style="justify-content:space-between;gap:10px">
+        <span class="sub">${k}</span>
+        <span class="num ${off?'sub':''}" style="${off?'':'font-weight:600'};text-align:right">${nbsp(v)}</span></div>`;
+      return `<div class="card" style="position:sticky;top:14px">
+        <div class="pad" style="border-bottom:1px solid var(--line-2)">
+          <div class="lbl">${pin(2)} Ce que l'agence voit de vous</div>
+          <div class="sidetabs">
+            <button class="${cat?'':'on'}" onclick="setPvue('contact')">Celle que je contacte</button>
+            <button class="${cat?'on':''}" onclick="setPvue('catalogue')">Celle du catalogue</button>
+          </div>
+        </div>
+        <div class="pad">
+          <div class="row mid gap8">
+            <div class="avatar" style="${cat?'':'background:repeating-linear-gradient(45deg,#c7ccd3 0 4px,#d6dade 4px 8px);border-style:solid'}"></div>
+            <div style="min-width:0">
+              <div class="txt" style="font-weight:600;color:var(--ink)">${cat?'Acquéreur AC-•••':'Marc D.'}</div>
+              <div class="sub">${cat?'identité masquée':'Téléphone vérifié ✓'}</div></div>
+          </div>
+
+          <div class="row gap6 wrap mt14">
+            ${score===null
+              ? '<span class="chip o">Score — en attente</span>'
+              : `<span class="chip ${serieux?'k':'o'} hot" onclick="POP.monScore(${score},[${det}])">${
+                  serieux?'Profil sérieux':'Profil sérieux — non atteint'} · ${score} / 100</span>`}
+            <span class="chip ${neuf?'o':''}">${neuf?'Aucune recherche encore':'Recherche active'}</span>
+          </div>
+
+          <div class="hr"></div>
+          <div class="col gap6">
+            ${cat ? `
+              ${ligne('Recherche', neuf?'aucun secteur':'Lyon 7ᵉ + 5 km · Villeurbanne', neuf)}
+              ${ligne('Projet', neuf?'non renseigné':(inv?'Investissement locatif':'Résidence principale'), neuf)}
+              ${ligne('Budget', neuf?'non renseigné':'320 000 €', neuf)}
+              ${ligne('Financement', neuf?'non renseigné':(plein?'oui — pré-accord':'non renseigné'), neuf||!plein)}
+              ${ligne('Dernière visite', neuf?'à l\u2019instant':'il y a 2 h')}
+            ` : `
+              ${ligne('Téléphone','06 42 18 77 42')}
+              ${ligne('Email','marc.d@…')}
+              ${ligne('Projet', neuf?'non renseigné':(inv?'Investissement locatif':'Résidence principale'), neuf)}
+              ${ligne('Délai', neuf?'non renseigné':'moins de 3 mois', neuf)}
+              ${ligne('Budget', neuf?'non renseigné':'320 000 €', neuf)}
+              ${ligne('Apport', neuf?'non renseigné':'45 000 €', neuf)}
+              ${ligne('Financement', plein?'pré-accord bancaire':'non renseigné', !plein)}
+            `}
+          </div>
+          <div class="hr"></div>
+          <div class="sub">${cat
+            ? `Elle ne voit ni votre nom, ni votre téléphone, ni votre email, et <b>jamais votre
+               adresse</b>. Pour vous joindre, elle doit débloquer votre profil — et vous n'êtes
+               proposé que si vous l'avez activé.`
+            : `Vous avez choisi de la contacter : elle reçoit tout, <b>gratuitement, en entier, à
+               vie</b>. Rien n'est masqué, rien ne se débloque, elle ne paie pas pour vous lire.`}</div>
+          ${cat && !OPTIN ? `<div class="bandeau mt14">Aperçu à titre d'exemple : les propositions
+          d'agences sont <b>désactivées</b>, votre profil n'est proposé à personne.
+          <span class="linkish hot" onclick="setCsec('propositions')">Voir le réglage</span></div>`:''}
+        </div>
+      </div>`;
+    };
+
+    /* ---------- sections ---------- */
+    let corps = '';
+
+    if (CSEC==='profil'){
+      const manque = neuf
+        ? [['Votre projet','type de bien, secteurs, délai'],['Budget et apport','les deux chiffres qui filtrent tout'],['Capacité de financement','pré-accord, comptant, ou en cours']]
+        : (plein ? [] : [['Capacité de financement','pré-accord bancaire, achat comptant, ou dossier en cours']]);
+      corps = `
+      <div class="row stackm gap14">
+        <div class="grow col gap14" style="min-width:0">
+
+          <div class="card"><div class="pad">
+            <div class="row mid" style="justify-content:space-between;gap:12px;flex-wrap:wrap">
+              <div style="min-width:0"><h5 class="wt">Complétude de votre profil${pin(3)}</h5>
+                <div class="sub" style="margin-top:3px">${plein
+                  ? 'Complet. Vos demandes partent avec le badge « Profil sérieux ».'
+                  : (neuf
+                    ? 'Trois blocs, deux minutes. Rien n\'est obligatoire — vous pouvez contacter une agence dès maintenant.'
+                    : 'Un bloc à compléter. C\'est celui que les agences regardent en premier.')}</div></div>
+              <div class="big num">${pct} / 100</div>
+            </div>
+            <div style="height:7px;background:var(--fill);border-radius:4px;margin-top:12px;overflow:hidden">
+              <div style="width:${pct}%;height:100%;background:var(--ink-2)"></div></div>
+
+            ${manque.length?`<div class="col gap6 mt14">
+              ${manque.map(([t,d])=>`<div class="rrow hot" style="justify-content:space-between"
+                onclick="go('profil-completude')">
+                <div class="rtx" style="min-width:0"><b>${t}</b><span>${d}</span></div>
+                <span class="chip o" style="flex:none">à compléter</span></div>`).join('')}
+            </div>
+            <div class="row gap8 mt14 wrap">
+              <button class="btn hot" onclick="go('profil-completude')">Compléter — ${neuf?'2 min':'40 s'}</button>
+              <span class="sub">${pin(9)} Rien n'est bloqué en attendant : ni la recherche, ni la mise en relation.</span>
+            </div>`:`
+            <div class="row gap8 mt14 wrap">
+              <span class="chip k">Identité ✓</span><span class="chip k">Téléphone vérifié ✓</span>
+              <span class="chip k">Projet ✓</span><span class="chip k">Budget ✓</span>
+              <span class="chip k">Financement ✓</span>
+            </div>`}
+
+            <div class="hr"></div>
+            <div class="sub">La complétude n'est pas le score : elle en est la part que vous
+            contrôlez entièrement — <b>35 points sur 100</b>. Les 65 autres se gagnent à l'usage :
+            recherche active, réactivité quand une agence rappelle, constance du projet.
+            ${score!==null?`<span class="linkish hot" onclick="POP.monScore(${score},[${det}])">Voir le détail de vos ${score} points</span>.`:''}</div>
+          </div></div>
+
+          <div class="card">
+            <div class="pad" style="border-bottom:1px solid var(--line-2)">
+              <div class="row mid" style="justify-content:space-between;gap:10px">
+                <h5 class="wt">Vos coordonnées</h5><span class="chip k">Vérifiées</span></div>
+            </div>
+            <div class="pad">
+              <div class="col gap6">
+                ${[['Prénom et nom','Marc Delaunay'],['Email','marc.d@…'],
+                   ['Téléphone','06 42 18 77 42 — vérifié par SMS'],
+                   ['Compte créé le', neuf?'aujourd\'hui':'12 juin 2026']]
+                  .map(([k,v])=>`<div class="row mid" style="justify-content:space-between;gap:10px">
+                    <span class="lbl">${k}</span>
+                    <span class="num" style="font-weight:600;text-align:right">${nbsp(v)}</span></div>`).join('')}
+              </div>
+              <div class="disc mt8">Elles ne partent qu'aux agences que vous contactez, bien par bien —
+              et, si vous l'avez activé, à celles qui débloquent votre profil au catalogue.</div>
+              <button class="btn sec2 sm mt8">Modifier</button>
+            </div>
+          </div>
+
+          ${neuf?`
+          <div class="card"><div class="empty">
+            <div class="ico"></div>
+            <h5 class="wt">Rien à suivre pour l'instant</h5>
+            <p>Vos demandes, vos favoris et vos recherches enregistrées apparaîtront ici.
+            Commencez par une recherche — le profil se remplit tout seul en chemin.</p>
+            <button class="btn hot" onclick="go('recherche')">Lancer une recherche</button>
+          </div></div>`:`
+          <div class="card">
+            <div class="pad" style="border-bottom:1px solid var(--line-2)"><h5 class="wt">Mon activité</h5></div>
+            <div class="pad"><div class="col gap6">
+              ${[['3 demandes envoyées','1 agence sur 3 a ouvert la vôtre sur le T3 Lyon 7ᵉ',`goState('accueil','Demande envoyée')`],
+                 ['3 biens en favori','baisse de prix sur Mérignac : −2,5 % le 2 août',`go('favoris')`],
+                 ['3 recherches enregistrées','2 alertes actives · 4 nouveautés depuis hier',`go('recherches')`]]
+                .map(([t,d,dest])=>`<div class="rrow hot" style="justify-content:space-between" onclick="${dest}">
+                  <div class="rtx" style="min-width:0"><b>${t}</b><span>${d}</span></div>
+                  <span class="sub" style="flex:none">→</span></div>`).join('')}
+            </div></div>
+          </div>`}
+        </div>
+        <div class="side">${apercu()}</div>
+      </div>`;
+    }
+
+    if (CSEC==='projet'){
+      corps = `<div class="col gap14" style="max-width:720px">
+        <div class="card">
+          <div class="pad" style="border-bottom:1px solid var(--line-2)">
+            <div class="row mid" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
+              <h5 class="wt">Mon projet</h5>
+              <span class="chip ${neuf?'o':''}">${neuf?'non renseigné':'mis à jour il y a 2 h'}</span></div>
+            <div class="sub" style="margin-top:4px">Ce bloc fait deux choses : il accompagne vos
+            demandes chez les agences, et il décrit qui vous êtes dans le catalogue si vous l'avez
+            activé. C'est le même texte des deux côtés — il n'y a pas deux versions de vous.</div>
+          </div>
+          <div class="pad">
+            <div class="grid3">
+              ${inp('Type de projet', neuf?'':(inv?'Investissement locatif':'Résidence principale'),{placeholder:'à renseigner'})}
+              ${inp('Délai', neuf?'':'moins de 3 mois',{placeholder:'à renseigner'})}
+              ${inp('Type de bien', neuf?'':'Appartement — T3 minimum',{placeholder:'à renseigner'})}
+            </div>
+            <div class="grid3 mt14">
+              ${inp('Budget maximum', neuf?'':'320 000 €',{placeholder:'à renseigner'})}
+              ${inp('Apport', neuf?'':'45 000 €',{placeholder:'à renseigner'})}
+              ${inp('Financement', plein?'Pré-accord bancaire':'',{placeholder:'à renseigner',
+                    hint:plein?'':'le bloc qui manque à votre profil'})}
+            </div>
+            <div class="hr"></div>
+            <div class="lbl">Secteurs recherchés</div>
+            <div class="row gap6 wrap mt8">
+              ${neuf?'<span class="chip o">aucun secteur</span>'
+                    :'<span class="chip">Lyon 7ᵉ + 5 km</span><span class="chip">Villeurbanne</span>'}
+              <span class="chip hot" onclick="go('recherche')">+ ajouter</span>
+            </div>
+            <div class="disc mt14"><b>Déclaratif, et assumé comme tel.</b> Nous ne vérifions ni votre
+            apport ni votre capacité d'emprunt — ni nous, ni une banque. La seule chose vérifiée est
+            votre téléphone, par SMS. Une agence qui lit « pré-accord bancaire » lit une déclaration,
+            et l'écran qui la lui montre le dit aussi.</div>
+            <button class="btn sec2 sm mt14" onclick="go('profil-completude')">Compléter bloc par bloc</button>
+          </div>
+        </div>
+
+        <div class="card"><div class="pad">
+          <h5 class="wt">Ce que je cherche${pin(5)}</h5>
+          <div class="sub" style="margin-top:3px">Ce choix recompose tout le produit : vocabulaire,
+          chiffres mis en avant, contenu des fiches. ${inv
+            ? 'En « J\'investis », chaque bien affiche son rendement et son cash-flow.'
+            : 'En « J\'habite », chaque bien affiche sa mensualité et son coût énergétique.'}</div>
+          <div class="sidetabs" style="max-width:320px">
+            <button class="${inv?'on':''}" onclick="setMode('invest')">J'investis</button>
+            <button class="${inv?'':'on'}" onclick="setMode('home')">J'habite</button>
+          </div>
+          <div class="disc mt8">Changeable à tout moment, sans rien perdre : les favoris et les
+          recherches sont communs aux deux modes.</div>
+        </div></div>
+      </div>`;
+    }
+
+    if (CSEC==='calcul'){
+      corps = `<div class="col gap14" style="max-width:720px">
+        <div class="card"><div class="pad">
+          <h5 class="wt">${inv?'Mes hypothèses de rendement':'Mes hypothèses de financement'}</h5>
+          <div class="sub" style="margin-top:3px">Appliquées automatiquement à chaque bien —
+          et modifiables directement sur la fiche, sans revenir ici. On ne redemande pas ces
+          réglages à chaque annonce : c'est un réglage produit, pas un formulaire.</div>
+          ${inv?`
+          <div class="grid3 mt14">
+            ${inp('Charges annuelles','8 %',{hint:'du loyer'})}
+            ${inp('Vacance locative','1 mois / an')}
+            ${inp('Taux d\'emprunt','3,6 %')}
+          </div>
+          <div class="grid3 mt14">
+            ${inp('Durée','20 ans')}${inp('Apport habituel','15 %')}${inp('Régime fiscal','LMNP')}
+          </div>`:`
+          <div class="grid3 mt14">
+            ${inp('Taux d\'emprunt','3,6 %')}
+            ${inp('Durée','25 ans')}
+            ${inp('Apport habituel','15 %')}
+          </div>
+          <div class="grid3 mt14">
+            ${inp('Assurance emprunteur','0,34 %')}
+            ${inp('Charges de copropriété','incluses dans la mensualité')}
+            ${inp('Taxe foncière','incluse')}
+          </div>`}
+          <div class="disc mt14">Ces chiffres sont les vôtres, pas une moyenne de marché : deux
+          acquéreurs qui regardent le même bien n'ont pas la même mensualité, et la fiche doit
+          afficher la vôtre.</div>
+        </div></div>
+
+        <div class="bandeau">Aucune de ces valeurs n'est transmise aux agences. Elles servent
+        au calcul affiché sur vos écrans, et à rien d'autre.</div>
+      </div>`;
+    }
+
+    if (CSEC==='propositions'){
+      corps = `<div class="col gap14" style="max-width:720px">
+        <div class="card">
+          <div class="pad" style="border-bottom:1px solid var(--line-2)">
+            <div class="row mid" style="justify-content:space-between;gap:12px;flex-wrap:wrap">
+              <div style="min-width:0"><h5 class="wt">Recevoir des propositions d'agences${pin(6)}</h5>
+                <div class="sub" style="margin-top:3px">Des agences dont les biens correspondent à
+                votre recherche peuvent vous proposer des biens — <b>y compris off-market, avant
+                publication</b>. C'est le seul moyen de voir ce qui ne sera jamais en ligne.</div></div>
+              <span class="chip ${OPTIN?'k':'o'}" style="flex:none">${OPTIN?'Activé':'Désactivé'}</span>
+            </div>
+          </div>
+          <div class="pad">
+            <div class="grid2">
+              <div>
+                <div class="lbl">Ce qu'elle voit avant de vous joindre</div>
+                <div class="col gap6 mt8">
+                  ${['Vos critères et votre commune — jamais votre adresse','Votre projet et votre délai',
+                     'Votre score de sérieux','Financement : oui ou non — jamais le montant',
+                     'Votre activité récente']
+                    .map(t=>`<div class="row mid gap6"><span class="sub">·</span><span class="txt">${t}</span></div>`).join('')}
+                </div>
+              </div>
+              <div>
+                <div class="lbl">Ce qu'elle ne voit qu'après vous avoir débloqué</div>
+                <div class="col gap6 mt8">
+                  ${['Votre nom','Votre téléphone','Votre email']
+                    .map(t=>`<div class="row mid gap6"><span class="sub">·</span><span class="txt">${t}</span></div>`).join('')}
+                </div>
+                <div class="disc mt8">Le déblocage lui coûte des crédits : une agence qui vous
+                appelle a payé pour le faire. C'est ce qui filtre les sollicitations de masse.</div>
+              </div>
+            </div>
+
+            <div class="hr"></div>
+            <div class="row gap8 wrap mid">
+              <button class="btn ${OPTIN?'sec2':''} hot" onclick="toggleOptin()">${OPTIN
+                ? 'Ne plus être proposé aux agences'
+                : 'Activer — révocable à tout moment'}</button>
+              <span class="sub">${OPTIN
+                ? 'Effet dans l\'heure. Aucun email à envoyer, aucune justification à donner.'
+                : 'Jamais activé sans votre geste — la case n\'est pré-cochée nulle part.'}</span>
+            </div>
+            ${OPTIN?`<div class="disc mt8">Vous restez maître du premier mot : une agence qui vous
+            débloque doit vous appeler, elle n'obtient pas un droit de vous relancer indéfiniment.
+            <span class="linkish hot" onclick="setState('Historique des transmissions')">Voir qui a
+            reçu vos coordonnées</span>.</div>`:`<div class="disc mt8">Désactivé, votre profil
+            n'apparaît dans aucun catalogue et aucune agence ne peut le débloquer. Vos demandes
+            sortantes, elles, continuent de fonctionner exactement pareil.</div>`}
+          </div>
+        </div>
+        <div class="bandeau">${pin(2)} Pour savoir exactement ce qu'une agence lit de vous,
+        l'aperçu est dans <span class="linkish hot" onclick="setCsec('profil')">Mon profil</span> —
+        avec la bascule « celle que je contacte » / « celle du catalogue ».</div>
+      </div>`;
+    }
+
+    if (CSEC==='notifications'){
+      const N = [
+        ['Nouveau bien sur une recherche enregistrée','email + push','k'],
+        ['Baisse de prix sur un favori','email + push','k'],
+        ['Une agence a ouvert ma demande','push','k'],
+        ['Ma demande reste sans réponse à 48 h','email','k'],
+        ['Proposition d\'une agence', OPTIN?'email':'—', OPTIN?'k':''],
+        ['Récapitulatif hebdomadaire','—','']
+      ];
+      corps = `<div class="col gap14" style="max-width:720px">
+        <div class="card">
+          <div class="pad" style="border-bottom:1px solid var(--line-2)"><h5 class="wt">Notifications</h5></div>
+          <div class="pad"><div class="col gap6">
+            ${N.map(([t,v,on])=>`<div class="row mid" style="justify-content:space-between;gap:10px">
+              <span class="txt">${t}</span>
+              <span class="chip ${on} hot" style="flex:none">${on?v:'désactivé'}</span></div>`).join('')}
+          </div>
+          ${!OPTIN?`<div class="disc mt8">La ligne « proposition d'une agence » est sans objet tant que
+          les propositions sont désactivées — elle reste visible pour que rien n'apparaisse par
+          surprise le jour où vous les activez.</div>`:''}
+          </div>
+        </div>
+        <div class="bandeau">Aucune notification commerciale, aucune relance « ça bouge près de
+        chez vous ». On ne notifie que ce que vous avez demandé — une recherche que vous avez
+        enregistrée, un bien que vous avez mis en favori, une demande que vous avez envoyée.</div>
+        <div class="card"><div class="pad">
+          <div class="row mid" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
+            <div style="min-width:0"><h5 class="wt">Fréquence des alertes</h5>
+              <div class="sub" style="margin-top:3px">Réglée recherche par recherche —
+              instantané pour celles qui comptent, hebdomadaire pour les autres.</div></div>
+            <button class="btn sec2 sm hot" style="flex:none" onclick="go('recherches')">Mes recherches</button>
+          </div>
+        </div></div>
+      </div>`;
+    }
+
+    if (CSEC==='securite'){
+      corps = `<div class="col gap14" style="max-width:720px">
+        <div class="card">
+          <div class="pad" style="border-bottom:1px solid var(--line-2)"><h5 class="wt">Connexion</h5></div>
+          <div class="pad"><div class="col gap6">
+            <div class="row mid" style="justify-content:space-between;gap:10px">
+              <span class="txt">Email de connexion</span><span class="num">marc.d@…</span></div>
+            <div class="row mid" style="justify-content:space-between;gap:10px">
+              <span class="txt">Mot de passe</span><span class="linkish sub hot">modifier</span></div>
+            <div class="row mid" style="justify-content:space-between;gap:10px">
+              <span class="txt">Téléphone vérifié</span>
+              <span class="chip k">06 42 18 77 42 ✓</span></div>
+            <div class="row mid" style="justify-content:space-between;gap:10px">
+              <span class="txt">Connexion en deux étapes</span>
+              <span class="chip ${neuf?'o':'k'} hot">${neuf?'à activer':'activée'}</span></div>
+          </div>
+          <div class="disc mt8">Le téléphone vérifié n'est pas un composant du score : c'est la
+          condition d'entrée. Un numéro non vérifié ne reçoit aucune demande et n'entre dans aucun
+          catalogue.</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="pad" style="border-bottom:1px solid var(--line-2)">
+            <div class="row mid" style="justify-content:space-between;gap:10px">
+              <h5 class="wt">Appareils connectés</h5>
+              <span class="chip">${neuf?'1 appareil':'2 appareils'}</span></div>
+          </div>
+          <div class="pad"><div class="col gap6">
+            ${(neuf?[['iPhone · Safari','Lyon · session en cours','']]
+                   :[['iPhone · Safari','Lyon · session en cours',''],
+                     ['MacBook · Chrome','Lyon · il y a 2 jours','Déconnecter']])
+              .map(([a,d,act])=>`<div class="row mid" style="justify-content:space-between;gap:10px">
+                <div style="min-width:0"><div class="txt" style="font-weight:500;color:var(--ink)">${a}</div>
+                  <div class="sub">${d}</div></div>
+                ${act?`<span class="linkish sub hot" style="flex:none">${act}</span>`
+                     :'<span class="chip k" style="flex:none">cet appareil</span>'}</div>`).join('')}
+          </div></div>
+        </div>
+      </div>`;
+    }
+
+    if (CSEC==='donnees'){
+      corps = `<div class="col gap14" style="max-width:720px">
+        <div class="card">
+          <div class="pad" style="border-bottom:1px solid var(--line-2)"><h5 class="wt">Vos données${pin(7)}</h5></div>
+          <div class="pad">
+            <div class="txt">Vos coordonnées ne sont transmises qu'aux agences que vous contactez,
+            bien par bien — et, si vous l'avez activé, à celles qui débloquent votre profil au
+            catalogue. Rien d'autre, à personne d'autre, jamais revendu.</div>
+            <div class="col gap6 mt14">
+              ${[['Historique des transmissions', neuf?'aucune transmission à ce jour':`${OPTIN?4:3} agences — qui a reçu quoi, quand, pourquoi`, `setState('Historique des transmissions')`],
+                 ['Exporter mes données','profil, recherches, favoris, demandes — fichier JSON',''],
+                 ['Ce que nous ne collectons pas','ni adresse, ni traceur publicitaire, ni revente',''] ]
+                .map(([t,d,dest])=>`<div class="rrow ${dest?'hot':''}"
+                  style="justify-content:space-between;${dest?'':'cursor:default'}"
+                  ${dest?`onclick="${dest}"`:''}>
+                  <div class="rtx" style="min-width:0"><b>${t}</b><span>${d}</span></div>
+                  <span class="sub" style="flex:none">${dest?'→':''}</span></div>`).join('')}
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="pad" style="border-bottom:1px solid var(--line-2)"><h5 class="wt">Supprimer mon compte${pin(8)}</h5></div>
+          <div class="pad">
+            <div class="txt">Suppression immédiate de votre profil, de vos recherches, de vos
+            favoris et de votre présence au catalogue. Aucune période de rétention, aucun email de
+            reconquête.</div>
+            <div class="bandeau mt14"><b>Ce que la suppression ne peut pas faire :</b> les
+            ${neuf?'demandes que vous enverriez':'3 demandes déjà envoyées'} vivent chez les agences
+            qui les ont reçues. Nous ne pouvons pas effacer chez elles — nous pouvons leur adresser
+            votre demande d'effacement, agence par agence, depuis
+            <span class="linkish hot" onclick="setState('Historique des transmissions')">l'historique
+            des transmissions</span>.</div>
+            <button class="btn ghost sm mt14">Supprimer mon compte</button>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    /* ---------- l'écran ---------- */
+    return `${appnav('')}
+    <div class="sec">
+      <div class="row mid" style="justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div class="row mid gap8" style="min-width:0">
+          <div class="navico photo" style="width:44px;height:44px;font-size:13px">MD</div>
+          <div style="min-width:0"><h4 class="wt">Marc Delaunay</h4>
+            <div class="row mid gap6 wrap" style="margin-top:3px">
+              <span class="chip k">Téléphone vérifié</span>
+              ${score!==null&&serieux?'<span class="chip">Profil sérieux</span>':''}
+              <span class="chip">${neuf?'Compte créé aujourd\'hui':'Membre depuis juin 2026'}</span>
+            </div></div>
+        </div>
+        ${/* un seul appel à l'action à la fois : sur « Mon profil », c'est la carte de
+              complétude qui le porte — l'en-tête ne le double pas, il ouvre l'autre aperçu.
+              Ailleurs dans le rail, l'en-tête est le seul endroit qui le rappelle. */
+          (plein || CSEC==='profil')
+          ? `<button class="btn sec2 hot" onclick="setCsec('profil');setPvue('${PVUE==='catalogue'?'contact':'catalogue'}')">${
+              PVUE==='catalogue'?'Voir ce que voit l\u2019agence que je contacte':'Voir ce que voit une agence du catalogue'}</button>`
+          : `<button class="btn hot" onclick="go('profil-completude')">Compléter mon profil — ${pct} / 100</button>`}
+      </div>
+
+      <div class="row stackm gap20 mt20">
+        ${rail}
+        <div class="grow" style="min-width:0">${corps}</div>
+      </div>
+    </div>`;
+  }
 });
 
 /* ---------------- CACHET & IA (scope v2) ---------------- */
@@ -4742,7 +5313,7 @@ add({id:'analyse-avancee', g:'P0+ — Cachet & IA (scope v2)', n:'', scope:'v2',
 
 add({id:'profil-completude', g:'P0+ — Cachet & IA (scope v2)', n:'', scope:'v2c', title:'Complétude du profil acquéreur (F-160)',
   intro:"Tout le design tient dans une équation à rendre évidente : ce que je remplis ici, l'agence le voit, et elle me répond plus vite. Sans cette contrepartie visible, personne ne complète. Et pour qui a coché la case catalogue, ce profil **est** la fiche anonymisée que les agences découvrent : le remplir, c'est recevoir de meilleures propositions.",
-  states:['En cours (60 / 100)','Complété (100 / 100)'],
+  states:['En cours (85 / 100)','Complété (100 / 100)'],
   notes:[
     ['Montrer la contrepartie, pas la jauge','un pourcentage seul ne motive personne. L’aperçu « ce que l’agence voit » est placé à côté de la jauge : c’est lui qui fait remplir.'],
     ['Le profil complet est aussi la fiche du catalogue','pour l’acquéreur qui a donné son accord, les agences voient cette fiche SANS l’identité — critères, commune, score, financement oui/non. La jauge et le score de sérieux servent donc les deux faces : réponses plus rapides sur ses demandes, meilleures propositions entrantes.'],
@@ -4753,23 +5324,27 @@ add({id:'profil-completude', g:'P0+ — Cachet & IA (scope v2)', n:'', scope:'v2
   ],
   render:(st)=>{
     const plein = st==='Complété (100 / 100)';
-    const pct = plein?100:60;
+    const pct = plein?100:85;
     const blocs = [
       ['Identité','Prénom, nom, email','fait'],
       ['Téléphone vérifié','Code SMS confirmé','fait'],
       ['Votre projet','Type d\'investissement, délai','fait'],
-      ['Budget','Budget maximum et apport', plein?'fait':'todo'],
+      ['Budget','Budget maximum et apport','fait'],
       ['Financement déclaré','Pré-accord bancaire ou achat comptant', plein?'fait':'todo']
     ];
     return `${appnav('')}
-    <div class="sec"><div class="row stackm gap20" style="max-width:960px;margin:0 auto">
+    <div class="sec"><div style="max-width:960px;margin:0 auto">
+      <div class="row mid gap8 sub" style="margin-bottom:14px">
+        <span class="linkish hot" onclick="go('compte')">← Mon profil</span>
+        <span>·</span><span>Compléter bloc par bloc</span></div>
+      <div class="row stackm gap20">
       <div class="grow col gap20">
         <div class="card"><div class="pad">
           <div class="row mid" style="justify-content:space-between;gap:12px;flex-wrap:wrap">
             <div><h4 class="wt">Votre profil${pin(2)}</h4>
               <div class="sub">${plein
                 ? 'Profil complet — vos demandes partent avec le badge « Profil sérieux ».'
-                : 'Deux blocs à compléter pour débloquer le badge « Profil sérieux » (seuil : 80).'}</div></div>
+                : 'Un bloc à compléter : la capacité de financement. C\u2019est celui que les agences regardent en premier.'}</div></div>
             <div class="big num">${pct} / 100</div>
           </div>
           <div style="height:7px;background:var(--fill);border-radius:4px;margin-top:12px;overflow:hidden">
@@ -4832,8 +5407,8 @@ add({id:'profil-completude', g:'P0+ — Cachet & IA (scope v2)', n:'', scope:'v2
             <div class="hr"></div>
             <div class="col gap6">
               ${[['Projet','Investissement locatif'],['Délai','moins de 3 mois'],
-                 ['Budget', plein?'320 000 €':'non renseigné'],
-                 ['Apport', plein?'45 000 €':'non renseigné'],
+                 ['Budget','320 000 €'],
+                 ['Apport','45 000 €'],
                  ['Financement', plein?'pré-accord bancaire':'non renseigné']]
                 .map(([k,v])=>`<div class="row mid" style="justify-content:space-between">
                   <span class="sub">${k}</span>
@@ -4846,7 +5421,7 @@ add({id:'profil-completude', g:'P0+ — Cachet & IA (scope v2)', n:'', scope:'v2
           </div>
         </div>
       </div>
-    </div></div>`;
+    </div></div></div>`;
   }
 });
 
@@ -7065,6 +7640,19 @@ function leadAgList(){ return BIENS[0].ags.filter((_,i)=>leadAgs().has(i)); }
 let OPTIN = false;
 function toggleOptin(){ OPTIN = !OPTIN; show(cur, true); }
 
+/* Section active du profil acquéreur. Le rail de gauche était décoratif : il navigue
+   maintenant pour de bon, et l'écran se réouvre toujours sur « Mon profil » — c'est
+   l'aperçu de ce que l'agence voit qui doit accueillir, pas un formulaire de réglages. */
+let CSEC = 'profil';
+function setCsec(s){ CSEC = s; show(cur, true); }
+
+/* Deux publics lisent ce profil et ne lisent pas la même chose : l'agence qu'on contacte
+   (tout, gratuitement) et l'agence du catalogue (ni nom, ni téléphone, ni email).
+   L'aperçu bascule entre les deux — c'est la seule façon de comprendre le consentement
+   avant de le donner. */
+let PVUE = 'contact';
+function setPvue(v){ PVUE = v; show(cur, true); }
+
 /* L'OTP sert deux entrées : la création de compte classique, et la fin du tunnel de
    mise en relation d'un visiteur. Le drapeau dit d'où l'on vient — il change le fil
    d'Ariane et la sortie, pas l'écran. */
@@ -7707,6 +8295,10 @@ const ZONES_REF = () => [['Lyon 7ᵉ','arr',5], ['Villeurbanne','com',0]];
    et « compte neuf » sont des recherches vierges, les autres reprennent la dernière recherche.
    Poser l'état ici plutôt que dans le gabarit évite que l'écran et le moteur se contredisent. */
 function scenario(id, st){
+  /* changer d'état sur le profil acquéreur remet le rail sur « Mon profil » : un état
+     décrit une situation de compte, pas une section — le lecteur doit repartir du même
+     endroit à chaque bascule. L'aperçu, lui, repart sur l'agence que l'on contacte. */
+  if (id === 'compte'){ CSEC = 'profil'; PVUE = 'contact'; return; }
   if (id !== 'accueil') return;
   const froid = st==='Visiteur — première visite' || st==='Compte neuf';
   if (froid){ CRIT = CRIT_VIDE(); ZONES = []; HASQ = false; }

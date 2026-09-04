@@ -2,7 +2,7 @@
 
 Prototype cliquable d'une plateforme immobilière. **Un seul fichier, aucune dépendance, fonctionne hors ligne** : ouvre `index.html` dans un navigateur (double-clic).
 
-**25 écrans · 77 états**, vérifiés sur 308 rendus (écran × état × connecté/visiteur × desktop/mobile). On valide ici les **parcours, la hiérarchie de l'information et les états**.
+**26 écrans · 88 états**, vérifiés sur 2 352 rendus (écran × état × mode d'usage × connecté/visiteur × desktop/tablette/mobile — et, sur le profil, × section × public de l'aperçu × consentement) : **0 erreur, 0 débordement horizontal**. On valide ici les **parcours, la hiérarchie de l'information et les états**.
 
 > **⚠️ Modèle de leads v2 (brief 08/2026).** L'ancien modèle « contact gratuit mais infos bloquées, qualification à débloquer » est retiré partout. Le nouveau : **tout contact reçu est gratuit, en entier, à vie** — et ce qui se vend est un **acheteur qui n'a pas contacté** (catalogue d'acheteurs anonymisés, 20/30/40 €, identité révélée après achat).
 
@@ -10,7 +10,7 @@ Prototype cliquable d'une plateforme immobilière. **Un seul fichier, aucune dé
 
 | Groupe | Écrans |
 |---|---|
-| **Parcours acquéreur** (10) | Accueil ⭐ · Recherche & résultats · Fiche bien ⭐ · Page agence · Mise en relation 1 & 2 · Vérification SMS · Favoris · Mes recherches (enregistrées & récentes) · Paramètres |
+| **Parcours acquéreur** (10) | Accueil ⭐ · Recherche & résultats · Fiche bien ⭐ · Page agence · Mise en relation 1 & 2 · Vérification SMS · Favoris · Mes recherches (enregistrées & récentes) · Mon profil ⭐ (7 sections) |
 | **Estimation & IA** (2) | Estimation + score + avis (bascule investisseur / acquéreur) · Complétude du profil acquéreur |
 | **Côté agence** (6) | Choix du profil · Vérification SIRET · Tableau de bord · Mes biens · Fiche bien côté agence · Dépôt d'un bien (4 étapes) |
 | **Leads & facturation** (6) | Mes leads (tout gratuit) · Fiche lead · Catalogue d'acheteurs (3 portes : annonce · catalogue+panier · alertes) · Acheter un acheteur · Paiements & factures · Déclaration de vente |
@@ -77,6 +77,21 @@ Le **budget total frais de notaire inclus** vit lui aussi dans le détail. Mis e
 
 Le mode « Décrire » vit **entièrement dans la nav** — pilule dépliée (champ + suggestions + **Valider**), pilule repliée (la phrase saisie + **Valider**), et onglet ✦ Décrire dans la popup de recherche mobile. Les trois mènent à la même **popup d'interprétation** : les critères déduits en chips modifiables, deux questions fermées (jamais un chat ouvert), et le rappel — *« aucun prix ni rendement n'est estimé ici : j'interprète une demande, je ne chiffre rien »*.
 
+### Mon profil ne s'appelle plus « Paramètres » — 4 états, 7 sections
+
+L'écran compte de l'acquéreur ouvrait sur des réglages : hypothèses de calcul, notifications, RGPD. Personne ne remplit un formulaire pour un formulaire. Il ouvre maintenant sur **ce que l'agence voit de vous** — le seul contenu qui donne envie de remplir le reste.
+
+`Profil — 85 / 100` · `Profil complet — 100 / 100` · `Compte neuf — 40 / 100` · `Historique des transmissions`
+
+- **Deux publics, deux fiches, une bascule.** L'agence que vous contactez reçoit tout — nom, téléphone, email, message, projet, budget — gratuitement, en entier, à vie. Une agence du catalogue ne voit ni nom, ni téléphone, ni email, et jamais l'adresse : elle doit débloquer votre profil pour vous joindre. Les deux aperçus sont au même endroit, sous un onglet. Une case à cocher n'expliquera jamais un consentement ; deux fiches côte à côte, si.
+- **Un seul score, celui que lit l'agence.** La complétude est ce que vous remplissez — elle vaut **35 points sur 100** dans le score de sérieux, et c'est la seule composante que vous contrôlez entièrement. Le score est ce que l'agence lit. Deux jauges concurrentes feraient douter des deux. La promesse écrite côté agence — *« l'acquéreur voit son propre score, le même chiffre, au même moment »* — n'était tenue nulle part : elle l'est, barème et pondérations compris, avec en plus ce que la version agence n'a pas — **ce qu'il peut y changer**.
+- **La colonne de gauche navigue vraiment.** Elle était décorative : cinq libellés inertes. Sept sections — profil, projet, hypothèses, propositions d'agences, notifications, sécurité, données — un état actif, un rappel d'état dans le rail (catalogue activé ou non), et en mobile une barre de sections défilante à 44 px.
+- **« J'investis / J'habite » devient une préférence de compte.** Le mode ne vivait que dans la barre de démonstration alors qu'il décide du vocabulaire et des chiffres partout. Il est dans le profil, avec la phrase qui dit ce qu'il change — et les hypothèses de calcul suivent : rendement, charges et vacance d'un côté ; taux, durée et assurance emprunteur de l'autre.
+- **Le consentement catalogue se retire là où il se donne.** Même bloc, même geste, effet dans l'heure, sans email ni justification. On écrit ce qu'on perd en le coupant (les propositions off-market, avant publication) et ce qu'on garde (les demandes sortantes, inchangées). Un consentement qu'on ne peut pas retirer d'un clic n'est pas un consentement.
+- **L'historique des transmissions est un écran, pas une ligne de CGU.** Qui a reçu quoi, quand, et à cause de quel geste — les trois mandataires d'un même bien y figurent séparément, parce que c'est l'acquéreur qui les a cochés. Et la vérité qui coûte : **une transmission ne s'annule pas**. Plutôt que de faire semblant, l'écran ouvre la demande d'effacement auprès de l'agence, texte rédigé, délai légal d'un mois annoncé.
+- **La suppression du compte dit ce qu'elle ne peut pas effacer** : les demandes déjà envoyées vivent chez les agences qui les ont reçues. Le promettre serait faux ; l'écrire est ce qui rend crédible tout le reste de la page.
+- **Rien n'est obligatoire, et l'état « compte neuf » le prouve** — 40 / 100, aucune porte fermée : chercher, comparer, contacter fonctionnent. Le profil est un accélérateur, pas un péage.
+
 ## Le côté agence
 
 - **Mes biens** — les colonnes actionnables sont la **complétude** et la **position de contact**, au même rang que le prix : ce sont les deux seules variables que l'agence contrôle et qui changent son classement sur un bien partagé.
@@ -100,7 +115,7 @@ Trois limites matérialisées : la **carte de la fiche est statique** (recherche
 
 - **Navigation** : le rail de gauche, les flèches ← → de la barre du haut, ou les touches clavier ← →.
 - **Écrans cliquables** : les boutons principaux enchaînent vraiment (Rechercher → Résultats → Fiche → Contacter → OTP → Confirmation ; côté agence : Mes biens → fiche bien, Mes leads → fiche lead ou achat). Survole : ce qui s'entoure est cliquable.
-- **États** : les pastilles sous le titre basculent les 69 états. Pas seulement le cas heureux — vide, chargement, erreur, cas limite.
+- **États** : les pastilles sous le titre basculent les 88 états. Pas seulement le cas heureux — vide, chargement, erreur, cas limite.
 - **Modes** : `J'investis / J'habite` recompose le vocabulaire et les chiffres (rendement ↔ mensualité) sans perdre les favoris, communs aux deux modes.
 - **Responsive** : bascule `Auto / Desktop / Tablette / Mobile` en barre du bas. **Auto** suit la largeur réelle de la fenêtre (< 700 px mobile · < 1080 px tablette).
 - **Annotations** : les pastilles ocre renvoient aux décisions UX listées sous chaque écran. Décochable pour une lecture propre en réunion.
